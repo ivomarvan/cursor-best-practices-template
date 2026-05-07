@@ -1,0 +1,234 @@
+---
+description: >-
+  Python coding standards — type hints, OOP, SOLID, docstrings, async, testing.
+  Aktivuje se při práci s Python soubory.
+globs: "**/*.py, **/pyproject.toml, **/requirements*.txt, **/setup.py, **/setup.cfg"
+alwaysApply: false
+---
+
+# Python — Coding Standards
+
+<!-- <lang-code>: Standardy pro psaní Python kódu — moderní, typovaný, testovatelný -->
+
+## Verze a tooling
+
+- Cílová verze: **Python 3.11+** (pokud projekt nespecifikuje jinak).
+- Formatter a linter: **Ruff** (`ruff format .` + `ruff check --fix .`).
+- Statická analýza typů: **mypy** (`mypy src/ --strict`) — CI musí projít.
+- Testování: **pytest** s markery `unit` / `integration` / `slow`.
+- Závislosti: `pyproject.toml` (preferuj) nebo `requirements.txt` s pinovanými verzemi.
+
+## Type hints — povinné všude
+
+Type hints jsou **povinné** na všech funkcích, metodách a třídách — bez výjimky.
+mypy `--strict` toto vynucuje automaticky.
+
+```python
+# ❌ Nepřijatelné
+def process(items, limit=10):
+    return items[:limit]
+
+# ✅ Správně — všechny parametry i návrat mají typy
+def process(items: list[str], limit: int = 10) -> list[str]:
+    return items[:limit]
+
+# ✅ Složitější typy
+from collections.abc import Sequence
+from typing import TypeAlias
+
+ItemId: TypeAlias = str
+
+def fetch_items(ids: Sequence[ItemId]) -> dict[ItemId, str]:
+    ...
+
+# ✅ Optional hodnoty — preferuj X | None před Optional[X] (Python 3.10+)
+def find_user(user_id: str) -> User | None:
+    ...
+```
+
+## OOP — architektura
+
+- **Jedna třída = jeden soubor** — výjimka: pomocné datové třídy (`dataclass`) těsně svázané s hlavní třídou.
+- **Kompozice před dědičností** — sdílená logika jde do kompozice nebo mixinu, ne do hlubokých hierarchií.
+- Abstrakt rozhraní přes `Protocol` (structural subtyping) nebo `ABC` (nominal subtyping):
+
+```python
+# Pattern: Strategy (GoF) — výběr algoritmu za běhu přes Protocol
+from typing import Protocol
+
+class EmbeddingModel(Protocol):
+    """Contract for embedding model implementations. Pattern: Strategy."""
+    def embed(self, text: str) -> list[float]: ...
+
+class OpenAIEmbedding:
+    """OpenAI-based implementation of EmbeddingModel."""
+    def embed(self, text: str) -> list[float]:
+        ...
+
+class LocalEmbedding:
+    """Local sentence-transformers implementation of EmbeddingModel."""
+    def embed(self, text: str) -> list[float]:
+        ...
+```
+
+- Závislosti injektuj přes konstruktor (Dependency Injection / DIP):
+
+```python
+# Pattern: Dependency Injection (DIP)
+class DocumentProcessor:
+    def __init__(self, embedder: EmbeddingModel, repo: DocumentRepository) -> None:
+        self._embedder = embedder   # injected — easily mockable in tests
+        self._repo = repo
+```
+
+- Preferuj `@dataclass` nebo **Pydantic** pro datové struktury bez chování.
+- `pathlib.Path` místo string cest všude.
+
+## Docstringy — Google style (Doxygen úroveň)
+
+Každá veřejná třída, metoda a funkce má docstring s:
+- 1–2 větami popisujícími **co** dělá
+- `Args:` — každý parametr: jméno, popis (typ je v signature)
+- `Returns:` — co vrací a jaká je sémantika
+- `Raises:` — kdy a jakou výjimku vyhodí
+
+```python
+class ChunkingPipeline:
+    """Split documents into overlapping text chunks for embedding.
+
+    Applies sliding window with configurable size and overlap.
+    Pattern: Template Method — subclasses can override _split_sentences().
+    """
+
+    def chunk(self, text: str, max_tokens: int = 512, overlap: int = 50) -> list[str]:
+        """Split text into overlapping chunks.
+
+        Args:
+            text: Raw input text. Must be non-empty.
+            max_tokens: Maximum tokens per chunk. Must be > overlap.
+            overlap: Number of overlapping tokens between consecutive chunks.
+
+        Returns:
+            List of text chunks preserving sentence boundaries where possible.
+            Returns empty list if text is empty.
+
+        Raises:
+            ValueError: If max_tokens <= overlap or max_tokens < 1.
+        """
+```
+
+## Importy a struktura
+
+- Absolutní importy od `src` — žádné relativní importy:
+
+```python
+# ❌
+from ..common.database import pool
+
+# ✅
+from src.common.database import pool
+```
+
+- Pořadí importů (Ruff/isort to vynucuje):
+  1. Standard library
+  2. Third-party
+  3. Local (`src.*`)
+
+## Logging
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ✅ Strukturovaný log — klíč=hodnota pro parsovatelnost
+logger.info("Document fetched: url=%s size_bytes=%d", url, len(content))
+logger.error("Fetch failed: url=%s attempt=%d error=%s", url, attempt, exc)
+
+# ❌ Nikdy
+print("Fetching document...")
+```
+
+## Zpracování chyb
+
+```python
+# ✅ Specifická výjimka, kontext, chain (from exc zachová traceback)
+try:
+    result = await fetch_document(url)
+except httpx.TimeoutException as exc:
+    logger.warning("Timeout: url=%s attempt=%d/%d", url, attempt, max_retries)
+    raise RetryableError(url) from exc
+```
+
+## Asynchronní kód
+
+- `async/await` pro veškeré I/O (HTTP, DB, soubory).
+- Sdílený connection pool — nevytvářej nové spojení v každé funkci.
+- `asyncio.gather()` pro paralelní I/O operace.
+
+## Testování
+
+```python
+# Pojmenování: test_<co>_<podmínka>_<očekávaný výsledek>
+def test_chunk_text_empty_input_returns_empty_list() -> None:
+    assert chunk_text("") == []
+
+def test_chunk_text_max_tokens_le_overlap_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="max_tokens"):
+        chunk_text("hello", max_tokens=10, overlap=10)
+
+@pytest.mark.integration
+async def test_document_repository_stores_and_retrieves() -> None:
+    ...
+```
+
+## .gitignore — Python-specific entries
+
+Add these to the project `.gitignore` when Python is used:
+
+```gitignore
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Distribution and packaging
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Test coverage
+.coverage
+htmlcov/
+```
+
+## Správa závislostí
+
+```toml
+# pyproject.toml
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast, no I/O",
+    "integration: requires DB or network",
+    "slow: > 5s",
+]
+```
+
+- Každou novou závislost zdůvodni komentářem v `requirements.txt` nebo `pyproject.toml`.
+- Nikdy `pip install` bez přidání do souboru závislostí.

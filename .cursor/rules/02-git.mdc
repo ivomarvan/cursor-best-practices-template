@@ -1,0 +1,130 @@
+---
+description: >-
+  Git rules — commit conventions, branching, PR workflow, and generic .gitignore.
+  Language-specific .gitignore entries live in the respective language rules.
+globs: "**/.gitignore, **/.gitattributes, **/CHANGELOG.md"
+alwaysApply: true
+---
+
+# Git Rules
+
+<!-- cs: Pravidla pro práci s Gitem — bezpečnostní mantinely, commity, větvení -->
+
+## Absolute prohibitions (without explicit user consent)
+
+<!-- cs: Absolutní zákazy (bez výslovného souhlasu uživatele) -->
+
+- **No** `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, `git reset`.
+  <!-- cs: Žádný git commit, push, pull, merge, rebase, reset. -->
+- **No** `git add` with destructive consequences.
+  <!-- cs: Žádný git add s destruktivními důsledky. -->
+- **No** force push (`--force`, `--force-with-lease`) to `main`/`master`.
+  <!-- cs: Žádný force push na main/master. -->
+- `git status` and `git diff` (read-only) are always safe.
+  <!-- cs: git status a git diff (readonly operace) jsou vždy v pořádku. -->
+
+## Commit messages — Conventional Commits
+
+<!-- cs: Commit messages — Conventional Commits formát -->
+
+Format: `<type>(<scope>): <description in imperative, English>`
+<!-- cs: Formát: <typ>(<rozsah>): <popis v imperativu, anglicky> -->
+
+```
+feat(auth): add JWT refresh token rotation
+fix(wifi): handle reconnection after deep sleep wake-up
+docs(readme): update build instructions for ESP-IDF 5.x
+refactor(parser): extract chunk boundary detection to separate function
+test(scraping): add integration test for robots.txt compliance
+chore(deps): bump pydantic to 2.7.0
+```
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`
+<!-- cs: Povolené typy: feat, fix, docs, style, refactor, test, chore, perf, ci, build -->
+
+- Description in **imperative** English (`add`, not `added` or `adds`).
+  <!-- cs: Popis v imperativu, anglicky (add, ne added nebo adds). -->
+- Max **72 characters** on the first line.
+  <!-- cs: Max 72 znaků na prvním řádku. -->
+- Optional body separated by a blank line — explains why, not what.
+  <!-- cs: Volitelné tělo odděleno prázdným řádkem — vysvětluje proč, ne co. -->
+- No vague messages (`fix stuff`, `update`, `wip`).
+  <!-- cs: Žádné vágní zprávy (fix stuff, update, wip). -->
+
+## Branching (Git Flow lite)
+
+<!-- cs: Větvení (Git Flow lite) -->
+
+```
+main              ← production, always stable
+develop           ← integration of feature branches (optional for larger projects)
+feature/<desc>    ← new functionality
+fix/<desc>        ← bug fix
+chore/<desc>      ← maintenance, dependency updates
+```
+
+- Branches merged via **Pull Request / Merge Request** with code review.
+  <!-- cs: Větve se mergují přes Pull Request / Merge Request s code review. -->
+- Prefer **squash merge** for feature branches (clean history on `main`).
+  <!-- cs: Preferuj squash merge pro feature větve (čistá historie na main). -->
+- Delete the branch after merge.
+  <!-- cs: Po merge větev smaz. -->
+
+## `.gitignore` — generic entries (always commit)
+
+<!-- cs: .gitignore — generické záznamy platné pro každý projekt -->
+
+Each project **must** have a `.gitignore`. Start from this generic base and extend
+with language-specific entries (see the respective language rule).
+<!-- cs: Každý projekt musí mít .gitignore. Začni od tohoto základu a rozšiř o jazykové záznamy (viz jazykové pravidlo). -->
+
+```gitignore
+# Secrets and environment
+.env
+.env.*
+!.env.example
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Personal convention — local data never committed
+nogit_data/
+
+# Generic logs and temp files
+*.log
+*.tmp
+```
+
+## Pull Request conventions
+
+<!-- cs: Konvence pro Pull Requesty -->
+
+- PR title = Conventional Commit format (becomes the squash commit message).
+  <!-- cs: PR title = Conventional Commit formát (stane se squash commit message). -->
+- PR description: what, why, how to test.
+  <!-- cs: PR popis obsahuje: co, proč, jak testovat. -->
+- Each PR solves **one concern** — split large changes.
+  <!-- cs: Každý PR řeší jeden concern — velké změny rozděl. -->
+- Before merge: CI green, code review from at least 1 person (even self-review after 24h).
+  <!-- cs: Před mergem: CI zelené, code review od alespoň 1 osoby (i od sebe přes 24h). -->
+
+## Useful read-only commands
+
+<!-- cs: Užitečné příkazy (readonly — vždy bezpečné) -->
+
+```bash
+git status                          # working directory state
+git diff                            # unstaged changes
+git diff --staged                   # staged changes
+git log --oneline --graph --all     # history overview
+git log -p -- <file>                # file history with diffs
+```

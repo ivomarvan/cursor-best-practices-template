@@ -1,0 +1,142 @@
+---
+description: >-
+  Technical standards for writing Dockerfiles and docker-compose.yml — multi-stage
+  builds, non-root user, cache, healthchecks, security. Activated for Docker files.
+globs: "**/Dockerfile, **/Dockerfile.*, **/*.dockerfile, **/docker-compose*.yml, **/docker-compose*.yaml, **/.dockerignore"
+alwaysApply: false
+---
+
+# Docker — Technical Standards
+
+<!-- cs: Technické standardy pro psaní Dockerfile a docker-compose.yml -->
+
+## Dockerfile
+
+<!-- cs: Dockerfile -->
+
+### Core Rules
+
+<!-- cs: Základní pravidla -->
+
+- **Never `latest` tag** — always a pinned version: `python:3.12.3-slim`, not `python:latest`.
+  <!-- cs: Nikdy latest tag — vždy pinovaná verze: python:3.12.3-slim, ne python:latest. -->
+- **Multi-stage builds** — separate build stage from runtime stage; minimize final image size.
+  <!-- cs: Multi-stage builds — odděl build fázi od runtime fáze; minimalizuj výsledný image. -->
+- **Non-root user** — the application never runs as `root`; create a dedicated user.
+  <!-- cs: Non-root user — aplikace nikdy neběží jako root; vytvoř dedikovaného uživatele. -->
+- **`.dockerignore`** — every project must have `.dockerignore` (`.git`, `__pycache__`, `node_modules`, `data/`).
+  <!-- cs: .dockerignore — každý projekt musí mít .dockerignore (.git, __pycache__, node_modules, data/). -->
+
+### Multi-stage Build Pattern
+
+<!-- cs: Vzor multi-stage buildu -->
+
+```dockerfile
+# Stage 1: install dependencies (cached separately from source code)
+FROM python:3.12.3-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: dev — includes test and lint tools
+FROM python:3.12.3-slim AS dev
+WORKDIR /app
+COPY --from=builder /install /usr/local
+RUN pip install --no-cache-dir pytest ruff mypy
+COPY . .
+
+# Stage 3: production — lean, no dev tooling
+FROM python:3.12.3-slim AS production
+WORKDIR /app
+COPY --from=builder /install /usr/local
+RUN useradd --create-home --shell /bin/bash appuser
+USER appuser
+COPY --chown=appuser:appuser src/ ./src/
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Cache Optimization
+
+<!-- cs: Cache optimalizace — závislosti před zdrojovým kódem -->
+
+```dockerfile
+# ✅ Copy dependencies first — code changes don't invalidate pip cache
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY src/ ./src/
+
+# ❌ Any code change invalidates the entire pip install layer
+COPY . .
+RUN pip install -r requirements.txt
+```
+
+### System Packages — Cleanup
+
+<!-- cs: Systémové balíčky — čistota -->
+
+```dockerfile
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+```
+
+## Docker Compose
+
+<!-- cs: Docker Compose -->
+
+- No `version:` field — obsolete since Compose V2.
+  <!-- cs: Bez version: fieldu — obsolete od Compose V2. -->
+- Secrets and config in `.env` file — never hardcoded in `docker-compose.yml`.
+  <!-- cs: Secrets a konfigurace do .env souboru — nikdy hardcodovány v docker-compose.yml. -->
+- Restart policy for production services: `restart: unless-stopped`.
+  <!-- cs: Restart policy pro produkční služby: restart: unless-stopped. -->
+- Named volumes for persistent data; bind mounts only for development hot-reload.
+  <!-- cs: Named volumes pro persistentní data; bind mount jen pro development hot-reload. -->
+
+```yaml
+services:
+  api:
+    build:
+      context: .
+      target: production        # always specify the stage explicitly
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16.2-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+## Security
+
+<!-- cs: Bezpečnost -->
+
+- Scan image after build: `docker scout cves <image>` or `trivy image <image>`.
+  <!-- cs: Scan image po buildu: docker scout cves nebo trivy image. -->
+- Never add SSH keys, API tokens, or `.env` with real values into the image.
+  <!-- cs: Nikdy nepřidávej SSH klíče, API tokeny ani .env s reálnými hodnotami do image. -->
+- Read-only filesystem where possible: `read_only: true` in compose.
+  <!-- cs: Read-only filesystem kde je to možné: read_only: true v compose. -->

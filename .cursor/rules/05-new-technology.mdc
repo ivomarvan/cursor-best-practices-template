@@ -1,0 +1,92 @@
+---
+description: >-
+  Checklist for adding a new language, framework, or infrastructure service to a project.
+  Use when introducing a new runtime, major framework, or infrastructure service —
+  not for individual library additions. Triggers on phrases like "add Python",
+  "integrate Redis", "set up Vue", "add new technology", "new service".
+alwaysApply: false
+---
+
+# Adding a New Technology — Checklist
+
+<!-- cs: Checklist pro přidání nové technologie do projektu -->
+
+This rule applies when introducing a **new language runtime, major framework,
+or infrastructure service**. It does NOT apply to adding an individual library/package.
+<!-- cs: Toto pravidlo platí při přidání nového jazyka, frameworku nebo infrastrukturní služby.
+         Neplatí pro přidání jednotlivé knihovny/balíčku. -->
+
+Examples that trigger this checklist:
+<!-- cs: Příklady, které spouštějí tento checklist: -->
+- New language runtime: Python, Node.js, Go, Rust
+- New major framework: FastAPI, Vue.js, Django, React
+- New infrastructure service: PostgreSQL, Redis, Qdrant, RabbitMQ
+- New toolchain: ESP-IDF, CMake
+
+## Checklist
+
+<!-- cs: Checklist -->
+
+Work through every item **before writing production code**. Exploratory/spike work
+is exempt — mark it clearly with a `spike/` branch prefix.
+<!-- cs: Projdi každou položku před psaním produkčního kódu. Explorační práce je osvobozena — označ ji prefixem spike/ větve. -->
+
+### 1. Docker decision (mandatory)
+
+<!-- cs: 1. Rozhodnutí o Dockeru (povinné) -->
+
+Consult `03-docker-policy.mdc` and choose one:
+<!-- cs: Projdi 03-docker-policy.mdc a zvol jednu z možností: -->
+
+- [ ] **Containerize** — add the service/runtime to `docker-compose.yml` with a pinned image version.
+  <!-- cs: Kontejnerizuj — přidej do docker-compose.yml s pinovanou verzí image. -->
+- [ ] **Exempt** — add the technology to the Docker Exclude List in `03-docker-policy.mdc`
+  with a written justification. Default is containerization; exemption requires a reason.
+  <!-- cs: Přidej výjimku — doplň do Docker Exclude List v 03-docker-policy.mdc s písemným zdůvodněním. Výchozí je kontejnerizace. -->
+
+### 2. `.gitignore` — extend with technology-specific entries
+
+<!-- cs: 2. .gitignore — rozšíř o záznamy specifické pro technologii -->
+
+- [ ] Add build artifacts, caches, and generated files specific to this technology.
+  <!-- cs: Přidej build artefakty, cache a generované soubory specifické pro tuto technologii. -->
+- [ ] Source: check the language/framework rule (e.g. `10-python.mdc`, `11-vuejs-vite-tailwind.mdc`)
+  or use [gitignore.io](https://www.toptal.com/developers/gitignore) for the canonical list.
+  <!-- cs: Zdroj: jazykové pravidlo (např. 10-python.mdc) nebo gitignore.io pro kanonický seznam. -->
+
+### 3. `README.md` — update or create
+
+<!-- cs: 3. README.md — aktualizuj nebo vytvoř -->
+
+- [ ] Document: how to install the runtime/dependencies, how to run, how to test.
+  <!-- cs: Dokumentuj: jak nainstalovat runtime/závislosti, jak spustit, jak testovat. -->
+- [ ] If Docker is used: update `README.docker.md` with the new service.
+  <!-- cs: Pokud se používá Docker: aktualizuj README.docker.md o novou službu. -->
+
+### 4. Language or technology rule — create if missing
+
+<!-- cs: 4. Pravidlo pro jazyk/technologii — vytvoř pokud chybí -->
+
+- [ ] Does a `.cursor/rules/` file already exist for this technology? (e.g. `10-python.mdc`)
+  <!-- cs: Existuje již pravidlo v .cursor/rules/ pro tuto technologii? -->
+- [ ] If not: create one following `00-meta-rules-and-skills.mdc`. Cover at minimum:
+  tooling, code style, `.gitignore` entries, documentation standard.
+  <!-- cs: Pokud ne: vytvoř ho podle 00-meta-rules-and-skills.mdc. Minimálně: tooling, styl, .gitignore, dokumentace. -->
+
+### 5. Skill — create if the workflow is complex
+
+<!-- cs: 5. Skill — vytvoř pokud je workflow komplexní -->
+
+- [ ] Is there a multi-step, repeatable setup or operational workflow for this technology?
+  <!-- cs: Existuje vícekrokový, opakující se setup nebo operační workflow pro tuto technologii? -->
+- [ ] If yes: create a skill in `.cursor/skills/<technology-name>/SKILL.md`.
+  <!-- cs: Pokud ano: vytvoř skill v .cursor/skills/<technology-name>/SKILL.md. -->
+
+### 6. Dependencies — pin and justify
+
+<!-- cs: 6. Závislosti — pinuj a zdůvodni -->
+
+- [ ] All new dependencies are pinned to a specific version.
+  <!-- cs: Všechny nové závislosti jsou pinované na konkrétní verzi. -->
+- [ ] Each dependency has a justification comment in the dependency file.
+  <!-- cs: Každá závislost má zdůvodnění v souboru závislostí. -->

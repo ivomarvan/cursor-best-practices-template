@@ -1,0 +1,195 @@
+---
+description: >-
+  Standard project directory structure — source code, documentation, experiments,
+  local data, and web app layout. Apply when creating new projects or directories.
+alwaysApply: true
+---
+
+# Project Directory Structure
+
+<!-- cs: Standardní adresářová struktura projektu -->
+
+## Universal top-level directories
+
+<!-- cs: Univerzální adresáře na nejvyšší úrovni -->
+
+```
+project-root/
+├── .cursor/            # Cursor IDE rules and skills — always committed
+├── src/                # All production source code (see layout variants below)
+├── tests/              # Tests — mirrors src/ structure (see language-specific rules)
+├── doc/                # Project documentation (see structure below)
+├── experiments/        # Technology spikes and exploratory code — committed, not production
+├── nogit_data/         # Local runtime data — NEVER committed (.gitignore)
+├── docker-compose.yml  # Infrastructure services
+├── .env.example        # Documented env variables template — always committed
+├── README.md           # Project overview, quick start
+└── README.docker.md    # Docker usage (required when Docker is used)
+```
+
+<!-- cs: .cursor — pravidla a skills pro Cursor IDE, vždy commitováno.
+     src — veškerý produkční kód.
+     tests — testy, zrcadlí strukturu src/.
+     doc — dokumentace projektu.
+     experiments — technologické experimenty — commitováno, ale není součástí produkce.
+     nogit_data — lokální data za běhu, logy, výstupy — NIKDY necommitováno. -->
+
+## `src/` layout variants
+
+<!-- cs: Varianty struktury src/ -->
+
+### Single-language project (most common)
+
+<!-- cs: Jednojazyčný projekt (nejčastější) -->
+
+No language subdirectory — source directly in `src/`:
+<!-- cs: Bez jazykového podadresáře — kód přímo v src/: -->
+
+```
+src/
+├── module_a/
+│   ├── entity_one.py
+│   └── sub_module/
+├── module_b/
+└── common/
+```
+
+### Multi-language project (e.g. Python + C/C++)
+
+<!-- cs: Vícejazyčný projekt (např. Python + C/C++) -->
+
+Language subdirectory at second level:
+<!-- cs: Jazykový podadresář na druhé úrovni: -->
+
+```
+src/
+├── py/
+│   ├── scraping/
+│   │   ├── fetcher.py
+│   │   └── parser.py
+│   └── ingestion/
+├── cpp/
+│   ├── wifi_manager/
+│   │   ├── include/
+│   │   └── wifi_manager.c
+│   └── sensor_driver/
+└── shared/             # Language-agnostic: configs, schemas, proto files
+```
+
+### Web application (backend + frontend)
+
+<!-- cs: Webová aplikace (backend + frontend) -->
+
+Separate top-level directories — different toolchains, dependencies, and Docker images:
+<!-- cs: Oddělené adresáře na nejvyšší úrovni — různé toolchainy, závislosti a Docker image: -->
+
+```
+project-root/
+├── backend/            # or: api/
+│   ├── src/
+│   ├── tests/
+│   ├── Dockerfile
+│   └── README.md
+├── frontend/           # or: web/
+│   ├── src/
+│   ├── tests/
+│   ├── Dockerfile
+│   └── README.md
+├── docker-compose.yml  # Orchestrates both services + infrastructure
+└── README.md
+```
+
+Do **not** use `src/backend/` and `src/frontend/` — it implies a single unified build
+that does not reflect reality.
+<!-- cs: Nepoužívej src/backend/ a src/frontend/ — implikuje jeden build, což neodpovídá realitě. -->
+
+## `tests/` placement
+
+<!-- cs: Umístění testů -->
+
+- **Preferred**: `tests/` at project root, mirroring `src/` structure.
+  <!-- cs: Preferované: tests/ v kořeni projektu, zrcadlí strukturu src/. -->
+- **Exception**: language-specific conventions may override (e.g. Vue colocates `*.test.ts`
+  next to components). See the respective language rule.
+  <!-- cs: Výjimka: jazykové konvence mohou přepsat (např. Vue kolokuje *.test.ts vedle komponent). Viz jazykové pravidlo. -->
+
+## `doc/` structure
+
+<!-- cs: Struktura doc/ -->
+
+```
+doc/
+├── architecture/               # System design: component diagrams, data models, flows
+│   └── decisions/              # ADR-NNN-title.md — Architecture Decision Records
+├── guides/                     # How-to guides, operational runbooks, onboarding
+├── api/                        # API docs (OpenAPI specs, request/response examples)
+└── external/                   # External: downloaded specs, standards, vendor docs
+                                # Files here are references only — not our work
+```
+
+<!-- cs: architecture/ — systémový design, diagramy, datové modely.
+     decisions/ — ADR záznamy o architektonických rozhodnutích.
+     guides/ — návody, runbooky, onboarding.
+     api/ — API dokumentace.
+     external/ — externí reference a stažené specifikace — není náš výtvor. -->
+
+### Architecture Decision Records (ADR)
+
+<!-- cs: Záznamy o architektonických rozhodnutích (ADR) -->
+
+Use ADRs to capture **why** a significant technical decision was made.
+<!-- cs: ADR zachycují PROČ bylo učiněno zásadní technické rozhodnutí. -->
+Filename: `ADR-NNN-short-title.md` (e.g. `ADR-001-use-postgresql-not-sqlite.md`)
+<!-- cs: Název souboru: ADR-NNN-kratky-nazev.md -->
+
+```markdown
+# ADR-001: Use PostgreSQL instead of SQLite
+
+**Status**: Accepted
+**Date**: 2026-05-07
+
+## Context
+Multi-user access and concurrent writes required; SQLite has write-lock limitations.
+
+## Decision
+Use PostgreSQL 16 via Docker Compose for all environments.
+
+## Consequences
++ Concurrent writes, full SQL feature set, production parity.
+- Requires Docker for local development (acceptable per docker policy).
+```
+
+### `external/` convention
+
+<!-- cs: Konvence pro external/ -->
+
+Files in `external/` are **read-only references** — never modify them directly.
+<!-- cs: Soubory v external/ jsou read-only reference — nikdy je přímo neupravuj. -->
+Add a `README.md` inside listing source URLs and download dates.
+<!-- cs: Přidej README.md uvnitř se seznamem zdrojových URL a dat stažení. -->
+
+## `experiments/` convention
+
+<!-- cs: Konvence pro experiments/ -->
+
+- Committed code **not part of the production build** — technology spikes, proofs of concept.
+  <!-- cs: Commitovaný kód, který není součástí produkčního buildu — experimenty, proof of concept. -->
+- Each experiment: own subdirectory + `README.md` (goal, outcome, decision).
+  <!-- cs: Každý experiment: vlastní podadresář + README.md (cíl, výsledek, rozhodnutí). -->
+- Name by date + topic: `2026-05-qdrant-hybrid-search/`.
+  <!-- cs: Pojmenuj datem + tématem: 2026-05-qdrant-hybrid-search/. -->
+- When promoted to production: move to `src/`, remove from `experiments/`.
+  <!-- cs: Po přesunu do produkce: přesuň do src/, smaž z experiments/. -->
+
+## `nogit_data/` convention
+
+<!-- cs: Konvence pro nogit_data/ -->
+
+- Local runtime outputs: logs, downloaded data, intermediate results. **Never committed.**
+  <!-- cs: Lokální výstupy za běhu: logy, stažená data, meziresultáty. Nikdy necommitováno. -->
+- Must be in `.gitignore`. Subdirectory mirrors the generating script/module:
+  <!-- cs: Musí být v .gitignore. Podadresář zrcadlí skript/modul, který data vygeneroval: -->
+
+```
+nogit_data/log/<module>/<script>/<YYMMDD>/<HHMMSS>.log.txt
+```

@@ -1,0 +1,299 @@
+---
+description: >-
+  C/C++ a ESP-IDF pravidla pro ESP32 firmware — styl kódu, error handling,
+  bezpečnost paměti, logging, FreeRTOS. Aktivuje se pro C/C++ soubory.
+globs: "**/*.c, **/*.cpp, **/*.h, **/*.hpp, **/CMakeLists.txt, **/Kconfig, **/sdkconfig*"
+alwaysApply: false
+---
+
+# C/C++ a ESP-IDF — Coding Standards
+
+<!-- <lang-code>: Standardy pro C/C++ firmware na ESP32 s ESP-IDF -->
+
+## Jazykový standard
+
+- **C**: C11 (`-std=c11`), **C++**: C++17 (`-std=c++17`).
+- Preferuj C tam kde postačuje — C++ jen pro OOP abstrakce (drivers, HAL vrstvy).
+- ESP-IDF target: ESP32 / ESP32-S3 / ESP32-C3 — vždy specifikuj v `CMakeLists.txt`.
+
+## Dokumentace — Doxygen
+
+Každá veřejná funkce a třída v `.h` / `.hpp` má Doxygen komentář:
+
+```c
+/**
+ * @brief Connect to the configured Wi-Fi network.
+ *
+ * Attempts connection up to MAX_RETRY_COUNT times with exponential back-off.
+ * Blocks the calling task until connected or all retries are exhausted.
+ *
+ * @param[in]  config   Wi-Fi station configuration (SSID, password, channel).
+ * @param[out] ip_info  Assigned IP address information; valid only on ESP_OK.
+ *
+ * @return ESP_OK            Successfully connected and IP assigned.
+ * @return ESP_ERR_TIMEOUT   All retries exhausted without connection.
+ * @return ESP_ERR_WIFI_*    Underlying Wi-Fi driver error.
+ */
+esp_err_t wifi_manager_connect(const wifi_config_t *config, esp_netif_ip_info_t *ip_info);
+```
+
+- Implementační soubory (`.c`/`.cpp`) mohou mít stručnější komentáře — detaily patří do `.h`.
+- Skupiny příbuzných funkcí obal do `/** @defgroup ... */` pro generovanou dokumentaci.
+
+## Pojmenování
+
+| Typ | Konvence | Příklad |
+|-----|----------|---------|
+| Funkce (C) | `snake_case` | `wifi_connect()` |
+| Makra a konstanty | `SCREAMING_SNAKE_CASE` | `MAX_RETRY_COUNT` |
+| Proměnné | `snake_case` | `retry_count` |
+| Typy (typedef) | `snake_case_t` | `wifi_config_t` |
+| Třídy (C++) | `PascalCase` | `WifiManager` |
+| Soubory | `snake_case` | `wifi_manager.c` |
+| Komponenty ESP-IDF | `lowercase` adresář | `components/wifi_manager/` |
+
+## Include guards
+
+```c
+// Preferuj #pragma once (platné pro všechny moderní kompilátory)
+#pragma once
+
+// Alternativa: klasické include guards
+#ifndef WIFI_MANAGER_H
+#define WIFI_MANAGER_H
+
+#endif /* WIFI_MANAGER_H */
+```
+
+## Pořadí include souborů (v `.c` / `.cpp`)
+
+```c
+#include "wifi_manager.h"    // Vlastní header jako první (odhalí chybějící závislosti)
+
+#include <stddef.h>          // Standard C library
+#include <stdint.h>
+#include <string.h>
+
+#include "esp_log.h"         // ESP-IDF headers
+#include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+```
+
+## ESP-IDF error handling — povinné
+
+```c
+// ✅ Vždy kontroluj esp_err_t návratovou hodnotu
+static const char *TAG = "wifi_manager";
+
+esp_err_t ret = esp_wifi_connect();
+if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "esp_wifi_connect failed: %s", esp_err_to_name(ret));
+    return ret;
+}
+
+// ✅ Makro pro opakované vzory (definuj v projektu)
+#define ESP_RETURN_ON_ERROR(x, tag, msg) do { \
+    esp_err_t err_ = (x);                      \
+    if (err_ != ESP_OK) {                      \
+        ESP_LOGE(tag, "%s: %s", msg, esp_err_to_name(err_)); \
+        return err_;                            \
+    }                                          \
+} while(0)
+
+// Použití
+ESP_RETURN_ON_ERROR(esp_wifi_init(&cfg), TAG, "wifi init failed");
+```
+
+## Logging — výhradně ESP-IDF makra
+
+```c
+static const char *TAG = "module_name";  // Každý modul má vlastní TAG
+
+ESP_LOGI(TAG, "Connected to %s (RSSI: %d dBm)", ssid, rssi);
+ESP_LOGW(TAG, "Retry %d/%d", attempt, MAX_RETRIES);
+ESP_LOGE(TAG, "Connection failed: %s", esp_err_to_name(ret));
+ESP_LOGD(TAG, "Raw packet: %d bytes", len);  // Jen při DEBUG level
+
+// ❌ Nikdy printf() pro diagnostiku firmware
+```
+
+## Správa paměti
+
+```c
+// ✅ Preferuj statickou alokaci (stack nebo static)
+static uint8_t rx_buffer[RX_BUFFER_SIZE];
+
+// ✅ Pokud heap — vždy kontroluj NULL a uvolni
+char *buf = malloc(size);
+if (buf == NULL) {
+    ESP_LOGE(TAG, "malloc failed, size=%zu", size);
+    return ESP_ERR_NO_MEM;
+}
+// ... použití ...
+free(buf);
+
+// ❌ Nikdy malloc bez kontroly NULL
+// ❌ Nikdy přenechej na GC (neexistuje) — každý malloc musí mít free
+```
+
+## FreeRTOS
+
+```c
+// Task vytváření — vždy kontroluj návratovou hodnotu
+BaseType_t res = xTaskCreatePinnedToCore(
+    wifi_task,        // Funkce tasku
+    "wifi_task",      // Název (pro debugging)
+    4096,             // Stack v bytech (ne slovech!)
+    NULL,             // Parametry
+    5,                // Priorita
+    &wifi_task_handle,// Handle pro pozdější kontrolu
+    APP_CPU_NUM       // Core (0 = PRO_CPU, 1 = APP_CPU)
+);
+configASSERT(res == pdPASS);
+
+// Synchronizace — preferuj FreeRTOS primitiva
+SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+configASSERT(mutex != NULL);
+
+// ❌ Nikdy busy-wait smyčka — vždy vTaskDelay nebo Event Group
+while (!connected) {
+    vTaskDelay(pdMS_TO_TICKS(100));  // ✅ Uvolní CPU
+}
+```
+
+## Bezpečnost a defensive programming
+
+```c
+// Kontrola hranic pole
+void process_data(const uint8_t *data, size_t len) {
+    if (data == NULL || len == 0 || len > MAX_PACKET_SIZE) {
+        ESP_LOGE(TAG, "Invalid input: data=%p, len=%zu", data, len);
+        return;
+    }
+    // ...
+}
+
+// Použij snprintf místo sprintf
+snprintf(url, sizeof(url), "https://api.example.com/v1/%s", endpoint);
+
+// Používej configASSERT pro invarianty (vypne se v Release)
+configASSERT(handle != NULL);
+```
+
+## OOP v C++ — RAII a návrhové vzory
+
+**RAII** (Resource Acquisition Is Initialization) — každý zdroj (paměť, mutex, handle) je spravován objektem; destruktor zaručuje uvolnění:
+
+```cpp
+// Pattern: RAII — mutex guard (analogie std::lock_guard pro FreeRTOS)
+class MutexGuard {
+public:
+    /** @brief Acquire mutex on construction. Blocks until acquired. */
+    explicit MutexGuard(SemaphoreHandle_t mutex) : mutex_(mutex) {
+        xSemaphoreTake(mutex_, portMAX_DELAY);
+    }
+    /** @brief Release mutex on destruction (scope exit, exception, return). */
+    ~MutexGuard() { xSemaphoreGive(mutex_); }
+
+    MutexGuard(const MutexGuard&) = delete;
+    MutexGuard& operator=(const MutexGuard&) = delete;
+
+private:
+    SemaphoreHandle_t mutex_;
+};
+
+// Usage — no manual SemaphoreGive needed
+void critical_section() {
+    MutexGuard guard(shared_mutex_);  // acquired here
+    // ... work ...
+}                                      // released here automatically
+```
+
+**PIMPL** (Pointer to Implementation) — skryj implementační detaily; zmenší závislosti a compile time:
+
+```cpp
+// wifi_manager.hpp — veřejné API bez implementačních závislostí
+// Pattern: PIMPL (Bridge variant)
+class WifiManager {
+public:
+    explicit WifiManager(const WifiConfig& config);
+    ~WifiManager();
+    esp_err_t connect();
+    esp_err_t disconnect();
+
+private:
+    struct Impl;               // Forward declaration — callers see no internals
+    std::unique_ptr<Impl> impl_;
+};
+
+// wifi_manager.cpp — implementace izolována od headerů ESP-IDF
+struct WifiManager::Impl {
+    WifiConfig config;
+    EventGroupHandle_t event_group;
+    // ... private members ...
+};
+```
+
+**Návrhové vzory** — pokud je vzor použit, uveď jeho jméno v komentáři:
+
+```cpp
+// Pattern: Singleton — jediná instance správce NVS úložiště
+class NvsStorage {
+public:
+    static NvsStorage& instance();   // Meyers singleton — thread-safe in C++11
+    // ...
+private:
+    NvsStorage();
+};
+
+// Pattern: Observer — callback registrace pro Wi-Fi události
+class WifiManager {
+public:
+    using EventCallback = std::function<void(wifi_event_t)>;
+    void register_callback(EventCallback cb);  // Pattern: Observer
+};
+```
+
+## .gitignore — C/C++ and ESP-IDF-specific entries
+
+Add these to the project `.gitignore` when C/C++ or ESP-IDF is used:
+
+```gitignore
+# C/C++ build artifacts
+*.o
+*.a
+*.so
+*.d
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# ESP-IDF specific
+sdkconfig.old
+dependencies.lock
+managed_components/
+```
+
+## Struktura ESP-IDF komponenty
+
+```
+components/
+└── wifi_manager/
+    ├── CMakeLists.txt
+    ├── include/
+    │   └── wifi_manager.h    # Veřejné API
+    ├── wifi_manager.c         # Implementace
+    └── README.md              # Popis komponenty, API, příklad použití
+```
+
+```cmake
+# CMakeLists.txt komponenty
+idf_component_register(
+    SRCS "wifi_manager.c"
+    INCLUDE_DIRS "include"
+    REQUIRES esp_wifi nvs_flash freertos
+)
+```

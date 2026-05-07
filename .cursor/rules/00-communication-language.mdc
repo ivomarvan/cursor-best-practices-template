@@ -1,0 +1,54 @@
+---
+description: >-
+  Defines the communication language and comment language for all rules and skills.
+  Single source of truth for language settings — all other rules reference this file.
+alwaysApply: true
+---
+
+# Communication Language
+
+<!-- cs: Jazyk komunikace -->
+
+<!-- Single source of truth for communication language settings.
+     Changing the values below affects the entire rule set. -->
+<!-- cs: Jediný zdroj pravdy pro nastavení komunikačního jazyka.
+         Změnou hodnot níže se změní chování celé sady pravidel. -->
+
+## Active Settings
+
+<!-- cs: Aktivní nastavení -->
+
+| Parameter | Value |
+|-----------|-------|
+| `<communication-language>` | Czech (čeština) |
+| `<lang-code>` | `cs` |
+
+## Rules Derived from This Setting
+
+<!-- cs: Pravidla plynoucí z tohoto nastavení -->
+
+- **Chat with the user**: always in `<communication-language>`, unless the user writes otherwise.
+  <!-- cs: Chat s uživatelem: vždy v <communication-language>, pokud uživatel nepíše jinak. -->
+- **Language of rules and skills**: always **English** (English version is the source of truth).
+  <!-- cs: Jazyk rules a skills: vždy anglicky (anglická verze je zdrojem pravdy). -->
+- **Comments in rules/skills**: present in `<communication-language>`, prefixed `<!-- <lang-code>: ... -->`.
+  <!-- cs: Komentáře v rules/skills: v <communication-language>, prefix <!-- <lang-code>: ... -->. -->
+- The agent keeps `<communication-language>` comments **synchronized** with the English text on every edit.
+  <!-- cs: Agent udržuje komentáře synchronizované s anglickým textem při každé editaci. -->
+
+## How to Change the Communication Language
+
+<!-- cs: Jak změnit komunikační jazyk -->
+
+Edit only this file — change `<communication-language>` and `<lang-code>` in the table above.
+All other rules read the setting from here.
+<!-- cs: Edituj pouze tento soubor — změň hodnoty v tabulce výše. Ostatní pravidla čtou nastavení odsud. -->
+
+| Language | `<communication-language>` | `<lang-code>` |
+|----------|---------------------------|---------------|
+| Czech | Czech (čeština) | `cs` |
+| German | German (Deutsch) | `de` |
+| English | English | `en` |
+
+> If `<lang-code>` = `en`, omit communication-language comments — English text is already the communication language.
+<!-- cs: Pokud je <lang-code> = en, komentáře v komunikačním jazyce se vynechávají — anglický text je zároveň komunikačním jazykem. -->
