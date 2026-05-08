@@ -1,0 +1,181 @@
+---
+description: >-
+  SQL and PostgreSQL standards — schema design, naming conventions, migrations,
+  performance, psycopg 3. Activated for SQL files, migrations, and repository classes.
+globs: "**/*.sql, **/alembic/**, **/*_repository.py, **/repository.py, **/database.py, **/models.py"
+alwaysApply: false
+---
+
+# SQL and PostgreSQL — Standards
+
+<!-- cs: Konvence pro SQL, PostgreSQL schema design a přístup z Pythonu -->
+
+## Naming Conventions
+
+<!-- cs: Naming conventions -->
+
+| Object | Convention | Example |
+|---|---|---|
+| Tables | `snake_case`, plural | `documents`, `document_versions` |
+| Columns | `snake_case` | `source_id`, `file_hash`, `created_at` |
+| Indexes | `idx_{table}_{column(s)}` | `idx_documents_source_id` |
+| Foreign keys | `fk_{table}_{target_table}` | `fk_chunks_documents` |
+| CHECK constraints | `chk_{table}_{rule}` | `chk_documents_url_not_empty` |
+| Sequences / serial | Use `gen_random_uuid()` | See schema design below |
+
+## Data Types (PostgreSQL-Specific)
+
+<!-- cs: Datové typy (PostgreSQL-specific) -->
+
+```sql
+-- Primary keys: UUID, not SERIAL
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+
+-- Timestamps: always timezone-aware
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+updated_at TIMESTAMPTZ
+
+-- Text: TEXT instead of VARCHAR(n) — PostgreSQL optimises both equally
+content TEXT NOT NULL
+
+-- JSON: JSONB (indexable, compressed), not JSON or TEXT
+metadata JSONB
+
+-- Boolean: BOOLEAN, not INTEGER 0/1
+is_active BOOLEAN NOT NULL DEFAULT TRUE
+```
+
+## Schema Design Principles
+
+<!-- cs: Schema design principy -->
+
+```sql
+CREATE TABLE documents (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id   TEXT NOT NULL UNIQUE,
+    url         TEXT NOT NULL,
+    mime_type   TEXT NOT NULL,
+    metadata    JSONB,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_documents_url_not_empty CHECK (url <> '')
+);
+
+-- Index every FK and frequently filtered column
+CREATE INDEX idx_documents_source_id ON documents (source_id);
+
+-- Partial index for filtered queries
+CREATE INDEX idx_document_versions_is_latest
+    ON document_versions (document_id) WHERE is_latest = TRUE;
+
+-- FK with RESTRICT — protects against accidental deletion (never CASCADE)
+ALTER TABLE document_versions
+    ADD CONSTRAINT fk_document_versions_documents
+    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE RESTRICT;
+```
+
+## Immutability and Versioning
+
+<!-- cs: Immutabilita a verzování -->
+
+```sql
+-- Records are NEVER modified (UPDATE) — only new versions are inserted.
+-- Exception: toggling the is_latest flag.
+
+INSERT INTO document_versions (document_id, version, content, is_latest)
+VALUES ($1, $2, $3, TRUE);
+
+UPDATE document_versions
+SET is_latest = FALSE
+WHERE document_id = $1 AND version < $2;
+```
+
+## Migrations (Alembic)
+
+<!-- cs: Migrace (Alembic) -->
+
+```python
+# Every migration must be idempotent and provide a downgrade
+def upgrade() -> None:
+    op.create_table(
+        'chunks',
+        sa.Column('id', postgresql.UUID(), server_default=sa.text('gen_random_uuid()'), primary_key=True),
+        sa.Column('document_id', postgresql.UUID(), nullable=False),
+        sa.Column('content', sa.Text(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.ForeignKeyConstraint(['document_id'], ['documents.id'],
+                                name='fk_chunks_documents', ondelete='RESTRICT'),
+    )
+    op.create_index('idx_chunks_document_id', 'chunks', ['document_id'])
+
+def downgrade() -> None:
+    op.drop_index('idx_chunks_document_id')
+    op.drop_table('chunks')
+```
+
+- Never delete columns without a prior deprecation migration.
+  <!-- cs: Nikdy nemazat sloupce bez předchozí deprecation migrace. -->
+- Every migration has both a working `upgrade()` and `downgrade()`.
+  <!-- cs: Každá migrace má funkční upgrade() i downgrade(). -->
+
+## Python — psycopg 3
+
+<!-- cs: Python — psycopg 3 -->
+
+```python
+# ✅ Parameterised queries — NEVER f-strings or string concatenation
+async def get_latest_version(self, source_id: str) -> DocumentVersion | None:
+    async with self.pool.connection() as conn:
+        row = await conn.execute(
+            """
+            SELECT dv.*
+            FROM document_versions dv
+            JOIN documents d ON d.id = dv.document_id
+            WHERE d.source_id = %s AND dv.is_latest = TRUE
+            LIMIT 1
+            """,
+            (source_id,),
+        ).fetchone()
+        return DocumentVersion.from_row(row) if row else None
+
+# ✅ Explicit transaction for atomic operations
+async def store_new_version(self, doc_id: str, content: str) -> None:
+    async with self.pool.connection() as conn:
+        async with conn.transaction():
+            await conn.execute(
+                "UPDATE document_versions SET is_latest = FALSE WHERE document_id = %s",
+                (doc_id,),
+            )
+            await conn.execute(
+                "INSERT INTO document_versions (document_id, content, is_latest) VALUES (%s, %s, TRUE)",
+                (doc_id, content),
+            )
+```
+
+## Repository Pattern
+
+<!-- cs: Repository pattern -->
+
+```
+src/
+└── <module>/
+    └── <entity>_repository.py   # SQL queries belong here, not in business logic
+```
+
+- SQL queries **exclusively** in `*_repository.py` files.
+  <!-- cs: SQL dotazy výhradně v *_repository.py souborech. -->
+- Business logic never calls SQL directly — it calls repository methods.
+  <!-- cs: Business logika nevolá SQL přímo — volá repository metody. -->
+
+## Performance
+
+<!-- cs: Výkon -->
+
+- Run `EXPLAIN ANALYZE` for queries called frequently or on large tables.
+  <!-- cs: EXPLAIN ANALYZE pro dotazy volané často nebo nad velkými tabulkami. -->
+- Explicit column list — no `SELECT *` in production code.
+  <!-- cs: Explicitní výčet sloupců — žádné SELECT * v produkčním kódu. -->
+- Partial indexes for filtered queries: `WHERE is_latest = TRUE`.
+  <!-- cs: Partial indexy pro filtrované dotazy: WHERE is_latest = TRUE. -->
+- Add `LIMIT` where semantically correct.
+  <!-- cs: LIMIT tam kde je to sémanticky správné. -->

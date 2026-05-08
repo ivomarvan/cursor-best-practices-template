@@ -1,0 +1,280 @@
+---
+description: >-
+  Python coding standards — type hints, OOP, SOLID, docstrings, async, testing.
+  Activated for Python source files and dependency manifests.
+globs: "**/*.py, **/pyproject.toml, **/requirements*.txt, **/setup.py, **/setup.cfg"
+alwaysApply: false
+---
+
+# Python — Coding Standards
+
+<!-- cs: Standardy pro psaní Python kódu — moderní, typovaný, testovatelný -->
+
+## Tooling and Target Version
+
+<!-- cs: Verze a tooling -->
+
+- Target version: **Python 3.11+** minimum (language features used in this rule require 3.11+).
+  The actual version is **always authoritative from `requires-python` in `pyproject.toml`**.
+  <!-- cs: Minimální verze je Python 3.11+ (jazykové prvky v tomto rule to vyžadují). Skutečná verze projektu je vždy závazná z requires-python v pyproject.toml. -->
+- Formatter and linter: **Ruff** (`ruff format .` + `ruff check --fix .`).
+  <!-- cs: Formatter a linter: Ruff. -->
+- Static type analysis: **mypy** (`mypy src/ --strict`) — must pass in CI.
+  <!-- cs: Statická analýza typů: mypy --strict — CI musí projít. -->
+- Testing: **pytest** with markers `unit` / `integration` / `slow`.
+  <!-- cs: Testování: pytest s markery unit / integration / slow. -->
+- Dependencies: `pyproject.toml` (preferred) or `requirements.txt` with pinned versions.
+  <!-- cs: Závislosti: pyproject.toml (preferuj) nebo requirements.txt s pinovanými verzemi. -->
+
+## Type Hints — Mandatory
+
+<!-- cs: Type hints — povinné všude -->
+
+Type hints are **mandatory** on all functions, methods, and classes — no exceptions.
+mypy `--strict` enforces this automatically.
+<!-- cs: Type hints jsou povinné na všech funkcích, metodách a třídách. mypy --strict to vynucuje. -->
+
+```python
+# ❌ Not acceptable
+def process(items, limit=10):
+    return items[:limit]
+
+# ✅ All parameters and return type annotated
+def process(items: list[str], limit: int = 10) -> list[str]:
+    return items[:limit]
+
+# ✅ Complex types
+from collections.abc import Sequence
+from typing import TypeAlias
+
+ItemId: TypeAlias = str
+
+def fetch_items(ids: Sequence[ItemId]) -> dict[ItemId, str]:
+    ...
+
+# ✅ Optional values — prefer X | None over Optional[X] (Python 3.10+)
+def find_user(user_id: str) -> User | None:
+    ...
+```
+
+## OOP — Architecture
+
+<!-- cs: OOP — architektura -->
+
+- **One class = one file** — exception: helper dataclasses tightly coupled to the main class.
+  <!-- cs: Jedna třída = jeden soubor — výjimka: pomocné dataclasses těsně svázané s hlavní třídou. -->
+- **Composition over inheritance** — shared logic via composition or mixin, not deep hierarchies.
+  <!-- cs: Kompozice před dědičností — sdílená logika přes kompozici nebo mixin, ne hluboké hierarchie. -->
+- Abstract interfaces via `Protocol` (structural subtyping) or `ABC` (nominal subtyping):
+  <!-- cs: Abstraktní rozhraní přes Protocol (structural subtyping) nebo ABC (nominal subtyping). -->
+
+```python
+# Pattern: Strategy (GoF) — runtime algorithm selection via Protocol
+from typing import Protocol
+
+class EmbeddingModel(Protocol):
+    """Contract for embedding model implementations. Pattern: Strategy."""
+    def embed(self, text: str) -> list[float]: ...
+
+class OpenAIEmbedding:
+    """OpenAI-based implementation of EmbeddingModel."""
+    def embed(self, text: str) -> list[float]:
+        ...
+```
+
+- Inject dependencies via constructor (Dependency Injection / DIP):
+  <!-- cs: Závislosti injektuj přes konstruktor (Dependency Injection / DIP). -->
+
+```python
+# Pattern: Dependency Injection (DIP)
+class DocumentProcessor:
+    def __init__(self, embedder: EmbeddingModel, repo: DocumentRepository) -> None:
+        self._embedder = embedder   # injected — easily mockable in tests
+        self._repo = repo
+```
+
+- Prefer `@dataclass` or **Pydantic** for data structures without behaviour.
+  <!-- cs: Preferuj @dataclass nebo Pydantic pro datové struktury bez chování. -->
+- Use `pathlib.Path` for all path operations — never raw strings.
+  <!-- cs: pathlib.Path místo string cest všude. -->
+
+## Docstrings — Google Style
+
+<!-- cs: Docstringy — Google style (Doxygen úroveň) -->
+
+Every public class, method, and function has a docstring with:
+<!-- cs: Každá veřejná třída, metoda a funkce má docstring s: -->
+- 1–2 sentences describing **what** it does
+  <!-- cs: 1–2 věty popisující co dělá -->
+- `Args:` — each parameter: name, description (type is in the signature)
+  <!-- cs: Args: každý parametr: jméno, popis (typ je v signatuře) -->
+- `Returns:` — what is returned and its semantics
+  <!-- cs: Returns: co vrací a sémantika -->
+- `Raises:` — when and which exception is raised
+  <!-- cs: Raises: kdy a jakou výjimku vyhodí -->
+
+```python
+def chunk(self, text: str, max_tokens: int = 512, overlap: int = 50) -> list[str]:
+    """Split text into overlapping chunks.
+
+    Args:
+        text: Raw input text. Must be non-empty.
+        max_tokens: Maximum tokens per chunk. Must be > overlap.
+        overlap: Number of overlapping tokens between consecutive chunks.
+
+    Returns:
+        List of text chunks preserving sentence boundaries where possible.
+        Returns empty list if text is empty.
+
+    Raises:
+        ValueError: If max_tokens <= overlap or max_tokens < 1.
+    """
+```
+
+## Imports and Structure
+
+<!-- cs: Importy a struktura -->
+
+- At the top of every script, use `git_root_to_syspath` to resolve the project root and
+  enable absolute imports regardless of the working directory:
+  <!-- cs: Na začátku každého skriptu použij git_root_to_syspath — najde kořen gitu a přidá ho do sys.path, takže absolutní importy fungují odkudkoliv. -->
+
+```python
+from git_root_to_syspath import agr  # locate project root and add it to sys.path
+PROJECT_ROOT = agr()
+```
+
+- Absolute imports from `src` — no relative imports:
+  <!-- cs: Absolutní importy od src — žádné relativní importy. -->
+
+```python
+# ❌
+from ..common.database import pool
+
+# ✅
+from src.common.database import pool
+```
+
+- Import order (enforced by Ruff/isort):
+  <!-- cs: Pořadí importů (Ruff/isort to vynucuje): -->
+  1. Standard library
+  2. Third-party (including `git_root_to_syspath`)
+  3. Local (`src.*`)
+
+## Logging
+
+<!-- cs: Logging -->
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ✅ Structured log — key=value for parseability
+logger.info("Document fetched: url=%s size_bytes=%d", url, len(content))
+logger.error("Fetch failed: url=%s attempt=%d error=%s", url, attempt, exc)
+
+# ❌ Never
+print("Fetching document...")
+```
+
+## Error Handling
+
+<!-- cs: Zpracování chyb -->
+
+```python
+# ✅ Specific exception, context, chain (from exc preserves traceback)
+try:
+    result = await fetch_document(url)
+except httpx.TimeoutException as exc:
+    logger.warning("Timeout: url=%s attempt=%d/%d", url, attempt, max_retries)
+    raise RetryableError(url) from exc
+```
+
+## Async Code
+
+<!-- cs: Asynchronní kód -->
+
+- `async/await` for all I/O (HTTP, DB, files).
+  <!-- cs: async/await pro veškeré I/O (HTTP, DB, soubory). -->
+- Shared connection pool — do not create a new connection per function call.
+  <!-- cs: Sdílený connection pool — nevytvářej nové spojení v každé funkci. -->
+- `asyncio.gather()` for parallel I/O operations.
+  <!-- cs: asyncio.gather() pro paralelní I/O operace. -->
+
+## Testing
+
+<!-- cs: Testování -->
+
+```python
+# Naming: test_<what>_<condition>_<expected_result>
+def test_chunk_text_empty_input_returns_empty_list() -> None:
+    assert chunk_text("") == []
+
+def test_chunk_text_max_tokens_le_overlap_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="max_tokens"):
+        chunk_text("hello", max_tokens=10, overlap=10)
+
+@pytest.mark.integration
+async def test_document_repository_stores_and_retrieves() -> None:
+    ...
+```
+
+## .gitignore — Python-Specific Entries
+
+<!-- cs: .gitignore — Python-specific záznamy -->
+
+Add these to the project `.gitignore` when Python is used:
+<!-- cs: Přidej toto do .gitignore při použití Pythonu: -->
+
+```gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+.coverage
+htmlcov/
+```
+
+## Dependency Management
+
+<!-- cs: Správa závislostí -->
+
+Set tool versions to match `requires-python` in `[project]` — that is the single source of truth.
+<!-- cs: Nastav verze nástrojů podle requires-python v [project] — to je jediný zdroj pravdy. -->
+
+```toml
+# pyproject.toml
+[project]
+requires-python = ">=3.11"   # <-- single source of truth for Python version
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"     # must match requires-python
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"      # must match requires-python
+strict = true
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast, no I/O",
+    "integration: requires DB or network",
+    "slow: > 5s",
+]
+```
+
+- Justify every new dependency with a comment in `requirements.txt` or `pyproject.toml`.
+  <!-- cs: Každou novou závislost zdůvodni komentářem. -->
+- Never `pip install` without adding to the dependency file.
+  <!-- cs: Nikdy pip install bez přidání do souboru závislostí. -->

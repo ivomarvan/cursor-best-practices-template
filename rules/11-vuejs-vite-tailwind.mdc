@@ -1,0 +1,280 @@
+---
+description: >-
+  Vue.js 3 + Vite + Tailwind CSS standards — Composition API, TypeScript,
+  component structure, state management, testing. Activated for Vue and TS files.
+globs: "**/*.vue, **/*.ts, **/*.tsx, **/vite.config.*, **/tailwind.config.*"
+alwaysApply: false
+---
+
+# Vue.js 3 + Vite + Tailwind CSS
+
+<!-- cs: Moderní Vue.js stack — Composition API, TypeScript, Tailwind -->
+
+## Technology Stack
+
+<!-- cs: Technologický stack -->
+
+- **Vue 3** with Composition API (`<script setup>`) — no Options API in new code.
+  <!-- cs: Vue 3 s Composition API — žádné Options API v novém kódu. -->
+- **TypeScript** strict mode (`"strict": true` in `tsconfig.json`).
+  <!-- cs: TypeScript v striktním módu. -->
+- **Vite** as build tool — leverage HMR and lazy loading.
+  <!-- cs: Vite jako build tool — využívej HMR a lazy loading. -->
+- **Tailwind CSS** — utility-first; no custom CSS if Tailwind suffices.
+  <!-- cs: Tailwind CSS — utility-first; žádné custom CSS pokud Tailwind postačuje. -->
+- **Pinia** for global state (replaces Vuex).
+  <!-- cs: Pinia pro globální stav (místo Vuex). -->
+- **Vue Router 4** for routing.
+  <!-- cs: Vue Router 4 pro routing. -->
+- **VueUse** for composable utilities — prefer over custom implementations.
+  <!-- cs: VueUse pro kompozable utility — preferuj před vlastní implementací. -->
+
+## Project Structure
+
+<!-- cs: Struktura projektu -->
+
+In a web application with a separate backend, the Vue.js project lives in `frontend/`
+at the project root (see `06-project-structure.mdc` — web application layout).
+The `src/` below is the internal Vite layout inside `frontend/`.
+<!-- cs: Ve webové aplikaci s backendem žije Vue.js projekt ve frontend/ v kořeni projektu (viz 06-project-structure.mdc). Níže uvedené src/ je interní layout Vite uvnitř frontend/. -->
+
+```
+frontend/
+├── src/
+│   ├── assets/       # Static files
+│   ├── components/   # Reusable components (atomic)
+│   │   ├── ui/       # Generic UI elements (Button, Input, Modal…)
+│   │   └── features/ # Domain-specific components
+│   ├── composables/  # Shared logic (use*.ts)
+│   ├── layouts/      # Layout components (DefaultLayout, AuthLayout)
+│   ├── pages/        # Route components (1 page = 1 file)
+│   ├── router/       # Vue Router configuration
+│   ├── stores/       # Pinia stores
+│   ├── types/        # Shared TypeScript types
+│   └── utils/        # Helper functions
+├── Dockerfile
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+## Components
+
+<!-- cs: Komponenty -->
+
+```vue
+<!-- ✅ Correct pattern — <script setup> with TypeScript -->
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import type { User } from '@/types/user'
+
+interface Props {
+  user: User
+  isLoading?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), { isLoading: false })
+const emit = defineEmits<{ update: [user: User]; delete: [id: string] }>()
+
+const displayName = computed(() =>
+  `${props.user.firstName} ${props.user.lastName}`
+)
+</script>
+
+<template>
+  <div class="flex items-center gap-4 p-4 rounded-lg bg-white shadow-sm">
+    <span class="text-lg font-medium text-gray-900">{{ displayName }}</span>
+    <button
+      v-if="!isLoading"
+      class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+      @click="emit('delete', user.id)"
+    >Delete</button>
+  </div>
+</template>
+```
+
+### Component Rules
+
+<!-- cs: Pravidla pro komponenty -->
+
+- File and component names: **PascalCase** (`UserCard.vue`).
+  <!-- cs: Pojmenování: PascalCase pro soubory i komponenty (UserCard.vue). -->
+- Max ~200 lines per component; split into sub-components otherwise.
+  <!-- cs: Max ~200 řádků na komponentu; rozděl na sub-komponenty jinak. -->
+- Props always typed via `defineProps<Interface>()`.
+  <!-- cs: Props vždy typované přes defineProps<Interface>(). -->
+- Emits always typed via `defineEmits<{...}>()`.
+  <!-- cs: Emits vždy typované přes defineEmits<{...}>(). -->
+- No `any` types.
+  <!-- cs: Žádné any typy. -->
+- Extract logic beyond 2–3 computed/refs into a composable (SRP).
+  <!-- cs: Logiku přesahující 2–3 computed/refs extrahuj do composable (SRP). -->
+
+## Composables — Composition Pattern
+
+<!-- cs: Composables — Composition Pattern -->
+
+Composables are the primary logic-composition mechanism in Vue 3 — GoF **Composition Pattern**.
+<!-- cs: Composables jsou primárním mechanismem kompozice logiky ve Vue 3 — GoF Composition Pattern. -->
+
+```typescript
+// composables/useUser.ts
+// Pattern: Composition — reusable stateful logic decoupled from UI
+
+/**
+ * Fetch and expose a single user by ID.
+ *
+ * @param userId - Reactive user ID; re-fetches automatically on change.
+ * @returns Reactive user data, loading state, error, and derived fullName.
+ */
+export function useUser(userId: Ref<string>) {
+  const { data: user, isLoading, error } = useFetch<User>(
+    computed(() => `/api/users/${userId.value}`)
+  )
+  const fullName = computed(() =>
+    user.value ? `${user.value.firstName} ${user.value.lastName}` : ''
+  )
+  return { user, isLoading, error, fullName }
+}
+```
+
+- Name starts with `use` (`useUser`, `useAuth`, `useNotifications`).
+  <!-- cs: Název začíná use (useUser, useAuth, useNotifications). -->
+- Returns reactive data — never plain values.
+  <!-- cs: Vrací reaktivní data — nikdy plain hodnoty. -->
+- One composable = one concern (SRP).
+  <!-- cs: Jeden composable = jeden concern (SRP). -->
+- Test composables independently of components (`@vue/test-utils` not required).
+  <!-- cs: Testuj composables nezávisle na komponentách (@vue/test-utils není nutný). -->
+
+## Docstrings — TSDoc Style
+
+<!-- cs: Dokumentace — TSDoc / JSDoc (Doxygen úroveň) -->
+
+Every exported function, composable, and class has a TSDoc comment:
+<!-- cs: Každá exportovaná funkce, composable a třída má TSDoc komentář. -->
+
+```typescript
+/**
+ * Fetch paginated list of documents from the API.
+ *
+ * @param page - 1-based page number.
+ * @param pageSize - Number of items per page. Defaults to 20.
+ * @returns Reactive object with `data`, `total`, `isLoading`, `error`.
+ *
+ * @example
+ * const { data, isLoading } = useDocuments(page, 20)
+ */
+export function useDocuments(page: Ref<number>, pageSize = 20) { ... }
+```
+
+- Types are not repeated in JSDoc (they are in the TypeScript signature) — describe semantics only.
+  <!-- cs: Typy se nepíší do JSDoc (jsou v TypeScript signature) — jen popis sémantiky. -->
+- Add `@example` for composables and utility functions with non-trivial usage.
+  <!-- cs: @example přidej u composables a utility funkcí s netriviálním použitím. -->
+- Document Props interfaces with an inline comment above each prop.
+  <!-- cs: Props interface dokumentuj inline komentářem nad každou prop. -->
+
+## Pinia Store
+
+<!-- cs: Pinia store -->
+
+```typescript
+// stores/auth.ts
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const isAuthenticated = computed(() => user.value !== null)
+
+  async function login(credentials: LoginCredentials) {
+    user.value = await authApi.login(credentials)
+  }
+  function logout() { user.value = null }
+
+  return { user, isAuthenticated, login, logout }
+})
+```
+
+- Prefer **Setup store** (function syntax) over Options store.
+  <!-- cs: Preferuj Setup store (function syntax) před Options store. -->
+- One store = one domain area.
+  <!-- cs: Jeden store = jedna doménová oblast. -->
+
+## Tailwind CSS
+
+<!-- cs: Tailwind CSS -->
+
+```vue
+<!-- ✅ Utility-first — no custom CSS for trivial styles -->
+<div class="flex flex-col gap-6 max-w-2xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold text-gray-900">Title</h1>
+</div>
+
+<!-- ✅ @apply only for repeated patterns in component CSS -->
+<style scoped>
+.btn-primary {
+  @apply px-4 py-2 bg-blue-600 text-white rounded-lg
+         hover:bg-blue-700 transition-colors duration-200;
+}
+</style>
+```
+
+- Responsive prefixes: `sm:`, `md:`, `lg:` — mobile-first approach.
+  <!-- cs: Responsive prefix: sm:, md:, lg: — mobile-first přístup. -->
+- Dark mode: `dark:` prefix — configure `darkMode: 'class'` in `tailwind.config`.
+  <!-- cs: Dark mode: dark: prefix — nakonfiguruj darkMode: 'class' v tailwind.config. -->
+- Avoid inline styles (`style="..."`) — always use Tailwind.
+  <!-- cs: Vyhýbej se inline stylům (style="...") — vždy Tailwind. -->
+
+## Performance
+
+<!-- cs: Výkon -->
+
+- Lazy-load routes: `component: () => import('./pages/Dashboard.vue')`.
+  <!-- cs: Lazy loading routes: component: () => import('./pages/Dashboard.vue'). -->
+- Lazy-load heavy components: `defineAsyncComponent(() => import('./HeavyChart.vue'))`.
+  <!-- cs: Lazy loading komponent: defineAsyncComponent(() => import('./HeavyChart.vue')). -->
+- `v-memo` for expensive render lists.
+  <!-- cs: v-memo pro drahé render listy. -->
+- `computed` instead of methods for derived data — auto-cached.
+  <!-- cs: computed místo method pro derivovaná data — automaticky se cachuje. -->
+
+## Testing
+
+<!-- cs: Testování -->
+
+- **Vitest** for unit tests (replaces Jest, integrated with Vite).
+  <!-- cs: Vitest pro unit testy (nahrazuje Jest, integrován s Vite). -->
+- **Vue Test Utils** for component testing.
+  <!-- cs: Vue Test Utils pro testování komponent. -->
+- **Playwright** or **Cypress** for E2E tests.
+  <!-- cs: Playwright nebo Cypress pro E2E testy. -->
+
+```typescript
+import { mount } from '@vue/test-utils'
+import UserCard from '@/components/UserCard.vue'
+
+test('displays full name', () => {
+  const wrapper = mount(UserCard, {
+    props: { user: { id: '1', firstName: 'Jan', lastName: 'Novák' } },
+  })
+  expect(wrapper.text()).toContain('Jan Novák')
+})
+```
+
+## .gitignore — Node/Vue-Specific Entries
+
+<!-- cs: .gitignore — Node/Vue-specific záznamy -->
+
+Add these to the project `.gitignore` when Node.js / Vue / Vite is used:
+<!-- cs: Přidej toto do .gitignore při použití Node.js / Vue / Vite: -->
+
+```gitignore
+node_modules/
+dist/
+.output/
+.vite/
+coverage/
+*.local
+.env.local
+.env.*.local
+```
