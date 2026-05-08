@@ -61,8 +61,14 @@ alwaysApply: false    # true = applies regardless of context
 
 - One rule = **one concern** (one file = one topic).
   <!-- cs: Jedno pravidlo = jeden concern (jeden soubor = jedno téma). -->
-- Maximum **200 lines** per file; move longer content to a skill's `reference.md`.
-  <!-- cs: Maximálně 200 řádků na soubor; delší obsah přesuň do reference.md skillu. -->
+- **Line limit depends on activation type** (cost rationale below):
+  <!-- cs: Limit řádků závisí na typu aktivace (zdůvodnění nákladů níže). -->
+  - `alwaysApply: true` → **strict 150 lines** — loaded on **every** AI call; every extra line costs tokens.
+    <!-- cs: alwaysApply: true → přísný limit 150 řádků — načítá se při každém AI volání; každý řádek stojí tokeny. -->
+  - `globs` / auto-attached → **250 lines** acceptable — loaded only when matching files are in context.
+    <!-- cs: globs / auto-attached → 250 řádků přijatelné — načítá se jen pokud odpovídající soubory jsou v kontextu. -->
+  - Move anything longer to a skill's `reference.md`.
+    <!-- cs: Delší obsah přesuň do reference.md skillu. -->
 - No explaining the obvious — the agent is an expert.
   <!-- cs: Žádné vysvětlování triviálního — agent je expert, nepotřebuje přednášku. -->
 - Use **❌ / ✅ code examples** instead of vague instructions.
@@ -157,8 +163,8 @@ description: >-
   <!-- cs: Soubor .mdc je v .cursor/rules/ s korektním frontmatter -->
 - [ ] `globs` or `alwaysApply` is set deliberately
   <!-- cs: globs nebo alwaysApply je záměrně nastaven -->
-- [ ] Length under 200 lines (rules) / 500 lines (skills)
-  <!-- cs: Délka pod 200 řádků (rules) / 500 řádků (skills) -->
+- [ ] Length: under **150 lines** for `alwaysApply: true`; under **250 lines** for `globs` rules; under **500 lines** for skills
+  <!-- cs: Délka: pod 150 řádků pro alwaysApply: true; pod 250 řádků pro globs rules; pod 500 řádků pro skills -->
 - [ ] Contains concrete examples (❌ / ✅) or commands
   <!-- cs: Obsahuje konkrétní příklady (❌ / ✅) nebo příkazy -->
 - [ ] `<communication-language>` comments synchronized with English text

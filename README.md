@@ -3,9 +3,9 @@
 A shared Cursor IDE configuration library — curated `.mdc` rules and agent skills
 enforcing consistent coding standards across all your projects.
 
-Rules cover: general programming, Git, Docker, Python, Vue.js/Vite/Tailwind,
-C/C++ ESP-IDF, and PostgreSQL. Skills cover: Docker setup, Python dev workflow,
-PostgreSQL access, and Vue.js dev workflow.
+Rules cover: general programming, Git, Docker, Python, FastAPI, Vue.js/Vite/Tailwind,
+C/C++ ESP-IDF, PostgreSQL, and Qdrant. Skills cover: Docker setup, Python dev workflow,
+PostgreSQL access, Vue.js dev workflow, and Qdrant vector database workflow.
 
 ---
 
@@ -154,6 +154,137 @@ For an **English-only** version (no translation comments):
 #
 # Then remove all <!-- cs: ... --> comments from rules/ and skills/.
 # Ask the Cursor agent: "Remove all cs comments from all rules and skills."
+```
+
+---
+
+## Git Submodule Guide
+
+This section covers everything you need to know about using this template (or any Git submodule) day-to-day.
+
+### Adding the submodule to a project
+
+```bash
+# Option A — mount directly as .cursor/ (no project-specific rules needed)
+git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor
+
+# Option B — mount at .cursor-shared/ (use wrapper pattern for project-specific rules)
+git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor-shared
+```
+
+After running this command, Git creates a `.gitmodules` file and a committed reference (not the full content) to the submodule. Commit both:
+
+```bash
+git add .gitmodules .cursor    # (or .cursor-shared)
+git commit -m "chore(cursor): add shared cursor rules as submodule"
+```
+
+---
+
+### Cloning a project that has a submodule
+
+```bash
+# ✅ Recommended — clone and initialize all submodules in one step
+git clone --recurse-submodules git@github.com:<you>/<your-project>.git
+
+# If you already cloned without --recurse-submodules, initialize afterwards:
+git submodule update --init --recursive
+```
+
+Without `--recurse-submodules`, the `.cursor/` (or `.cursor-shared/`) directory exists but is **empty**.
+
+---
+
+### Updating the submodule to the latest version
+
+The submodule is pinned to a specific commit. To update it to the latest template commit:
+
+```bash
+# Pull latest from the submodule's remote and pin the new commit
+git submodule update --remote .cursor
+
+# Commit the updated pin in your project
+git add .cursor
+git commit -m "chore(cursor): update shared rules to latest"
+```
+
+To update all submodules at once: `git submodule update --remote --merge`
+
+---
+
+### Making changes inside the submodule
+
+The submodule is a full Git repository inside your project. To contribute a fix or addition to the template:
+
+```bash
+# 1. Enter the submodule directory
+cd .cursor       # (or .cursor-shared)
+
+# 2. Check out the branch you want to work on
+git checkout main
+git pull
+
+# 3. Make your changes, then commit inside the submodule
+git add rules/15-qdrant.mdc
+git commit -m "feat(qdrant): add vector database rule"
+
+# 4. Push the submodule changes to the template repo
+git push
+
+# 5. Return to the parent project and update the pinned commit
+cd ..
+git add .cursor
+git commit -m "chore(cursor): update shared rules (added qdrant rule)"
+git push
+```
+
+> The parent project stores only a **commit SHA** pointing into the submodule repo.
+> After you push inside the submodule, you must also update + commit + push the parent.
+
+---
+
+### Checking submodule status
+
+```bash
+# Show which commit each submodule is pinned to + whether it has local changes
+git submodule status
+
+# Show submodule details in git status
+git status   # submodule shows as "modified" when its pinned SHA changed
+
+# Show the full diff of which commit the submodule moved to
+git diff --submodule
+```
+
+---
+
+### Pulling a project when the submodule was updated upstream
+
+When a teammate updated the pinned submodule commit and pushed, your local clone will show the submodule as "modified". Sync it:
+
+```bash
+git pull
+git submodule update --init --recursive
+```
+
+Add this to CI pipelines and onboarding scripts to ensure submodules are always initialized.
+
+---
+
+### Removing a submodule
+
+```bash
+# 1. Remove the entry from .gitmodules
+git submodule deinit -f .cursor
+
+# 2. Remove from Git's index
+git rm -f .cursor
+
+# 3. Clean up the internal Git state
+rm -rf .git/modules/.cursor
+
+# 4. Commit the removal
+git commit -m "chore: remove cursor submodule"
 ```
 
 ---

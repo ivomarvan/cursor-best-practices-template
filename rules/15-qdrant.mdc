@@ -1,0 +1,208 @@
+---
+description: >-
+  Qdrant vector database standards — collection design, point upsert, filtered search,
+  payload indexing, batch operations, psycopg 3 analogy. Activated for Qdrant-related
+  Python files and Docker configs.
+globs: "**/*qdrant*.py, **/*vector*.py, **/*embedding*.py, **/vector_store*.py"
+alwaysApply: false
+---
+
+# Qdrant — Best Practices
+
+<!-- cs: Best practices pro Qdrant vektorovou databázi -->
+
+## Docker Setup
+
+<!-- cs: Docker setup -->
+
+```yaml
+# docker-compose.yml — infrastructure section
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.2        # always pin the version
+    ports:
+      - "6333:6333"                     # REST API
+      - "6334:6334"                     # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  qdrant_data:
+```
+
+## Python Client Setup
+
+<!-- cs: Python klient -->
+
+```python
+# Use grpc for production (faster batch operations); http for dev/scripts
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
+
+# ✅ async client — preferred for FastAPI / async services
+from qdrant_client import AsyncQdrantClient
+
+client = AsyncQdrantClient(host="localhost", port=6334, prefer_grpc=True)
+
+# ✅ sync client — for scripts and migrations
+client = QdrantClient(url="http://localhost:6333")
+```
+
+## Collection Design
+
+<!-- cs: Návrh kolekcí -->
+
+```python
+from qdrant_client.models import Distance, VectorParams, HnswConfigDiff
+
+# ✅ Create collection — idempotent (recreate_collection replaces existing)
+await client.recreate_collection(
+    collection_name="documents",
+    vectors_config=VectorParams(
+        size=1536,              # must match embedding model output dimension
+        distance=Distance.COSINE,
+    ),
+    hnsw_config=HnswConfigDiff(
+        m=16,                   # higher → better recall, more memory
+        ef_construct=200,       # higher → better index quality, slower indexing
+    ),
+    on_disk_payload=True,       # ✅ keep payload on disk — saves RAM for large corpora
+)
+
+# ✅ Named vectors — for multi-vector (e.g. title + body) search
+await client.recreate_collection(
+    collection_name="articles",
+    vectors_config={
+        "title": VectorParams(size=1536, distance=Distance.COSINE),
+        "body":  VectorParams(size=1536, distance=Distance.COSINE),
+    },
+)
+```
+
+## Payload Indexing
+
+<!-- cs: Indexování payloadu -->
+
+Always index fields used in `filter` — without index, filter scans all vectors:
+<!-- cs: Vždy indexuj pole používaná ve filter — bez indexu probíhá full scan. -->
+
+```python
+from qdrant_client.models import PayloadSchemaType
+
+# Run once after collection creation (idempotent)
+await client.create_payload_index(
+    collection_name="documents",
+    field_name="source_id",
+    field_schema=PayloadSchemaType.KEYWORD,
+)
+await client.create_payload_index(
+    collection_name="documents",
+    field_name="created_at",
+    field_schema=PayloadSchemaType.DATETIME,
+)
+```
+
+## Point Upsert
+
+<!-- cs: Vkládání bodů -->
+
+```python
+from qdrant_client.models import PointStruct
+import uuid
+
+# ✅ Use UUID for point IDs — consistent with PostgreSQL PK convention
+await client.upsert(
+    collection_name="documents",
+    points=[
+        PointStruct(
+            id=str(uuid.uuid4()),          # or deterministic: uuid5(NAMESPACE, source_id)
+            vector=embedding,              # List[float], length must match VectorParams.size
+            payload={
+                "source_id": doc.source_id,
+                "content":   doc.content[:500],  # store snippet, not full text
+                "created_at": doc.created_at.isoformat(),
+            },
+        )
+    ],
+    wait=True,   # ✅ wait=True ensures point is searchable immediately
+)
+```
+
+## Search with Filter
+
+<!-- cs: Vyhledávání s filtrem -->
+
+```python
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+
+# ✅ Filtered semantic search
+results = await client.search(
+    collection_name="documents",
+    query_vector=query_embedding,
+    query_filter=Filter(
+        must=[
+            FieldCondition(key="source_id", match=MatchValue(value="feed-42")),
+        ],
+        must_not=[
+            FieldCondition(key="is_deleted", match=MatchValue(value=True)),
+        ],
+    ),
+    limit=10,
+    with_payload=True,   # ✅ return payload — avoids a second DB lookup
+    with_vectors=False,  # ❌ don't return vectors unless you need them (bandwidth)
+    score_threshold=0.7, # optional: minimum cosine similarity
+)
+
+# Access results
+for hit in results:
+    print(hit.id, hit.score, hit.payload["content"])
+```
+
+## Batch Operations
+
+<!-- cs: Dávkové operace -->
+
+```python
+# ✅ Always upsert in batches — individual upserts are slow for bulk loading
+BATCH_SIZE = 256
+
+async def upsert_batch(points: list[PointStruct]) -> None:
+    for i in range(0, len(points), BATCH_SIZE):
+        await client.upsert(
+            collection_name="documents",
+            points=points[i : i + BATCH_SIZE],
+            wait=True,
+        )
+
+# ✅ Delete by filter (e.g. clean up outdated source)
+await client.delete(
+    collection_name="documents",
+    points_selector=Filter(
+        must=[FieldCondition(key="source_id", match=MatchValue(value="feed-42"))]
+    ),
+)
+```
+
+## Repository Pattern
+
+<!-- cs: Repository pattern -->
+
+```
+src/
+└── <module>/
+    └── vector_repository.py   # all Qdrant calls here — not in business logic
+```
+
+- One `VectorRepository` class per collection.
+  <!-- cs: Jedna třída VectorRepository na kolekci. -->
+- Business logic never calls `qdrant_client` directly — only through the repository.
+  <!-- cs: Business logika nevolá qdrant_client přímo — jen přes repository. -->
+- Constructor accepts `AsyncQdrantClient` — injectable for testing with `AsyncQdrantClient(":memory:")`.
+  <!-- cs: Konstruktor přijímá AsyncQdrantClient — injectovatelný pro testy přes in-memory klient. -->

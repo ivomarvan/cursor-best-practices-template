@@ -183,6 +183,9 @@ configASSERT(handle != NULL);  // invariants — disabled in Release build
 **RAII** — every resource (memory, mutex, handle) is owned by an object; destructor guarantees release:
 <!-- cs: RAII — každý zdroj je vlastněn objektem; destruktor zaručuje uvolnění. -->
 
+**Rule of Five** — if you define any of {destructor, copy constructor, copy assignment, move constructor, move assignment}, define all five explicitly:
+<!-- cs: Rule of Five — pokud definuješ destruktor nebo jakýkoliv copy/move, definuj všech pět explicitně. -->
+
 ```cpp
 // Pattern: RAII — FreeRTOS mutex guard (analogous to std::lock_guard)
 class MutexGuard {
@@ -192,8 +195,11 @@ public:
     }
     ~MutexGuard() { xSemaphoreGive(mutex_); }
 
-    MutexGuard(const MutexGuard&) = delete;
+    // Rule of Five: non-copyable, non-movable (owns exclusive FreeRTOS handle)
+    MutexGuard(const MutexGuard&)            = delete;
     MutexGuard& operator=(const MutexGuard&) = delete;
+    MutexGuard(MutexGuard&&)                 = delete;
+    MutexGuard& operator=(MutexGuard&&)      = delete;
 
 private:
     SemaphoreHandle_t mutex_;
@@ -203,6 +209,25 @@ void critical_section() {
     MutexGuard guard(shared_mutex_);  // acquired here
     // ... work ...
 }                                      // released automatically on scope exit
+```
+
+**`std::optional`** — use for values that may be absent; avoids sentinel values (C++17, supported in ESP-IDF):
+<!-- cs: std::optional — pro hodnoty, které mohou chybět; vyhýbá se sentinel hodnotám (C++17, podporováno v ESP-IDF). -->
+
+```cpp
+#include <optional>
+
+std::optional<sensor_data_t> read_sensor() {
+    if (!sensor_ready()) {
+        return std::nullopt;  // explicit absence — no magic -1 or nullptr
+    }
+    return sensor_data_t{ .temperature = read_temp(), .humidity = read_hum() };
+}
+
+auto data = read_sensor();
+if (data.has_value()) {
+    ESP_LOGI(TAG, "Temp: %.1f", data->temperature);
+}
 ```
 
 ## .gitignore — C/C++ and ESP-IDF-Specific Entries

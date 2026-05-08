@@ -167,6 +167,66 @@ src/
 - Business logic never calls SQL directly — it calls repository methods.
   <!-- cs: Business logika nevolá SQL přímo — volá repository metody. -->
 
+## Query Writing Conventions
+
+<!-- cs: Konvence pro psaní SQL dotazů -->
+
+- **Formatting**: SQL keywords lowercase; root clauses (`select`, `from`, `where`) on their own line.
+  <!-- cs: Klíčová slova lowercase; root klauzule každá na vlastním řádku. -->
+- **Always explicit `JOIN`** — never implicit `FROM a, b WHERE a.id = b.id`.
+  <!-- cs: Vždy explicitní JOIN — nikdy implicitní spojení v FROM. -->
+- **CTEs over nested subqueries** — `WITH` clauses are more readable and composable.
+  <!-- cs: CTEs místo zanořených poddotazů — WITH klauzule jsou čitelnější. -->
+- **Never `NOT IN`** — use `NOT EXISTS` or `LEFT JOIN ... IS NULL` (avoids NULL traps).
+  <!-- cs: Nikdy NOT IN — použij NOT EXISTS nebo LEFT JOIN IS NULL (NULL pasti). -->
+- **Never `BETWEEN` for timestamps** — use `>= ... AND <` (off-by-one hazard with `BETWEEN`).
+  <!-- cs: Nikdy BETWEEN pro timestamps — použij >= ... AND < (off-by-one problém). -->
+- **Never `serial`/`bigserial`** for integer PKs — use `bigint generated always as identity`.
+  <!-- cs: Nikdy serial/bigserial — použij bigint generated always as identity. -->
+
+```sql
+-- ✅ formatting + explicit join + CTE
+with active_buyers as (
+    select user_id from orders
+    where order_date >= '2023-01-01' and order_date < '2023-02-01'  -- not BETWEEN
+    group by user_id having count(*) > 5
+)
+select u.user_id, u.email
+from users as u
+inner join active_buyers as ab on u.user_id = ab.user_id
+where not exists (select 1 from blacklist b where b.user_id = u.user_id);  -- not NOT IN
+```
+
+## Schema Documentation
+
+<!-- cs: Dokumentace schématu -->
+
+Every table and non-obvious column must have a `COMMENT ON`:
+<!-- cs: Každá tabulka a méně zřejmý sloupec musí mít COMMENT ON. -->
+
+```sql
+comment on table documents is 'Crawled source documents — immutable, append-only.';
+comment on column documents.source_id is 'Stable external identifier (URL hash or feed GUID).';
+```
+
+## Database Roles — Least Privilege
+
+<!-- cs: Databázové role — princip nejmenších oprávnění -->
+
+```sql
+create role app_reader nologin;
+grant connect on database app_db to app_reader;
+grant usage on schema public to app_reader;
+grant select on all tables in schema public to app_reader;
+alter default privileges in schema public grant select on tables to app_reader;
+
+create role app_writer nologin;
+grant app_reader to app_writer;  -- inherit read permissions
+grant insert, update, delete on all tables in schema public to app_writer;
+alter default privileges in schema public
+    grant insert, update, delete on tables to app_writer;
+```
+
 ## Performance
 
 <!-- cs: Výkon -->

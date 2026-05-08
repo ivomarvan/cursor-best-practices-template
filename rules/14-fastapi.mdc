@@ -1,0 +1,213 @@
+---
+description: >-
+  FastAPI best practices — project structure, dependency injection, service layer,
+  Pydantic v2, pydantic-settings, lifespan, async patterns, error handling.
+  Activated for Python files in FastAPI projects.
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# FastAPI — Best Practices
+
+<!-- cs: Best practices pro FastAPI projekty -->
+
+## Project Structure — Domain-Driven
+
+<!-- cs: Struktura projektu — domain-driven organizace -->
+
+Organize by domain, not by file type.
+<!-- cs: Organizuj podle domény, ne podle typu souboru. -->
+
+```
+# ❌ — file-type grouping (hard to navigate as project grows)
+app/routers/users.py
+app/schemas/user.py
+app/models/user.py
+
+# ✅ — domain grouping
+src/
+├── auth/
+│   ├── router.py         # route definitions (thin — no business logic)
+│   ├── schemas.py        # Pydantic request/response models
+│   ├── service.py        # business logic
+│   └── dependencies.py   # auth-specific Depends factories
+├── users/
+│   ├── router.py
+│   ├── schemas.py
+│   └── service.py
+├── core/
+│   ├── config.py         # pydantic-settings (see below)
+│   └── security.py
+├── db/
+│   └── session.py        # async engine + get_session dependency
+└── main.py               # FastAPI() + router registration + lifespan
+```
+
+## Configuration — pydantic-settings
+
+<!-- cs: Konfigurace — pydantic-settings -->
+
+```python
+# src/core/config.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    DEBUG: bool = False
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+settings = Settings()  # singleton — import from here everywhere
+```
+
+```ini
+# .env.example (always committed, never .env itself)
+DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/app
+SECRET_KEY=change-me
+```
+
+## Application Lifespan
+
+<!-- cs: Životní cyklus aplikace -->
+
+```python
+# ✅ lifespan — replaces deprecated @app.on_event("startup"/"shutdown")
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db.connect()       # startup
+    yield
+    await db.disconnect()    # shutdown
+
+app = FastAPI(lifespan=lifespan)
+```
+
+## Dependency Injection
+
+<!-- cs: Dependency injection -->
+
+```python
+# ✅ inject DB session and current user via Depends — never instantiate directly
+from typing import Annotated
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def get_session() -> AsyncSession: ...  # defined in db/session.py
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+UserDep    = Annotated[User, Depends(get_current_active_user)]
+
+@router.get("/me/")
+async def read_me(db: SessionDep, user: UserDep) -> UserOut:
+    return await user_service.get_profile(db, user.id)
+```
+
+## Thin Endpoints — Service Layer
+
+<!-- cs: Tenké endpointy — service vrstva -->
+
+```python
+# ✅ router.py — validation and routing only
+@router.post("/", response_model=UserOut, status_code=201)
+async def create_user(body: UserCreate, db: SessionDep) -> UserOut:
+    return await user_service.create(db, body)
+
+# ✅ service.py — all business logic lives here
+async def create(db: AsyncSession, body: UserCreate) -> User:
+    if await user_repo.exists_by_email(db, body.email):
+        raise HTTPException(status_code=409, detail="Email already registered")
+    return await user_repo.create(db, body)
+```
+
+## API Versioning
+
+<!-- cs: Verzování API -->
+
+```python
+# Version prefix from day one — impossible to add later without breaking clients
+router = APIRouter(prefix="/v1/users", tags=["Users"])
+```
+
+## Error Handling
+
+<!-- cs: Zpracování chyb -->
+
+```python
+# ✅ HTTPException for API errors — never raise generic Exception in routes
+from fastapi import HTTPException, status
+
+raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+raise HTTPException(status_code=status.HTTP_409_CONFLICT,  detail="Already exists")
+
+# ✅ global handler for unexpected errors (in main.py)
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error", extra={"path": request.url.path})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+```
+
+## Async Patterns
+
+<!-- cs: Async vzory -->
+
+```python
+# ✅ async def for all I/O-bound handlers
+@router.get("/items/{id}")
+async def get_item(id: int, db: SessionDep) -> ItemOut:
+    return await item_service.get(db, id)
+
+# ✅ run_in_threadpool for CPU-bound work inside async endpoint
+from fastapi.concurrency import run_in_threadpool
+
+@router.post("/process/")
+async def process(file: UploadFile) -> ProcessResult:
+    data = await file.read()
+    result = await run_in_threadpool(cpu_intensive_parse, data)
+    return result
+
+# ❌ never time.sleep() or blocking I/O inside async def — blocks the event loop
+```
+
+## Structured Logging
+
+<!-- cs: Strukturované logování -->
+
+```python
+# src/core/logging.py — configure once, import logger everywhere
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(asctime)s %(name)s %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger("app")
+
+# in endpoint/service:
+logger.info("User created", extra={"user_id": str(user.id), "email": user.email})
+logger.warning("Rate limit reached", extra={"ip": client_ip, "endpoint": path})
+```
+
+## Pydantic Models
+
+<!-- cs: Pydantic modely -->
+
+```python
+from pydantic import BaseModel, EmailStr, Field
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+class UserOut(BaseModel):
+    id: UUID
+    email: EmailStr
+    model_config = ConfigDict(from_attributes=True)  # ORM mode (v2)
+
+# ❌ Never use raw dict for request/response — always a Pydantic model
+```
