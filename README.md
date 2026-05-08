@@ -3,9 +3,17 @@
 A shared Cursor IDE configuration library — curated `.mdc` rules and agent skills
 enforcing consistent coding standards across all your projects.
 
-Rules cover: general programming, Git, Docker, Python, FastAPI, Vue.js/Vite/Tailwind,
-C/C++ ESP-IDF, PostgreSQL, and Qdrant. Skills cover: Docker setup, Python dev workflow,
-PostgreSQL access, Vue.js dev workflow, and Qdrant vector database workflow.
+**Rules** cover: general programming, Git, Docker, Python, FastAPI, Vue.js/Vite/Tailwind,
+C/C++ ESP-IDF, PostgreSQL, Qdrant, and AI-driven project management (APM).
+
+**Skills** cover: Docker setup and debugging, Python dev workflow, PostgreSQL dev workflow,
+Vue.js dev workflow, Qdrant vector database workflow, and APM phases
+(project init, epic planning, task execution, epic review).
+
+> New technologies and workflows are added to this template as they are needed across projects.
+
+For the AI-driven project management workflow (APM), see
+[README.project_management.md](README.project_management.md).
 
 ---
 
@@ -15,11 +23,53 @@ PostgreSQL access, Vue.js dev workflow, and Qdrant vector database workflow.
 cursor-best-practices-template/
 ├── rules/          # .mdc rule files — Cursor reads these as .cursor/rules/
 ├── skills/         # Agent skill directories — Cursor reads as .cursor/skills/
+├── doc/            # Template-level documentation and APM document templates
+│   └── project-progress/   # APM templates (brief, spec, roadmap, epics, tasks)
 ├── .cursor/
 │   ├── rules  →  ../rules     # symlink — enables rules while editing this repo
 │   └── skills →  ../skills    # symlink — enables skills while editing this repo
-└── README.md
+├── README.md
+└── README.project_management.md   # APM workflow documentation
 ```
+
+---
+
+## Rules and Skills overview
+
+### Rules (`rules/`)
+
+| File | Topic | Activation |
+|------|-------|-----------|
+| `00-communication-language.mdc` | Communication language setting (CS/DE/EN) | always |
+| `00-meta-rules-and-skills.mdc` | How to write rules and skills | always |
+| `01-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
+| `02-git.mdc` | Conventional commits, branching, `.gitignore` | always |
+| `03-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
+| `04-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
+| `05-new-technology.mdc` | Process for adding new technologies | on request |
+| `06-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
+| `07-project-management.mdc` | APM workflow, terminology, file headers | `doc/project-progress/**` |
+| `10-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
+| `11-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
+| `12-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
+| `13-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
+| `14-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
+| `15-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
+
+### Skills (`skills/`)
+
+| Directory | Skill | Purpose |
+|-----------|-------|---------|
+| `docker-new-project/` | Docker setup | Scaffold Dockerfile + compose + README.docker.md |
+| `docker-debug/` | Docker debug | Diagnose container/compose failures |
+| `python-dev/` | Python dev | Docker-based Python development workflow |
+| `postgresql-dev/` | PostgreSQL dev | Docker-based PostgreSQL access and migrations |
+| `vuejs-dev/` | Vue.js dev | Docker-based Vue.js development workflow |
+| `qdrant-dev/` | Qdrant dev | Docker-based Qdrant collection management and testing |
+| `project-init/` | APM Phase 0 | Formalize brief → `spec.md` + `roadmap.md` |
+| `plan-epic/` | APM Phase E | Decompose Epic into Tasks with Context Bundles |
+| `execute-task/` | APM Phase T | Implement Task: code + tests + DoD + report |
+| `review-epic/` | APM Phase ER | Write Epic Report + review Roadmap validity |
 
 ---
 
