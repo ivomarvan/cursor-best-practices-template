@@ -55,6 +55,7 @@ cursor-best-practices-template/
 | `13-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
 | `14-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
 | `15-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
+| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
 
 ### Skills (`skills/`)
 
@@ -66,6 +67,7 @@ cursor-best-practices-template/
 | `postgresql-dev/` | PostgreSQL dev | Docker-based PostgreSQL access and migrations |
 | `vuejs-dev/` | Vue.js dev | Docker-based Vue.js development workflow |
 | `qdrant-dev/` | Qdrant dev | Docker-based Qdrant collection management and testing |
+| `sqlalchemy-dev/` | SQLAlchemy dev | Scaffold SQLAlchemy + Alembic, migration workflow, troubleshooting |
 | `project-init/` | APM Phase 0 | Formalize brief → `spec.md` + `roadmap.md` |
 | `plan-epic/` | APM Phase E | Decompose Epic into Tasks with Context Bundles |
 | `execute-task/` | APM Phase T | Implement Task: code + tests + DoD + report |

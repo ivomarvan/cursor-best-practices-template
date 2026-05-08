@@ -94,6 +94,11 @@ WHERE document_id = $1 AND version < $2;
 
 <!-- cs: Migrace (Alembic) -->
 
+> When using **SQLAlchemy ORM**, use `--autogenerate` and follow `16-sqlalchemy.mdc`.
+> The example below applies to **raw SQL / psycopg3** projects without SQLAlchemy.
+<!-- cs: Při použití SQLAlchemy ORM použij --autogenerate a viz 16-sqlalchemy.mdc.
+     Příklad níže platí pro projekty s raw SQL / psycopg3 bez SQLAlchemy. -->
+
 ```python
 # Every migration must be idempotent and provide a downgrade
 def upgrade() -> None:
