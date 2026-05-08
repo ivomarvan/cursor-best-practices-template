@@ -1,0 +1,193 @@
+---
+description: >-
+  SQLAlchemy 2.x ORM best practices — model definition, async sessions, querying,
+  eager loading, and Alembic autogenerate migrations. Activated for ORM model files,
+  session management, and Alembic configuration.
+globs: "**/models.py, **/orm_models*.py, **/session.py, **/database.py, **/alembic/env.py, **/*_repository.py"
+alwaysApply: false
+---
+
+# SQLAlchemy 2.x — Best Practices
+
+<!-- cs: Doporučené postupy pro SQLAlchemy 2.x -->
+
+Use **SQLAlchemy 2.x style exclusively** — `DeclarativeBase`, `Mapped`, `mapped_column`.
+Legacy `declarative_base()` and `session.query()` are **prohibited**.
+<!-- cs: Používej výhradně SQLAlchemy 2.x styl — DeclarativeBase, Mapped, mapped_column.
+     Starý declarative_base() a session.query() jsou zakázány. -->
+
+## Model Definition
+
+<!-- cs: Definice modelů -->
+
+```python
+# ✅ SQLAlchemy 2.x + PostgreSQL conventions (UUID PK, TIMESTAMPTZ)
+from uuid import UUID
+from datetime import datetime
+from sqlalchemy import String, ForeignKey, text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    pass
+
+class TimestampMixin:
+    """Add created_at / updated_at to any model."""
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(onupdate=text("NOW()"))
+
+class Document(Base, TimestampMixin):
+    __tablename__ = "documents"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    source_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)
+
+    versions: Mapped[list["DocumentVersion"]] = relationship(
+        back_populates="document", cascade="all, delete-orphan"
+    )
+```
+
+## Async Session (FastAPI / asyncio)
+
+<!-- cs: Async session (FastAPI / asyncio) -->
+
+```python
+# session.py
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+AsyncSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionFactory() as session:
+        yield session
+
+# FastAPI dependency
+from typing import Annotated
+from fastapi import Depends
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+```
+
+- `expire_on_commit=False` — objects remain accessible after commit (important in FastAPI).
+  <!-- cs: expire_on_commit=False — objekty zůstávají přístupné po commitu (důležité ve FastAPI). -->
+- Always `yield` inside `async with` — ensures rollback on unhandled exceptions.
+  <!-- cs: Vždy yield uvnitř async with — zajišťuje rollback při neošetřené výjimce. -->
+
+## Querying — 2.x Style
+
+<!-- cs: Dotazy — 2.x styl -->
+
+```python
+from sqlalchemy import select
+
+# ✅ select() + session.scalar() / scalars()
+async def get_by_source_id(session: AsyncSession, source_id: str) -> Document | None:
+    stmt = select(Document).where(Document.source_id == source_id)
+    return await session.scalar(stmt)
+
+# ✅ Multiple results
+async def list_active(session: AsyncSession) -> list[Document]:
+    stmt = select(Document).where(Document.is_active == True).order_by(Document.created_at)
+    result = await session.scalars(stmt)
+    return list(result.all())
+```
+
+```python
+# ❌ Legacy — prohibited
+session.query(Document).filter(Document.source_id == source_id).first()
+```
+
+## Eager Loading — Avoid N+1
+
+<!-- cs: Eager loading — zamezení N+1 -->
+
+```python
+from sqlalchemy.orm import selectinload, joinedload
+
+# ✅ selectinload — preferred for collections (separate IN query)
+stmt = select(Document).options(selectinload(Document.versions))
+
+# ✅ joinedload — preferred for single objects (JOIN)
+stmt = select(DocumentVersion).options(joinedload(DocumentVersion.document))
+
+# ❌ Never access a relationship in a loop without eager loading
+for doc in docs:
+    print(doc.versions)  # N+1 queries — prohibited
+```
+
+## Repository Pattern with Async
+
+<!-- cs: Repository pattern s async -->
+
+```python
+# Pattern: Repository
+class DocumentRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, source_id: str) -> Document | None:
+        stmt = select(Document).where(Document.source_id == source_id)
+        return await self._session.scalar(stmt)
+
+    async def save(self, doc: Document) -> Document:
+        self._session.add(doc)
+        await self._session.flush()  # assign PK without committing
+        await self._session.refresh(doc)
+        return doc
+```
+
+- `flush()` assigns auto-generated PKs without committing the transaction.
+  <!-- cs: flush() přiřadí auto-generované PK bez commitu transakce. -->
+- Commit belongs to the **caller** (the service layer), not the repository.
+  <!-- cs: Commit patří volajícímu (service layer), ne repository. -->
+
+## Alembic — Autogenerate with Async Engine
+
+<!-- cs: Alembic — autogenerate s async engine -->
+
+```python
+# alembic/env.py — async pattern
+from sqlalchemy.ext.asyncio import create_async_engine
+from logging.config import fileConfig
+from alembic import context
+from src.db.models import Base  # import your Base so metadata is populated
+
+target_metadata = Base.metadata
+
+def run_migrations_online() -> None:
+    connectable = create_async_engine(config.get_main_option("sqlalchemy.url"))
+
+    async def run() -> None:
+        async with connectable.connect() as connection:
+            await connection.run_sync(
+                context.configure,
+                connection=connection,
+                target_metadata=target_metadata,
+            )
+            async with context.begin_transaction():
+                await connection.run_sync(context.run_migrations)
+
+    import asyncio
+    asyncio.run(run())
+```
+
+```bash
+# Generate migration from model changes
+alembic revision --autogenerate -m "add source_id index to documents"
+
+# Apply
+alembic upgrade head
+
+# Rollback one step
+alembic downgrade -1
+```
+
+- Always **review autogenerated migrations** before applying — `--autogenerate` misses some ops.
+  <!-- cs: Vždy kontroluj autogenerované migrace před aplikací — --autogenerate některé operace přehlédne. -->
+- Every migration must have a working `downgrade()`. See `13-sql-postgresql.mdc` for SQL conventions.
+  <!-- cs: Každá migrace musí mít funkční downgrade(). SQL konvence viz 13-sql-postgresql.mdc. -->
