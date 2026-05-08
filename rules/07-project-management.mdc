@@ -1,0 +1,128 @@
+---
+description: >-
+  APM (Agentic Project Management) workflow — two-actor model (Planner + Coder),
+  document structure, file naming, and header conventions for project-progress/.
+  Apply when working on APM documents: spec, roadmap, epic plan, task spec, reports, DoD.
+globs: doc/project-progress/**/*.md
+alwaysApply: false
+---
+
+# APM — Agentic Project Management
+<!-- cs: APM — Agentem Řízený Vývoj -->
+
+## Actors
+<!-- cs: Aktéři -->
+
+| Actor | Role | Model |
+|-------|------|-------|
+| **Planner** | Planning, decomposition, context preparation | expensive/complex |
+| **Coder** | Implementation, tests, reports | cheaper; per Task Specification |
+| **Human** | Final authority, reviewer, decision-maker | — |
+
+<!-- cs: Planner — plánování, dekomposice, příprava kontextu.
+     Coder — implementace, testy, reporty.
+     Human — finální autorita, reviewer, rozhodování. -->
+
+## APM Phases
+<!-- cs: Fáze APM -->
+
+```
+Phase 0 (Project Init):  Human → brief.md → [Planner ↔ Human] → spec.md + roadmap.md
+Phase E (Epic):          Planner → epic-NNN/plan.md  →  Human approves
+Phase T (Task):          Coder reads spec.md → implements → tests → dod.md → report.md
+                         Human reviews → approve or reject
+Phase ER (Epic Close):   Coder → epic-NNN/report.md  →  [Planner ↔ Human] roadmap review
+```
+
+## Document Types
+<!-- cs: Typy dokumentů -->
+
+| File | Category value | Written by | Read by |
+|------|---------------|------------|---------|
+| `brief.md` | `project-brief` | Human | Planner |
+| `spec.md` (project) | `project-spec` | Planner | All |
+| `roadmap.md` | `roadmap` | Planner | All |
+| `epic-NNN/plan.md` | `epic-plan` | Planner | Coder, Human |
+| `epic-NNN/task-NNN/spec.md` | `task-spec` | Planner | Coder |
+| `epic-NNN/task-NNN/dod.md` | `dod` | Planner (template) → Coder (fills) | Human |
+| `epic-NNN/task-NNN/report.md` | `task-report` | Coder | Human |
+| `epic-NNN/report.md` | `epic-report` | Coder | Human, Planner |
+
+<!-- cs: brief — neformální zadání. spec — specifikace projektu. roadmap — seznam epik.
+     epic-plan — plán epiky (dekomposice na tasky). task-spec — zadání tasku + Context Bundle.
+     dod — Definition of Done. task-report — report tasku. epic-report — report epiky. -->
+
+## Directory Structure
+<!-- cs: Adresářová struktura -->
+
+```
+doc/project-progress/
+├── GLOSSARY.md
+├── brief.md
+├── spec.md
+├── roadmap.md
+└── epic-010-name/
+    ├── plan.md
+    ├── report.md
+    └── task-010-name/
+        ├── spec.md         # Task Specification + Context Bundle
+        ├── dod.md          # Definition of Done checklist
+        └── report.md       # Task Report
+```
+
+Numbering in steps of 10 — insertion: `epic-015-name/` between `epic-010` and `epic-020`.
+<!-- cs: Číslování po 10 — vkládání: epic-015-name/ mezi epic-010 a epic-020. -->
+
+## File Header (YAML front matter)
+<!-- cs: Záhlaví souboru (YAML front matter) -->
+
+Every APM document **must** start with this front matter:
+<!-- cs: Každý APM dokument musí začínat tímto front matter: -->
+
+```yaml
+---
+apm_category: task-spec         # see Document Types table above
+apm_ref: E010.T020              # E010 = epic ref; E010.T020 = task ref
+apm_level: task                 # project | epic | task
+created_by: Planner             # Planner | Coder | Human
+model: claude-opus-4-7          # model used; omit if Human
+intended_for: Coder             # Planner | Coder | Human | All
+created_at: 2026-05-08
+updated_at: 2026-05-08
+---
+```
+
+## Task Specification — required sections
+<!-- cs: Task Specification — povinné sekce -->
+
+1. **Goal** — what to build (1–3 sentences)
+2. **Inputs** — files to read, APIs to call, data provided
+3. **Outputs** — files to create/modify, interfaces to expose
+4. **Context Bundle** — relevant existing files; files NOT to modify; interfaces from prior Tasks
+5. **Dependencies** — which Tasks must be completed first
+6. **Test Specification** — what tests to write; happy path + edge cases
+7. **Definition of Done** — checklist (→ also written to `dod.md`)
+8. **Recommended Coder model** — default: Composer-2; complex tasks: stronger model
+
+## Coder — Task Report required sections
+<!-- cs: Coder — povinné sekce Task Reportu -->
+
+Language: `<communication-language>` (see `00-communication-language.mdc`)
+<!-- cs: Jazyk: <communication-language> (viz 00-communication-language.mdc) -->
+
+1. **Co bylo implementováno** — stručný popis
+2. **Vstupy a výstupy** — co bylo přečteno, co bylo vytvořeno/změněno
+3. **Použité metody a rozhodnutí** — klíčová architektonická a implementační rozhodnutí
+4. **Reference do kódu** — soubory, funkce, rozsahy řádků
+5. **Výsledek regresního testu** — ✅ all pass / ❌ failures listed
+6. **Definition of Done** — shrnutí (odkaz na dod.md)
+
+## Security guard
+<!-- cs: Bezpečnostní zábrany -->
+
+- No `git commit/push` without explicit Human approval.
+  <!-- cs: Žádný git commit/push bez explicitního souhlasu člověka. -->
+- No database migrations without Human approval.
+  <!-- cs: Žádné DB migrace bez souhlasu člověka. -->
+- No destructive file operations without confirmation.
+  <!-- cs: Žádné destruktivní operace se soubory bez potvrzení. -->

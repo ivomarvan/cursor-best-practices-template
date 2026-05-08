@@ -123,15 +123,18 @@ doc/
 │   └── decisions/              # ADR-NNN-title.md — Architecture Decision Records
 ├── guides/                     # How-to guides, operational runbooks, onboarding
 ├── api/                        # API docs (OpenAPI specs, request/response examples)
-└── external/                   # External: downloaded specs, standards, vendor docs
-                                # Files here are references only — not our work
+├── external/                   # External: downloaded specs, standards, vendor docs
+│                               # Files here are references only — not our work
+└── project-progress/           # APM artifacts — see 07-project-management.mdc
+                                # brief, spec, roadmap, epic plans, task specs, reports
 ```
 
 <!-- cs: architecture/ — systémový design, diagramy, datové modely.
      decisions/ — ADR záznamy o architektonických rozhodnutích.
      guides/ — návody, runbooky, onboarding.
      api/ — API dokumentace.
-     external/ — externí reference a stažené specifikace — není náš výtvor. -->
+     external/ — externí reference a stažené specifikace — není náš výtvor.
+     project-progress/ — APM artefakty (brief, spec, roadmap, epiky, tasky, reporty). -->
 
 ### Architecture Decision Records (ADR)
 
