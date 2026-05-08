@@ -104,18 +104,60 @@ updated_at: 2026-05-08
 7. **Definition of Done** — checklist (→ also written to `dod.md`)
 8. **Recommended Coder model** — default: Composer-2; complex tasks: stronger model
 
-## Coder — Task Report required sections
-<!-- cs: Coder — povinné sekce Task Reportu -->
+## Coder — Task Report
+<!-- cs: Coder — Task Report -->
 
-Language: `<communication-language>` (see `00-communication-language.mdc`)
-<!-- cs: Jazyk: <communication-language> (viz 00-communication-language.mdc) -->
+Write `task-NNN/report.md` prose in `<communication-language>` (see `00-communication-language.mdc`). This section defines structure in **English**; rendered `##`/`###` headings must follow the mapping table when `<lang-code>` ≠ `en`.
+<!-- cs: Prostý text reportu piš v <communication-language>. Tato sekce je anglicky; nadpisy v reportu musí odpovídat tabulce mapping pro cs (ne en). -->
 
-1. **Co bylo implementováno** — stručný popis
-2. **Vstupy a výstupy** — co bylo přečteno, co bylo vytvořeno/změněno
-3. **Použité metody a rozhodnutí** — klíčová architektonická a implementační rozhodnutí
-4. **Reference do kódu** — soubory, funkce, rozsahy řádků
-5. **Výsledek regresního testu** — ✅ all pass / ❌ failures listed
-6. **Definition of Done** — shrnutí (odkaz na dod.md)
+### Required content (ordered `##` sections)
+<!-- cs: Povinný obsah (pořadí sekcí ##) -->
+
+| # | Section (English) | Czech (`cs`) `##` heading in `report.md` |
+|---|-------------------|-------------------------------------------|
+| 1 | What was implemented | `## Co bylo implementováno` |
+| 2 | Inputs and outputs | `## Vstupy a výstupy` |
+| 3 | Methods and decisions | `## Použité metody a rozhodnutí` |
+| 4 | Code references | `## Reference do kódu` |
+| 5 | Regression test results | `## Výsledek regresního testu` |
+| 6 | Definition of Done | `## Definition of Done` |
+
+When `<lang-code>` = `en`, use the English phrase as the `##` heading (e.g. `## What was implemented`). Optional follow-ups: extra `##` (e.g. *Notes*) only if needed; title in `<communication-language>`.
+<!-- cs: Pro `en` použij anglický název z prvního sloupce tabulky jako `##` nadpis. Volitelné `##` (např. poznámky) jen pokud dává smysl; titulek v <communication-language>. -->
+
+1. **What was implemented** — short summary (bullets preferred).
+2. **Inputs and outputs** — read / created / changed / not touched lists.
+3. **Methods and decisions** — key architecture and implementation choices.
+4. **Code references** — files, notable symbols, line ranges.
+5. **Regression test results** — ✅ all pass / ❌ failures, commands, exit codes, counts.
+6. **Definition of Done** — short summary + link to `dod.md` (do not duplicate the full checklist).
+
+### Mandatory Markdown layout (task `report.md`)
+<!-- cs: Povinné Markdown rozložení (task report.md) -->
+
+- Between top-level `##` sections, optional `---` **only** if it improves scanability (avoid spamming rules).
+  <!-- cs: Mezi sekcemi ## volitelně --- jen pro čitelnost. -->
+
+- **What was implemented:** use bullets; avoid one continuous paragraph longer than ~4 sentences.
+  <!-- cs: Co bylo implementováno: odrážky; žádný mega-odstavec. -->
+
+- **Inputs and outputs:** use `###` subsections; **one repo path per bullet**, always in backticks. For `cs`: `### Přečteno`, `### Vytvořeno`, `### Změněno`, `### Nedotčeno (Context Bundle)`. For `en`: `### Read`, `### Created`, `### Changed`, `### Not modified (Context Bundle)`.
+  <!-- cs: Vstupy/výstupy: podsekce ###; jedna cesta na řádek v backticks. -->
+
+- **Methods and decisions:** split themes: either separate `### Topic` blocks or bullets with a **bold** lead-in line followed by a short paragraph; do not merge unrelated topics in one bullet.
+  <!-- cs: Metody: odděl témata (### nebo tučný úvod); neslučuj nesouvisející body. -->
+
+- **Code references:** include a **Markdown table**: `| File | Lines | Summary |` (lines = range such as `1-42`). Put function/class names in Summary when useful.
+  <!-- cs: Reference: tabulka Soubor | Řádky | Shrnutí. -->
+
+- **Regression test results:** use a **table** (`| Command / scope | Result | Notes |`) or clearly structured bullets with command, outcome, and exit code (state **0 tests** / pytest exit **5** when applicable).
+  <!-- cs: Regrese: tabulka nebo jasné odrážky včetně exit kódů. -->
+
+- **Definition of Done:** one short paragraph + `[dod.md](dod.md)` link.
+  <!-- cs: DoD: krátce + odkaz na dod.md. -->
+
+❌ One bullet with comma-separated paths for “created” files.  
+✅ One path per line under `### Created` / `### Vytvořeno`.
 
 ## Security guard
 <!-- cs: Bezpečnostní zábrany -->
