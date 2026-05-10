@@ -104,6 +104,21 @@ updated_at: 2026-05-08
 7. **Definition of Done** — checklist (→ also written to `dod.md`)
 8. **Recommended Coder model** — default: Composer-2; complex tasks: stronger model
 
+## Coder — doc/ Write Permission
+<!-- cs: Coder — oprávnění k zápisu do doc/ -->
+
+Task specs and epic plans often state **"Do NOT modify `doc/**`"** in their Context Bundle.
+This constraint means: do not touch **other tasks'** `spec.md`/`dod.md`, the epic `plan.md`,
+project `spec.md`, `roadmap.md`, or `doc/architecture/` ADRs.
+
+It does **NOT** prevent — and in fact **requires** — Coder to:
+
+- Create `report.md` in the **current task's own directory** (e.g. `task-010-foo/report.md`)
+- Fill checkboxes in the **current task's own `dod.md`**
+
+<!-- cs: "Do NOT modify doc/**" v Context Bundle znamená: nesahej na spec, plan, roadmap, ADRs
+     a cizí taskové soubory. Coder MUSÍ zapsat report.md a vyplnit dod.md v adresáři svého tasku. -->
+
 ## Coder — Task Report
 <!-- cs: Coder — Task Report -->
 

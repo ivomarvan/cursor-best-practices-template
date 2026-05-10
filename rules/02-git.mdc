@@ -58,7 +58,7 @@ Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `per
 <!-- cs: Větvení (Git Flow lite) -->
 
 ```
-main              ← production, always stable
+master            ← production, always stable
 develop           ← integration of feature branches (optional for larger projects)
 feature/<desc>    ← new functionality
 fix/<desc>        ← bug fix
@@ -67,8 +67,8 @@ chore/<desc>      ← maintenance, dependency updates
 
 - Branches merged via **Pull Request / Merge Request** with code review.
   <!-- cs: Větve se mergují přes Pull Request / Merge Request s code review. -->
-- Prefer **squash merge** for feature branches (clean history on `main`).
-  <!-- cs: Preferuj squash merge pro feature větve (čistá historie na main). -->
+- Prefer **squash merge** for feature branches (clean history on `master`).
+  <!-- cs: Preferuj squash merge pro feature větve (čistá historie na master). -->
 - Delete the branch after merge.
   <!-- cs: Po merge větev smaz. -->
 
