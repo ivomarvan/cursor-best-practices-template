@@ -119,6 +119,22 @@ nogit_data/
 - Before merge: CI green, code review from at least 1 person (even self-review after 24h).
   <!-- cs: Před mergem: CI zelené, code review od alespoň 1 osoby (i od sebe přes 24h). -->
 
+## Explicit Git Trigger Phrases (exceptions to prohibitions above)
+
+<!-- cs: Explicitní trigger phrases — výjimky ze zákazů výše -->
+
+When Human's message contains one of these phrases, invoke skill `commit-task`:
+<!-- cs: Pokud příkaz Humana obsahuje jednu z těchto frází, aktivuj skill commit-task. -->
+
+| Phrase (CS / EN) | Target branch | CI check |
+|---|---|---|
+| `... s commitem` / `... with commit` | `master` direct | — |
+| `... s commitem s CI` / `... with commit and CI` | `master` direct | iterative, max 3 |
+| `... s commitem do feature` / `... with feature commit` | new `feature/eNNN-tNNN-slug` | — |
+| `... s commitem do feature s CI` / `... with feature commit and CI` | new `feature/eNNN-tNNN-slug` | iterative, max 3 + squash merge |
+
+<!-- cs: Detailní postup: skill commit-task. -->
+
 ## Useful read-only commands
 
 <!-- cs: Užitečné příkazy (readonly — vždy bezpečné) -->

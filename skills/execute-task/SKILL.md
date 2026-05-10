@@ -148,6 +148,15 @@ Before signalling completion, verify:
 - [ ] `dod.md` — all checkboxes filled ✅/❌ [FT.5]
 - [ ] `report.md` — all required sections present in `<communication-language>` [FT.6]
 
+## Git Commit (optional — only when triggered)
+<!-- cs: Git commit (volitelný — jen pokud je trigger v příkazu) -->
+
+If the Human's message contains a commit trigger phrase (`s commitem`, `s commitem s CI`,
+`s commitem do feature`, `s commitem do feature s CI`), invoke skill `commit-task`
+**after** completing Steps 1–7 above.
+<!-- cs: Pokud příkaz obsahuje commit trigger phrase, aktivuj skill commit-task po dokončení kroků 1–7. -->
+
 ## Additional resources
 - [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
 - [README.project_management.md](../../../README.project_management.md)
+- [../commit-task/SKILL.md](../commit-task/SKILL.md)
