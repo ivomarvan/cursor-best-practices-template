@@ -46,10 +46,12 @@ Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `per
   <!-- cs: Popis v imperativu, anglicky (add, ne added nebo adds). -->
 - Max **72 characters** on the first line.
   <!-- cs: Max 72 znaků na prvním řádku. -->
-- Optional body separated by a blank line — explains why, not what.
-  <!-- cs: Volitelné tělo odděleno prázdným řádkem — vysvětluje proč, ne co. -->
+- Body separated by a blank line — explains why, not what.
+  <!-- cs: Tělo odděleno prázdným řádkem — vysvětluje proč, ne co. -->
 - No vague messages (`fix stuff`, `update`, `wip`).
   <!-- cs: Žádné vágní zprávy (fix stuff, update, wip). -->
+- Use names of epic and task from project progress report.
+  <!-- cs: Použij názvy epického a tasku z reportu projektového postupu. -->
 
 ## Branching (Git Flow lite)
 
