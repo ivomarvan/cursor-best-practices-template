@@ -3,16 +3,23 @@
 A shared Cursor IDE configuration library — curated `.mdc` rules and agent skills
 enforcing consistent coding standards across all your projects.
 
-**Rules** cover: general programming, Git, Docker, Python, FastAPI, Vue.js/Vite/Tailwind,
-C/C++ ESP-IDF, PostgreSQL, Qdrant, and AI-driven project management (APM).
+## Agentic Project Management (APM)
 
-**Skills** cover: Docker setup and debugging, Python dev workflow, PostgreSQL dev workflow,
-Vue.js dev workflow, Qdrant vector database workflow, and APM phases
-(project init, epic planning, task execution, epic review).
+This template is built around the idea of managing AI models like a real development team. By organizing AI development into a clearly structured process, the results go beyond mindless code generation.
 
-> New technologies and workflows are added to this template as they are needed across projects.
+The workflow is divided into distinct roles:
 
-For the AI-driven project management workflow (APM), see
+- 🧠 **Planner (Analyst/Architect)**: Handled by high-context reasoning models (e.g., Sonnet 4.6). The Planner analyzes requirements, breaks them down into Epics and Tasks, prepares precise specifications, sets boundaries (Context Bundles), and defines the Definition of Done.
+- 💻 **Coder (Developer)**: Handled by faster, cost-effective models (e.g., Composer 2). The Coder takes the Planner's specifications, implements the code, writes tests, and checks off the DoD requirements.
+- 👤 **Human (Tech Lead)**: Has the final say. Conducts code reviews, makes strategic decisions, and ensures no destructive operations happen without explicit approval.
+
+Output quality is enforced by strict repository rules:
+- **Strict Boundaries**: Clean Code, SOLID principles, and intent-focused comments.
+- **Automated Quality**: Mandatory linting and formatting (Ruff, ESLint) and strict type checking (Mypy, vue-tsc).
+- **Test-Driven**: Local testing backed by a CI pipeline.
+- **Versioned Reports**: For every completed task, the agent writes a detailed Markdown report detailing files read, changes made, and regression test results, ensuring absolute transparency.
+
+For the full APM workflow documentation, see
 [README.project_management.md](README.project_management.md).
 
 ---

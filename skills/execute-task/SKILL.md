@@ -79,6 +79,16 @@ Open `dod.md` and mark each criterion:
 
 Every criterion must be addressed. No silent skips.
 
+**DoD integrity rule — mark `✅` only after verifying the artifact exists:**
+<!-- cs: Pravidlo integrity DoD — označ ✅ pouze poté, co ověříš, že artefakt existuje. -->
+- File referenced → file is on disk
+- Test referenced → test actually passes
+- Endpoint referenced → endpoint actually responds
+- Report referenced → `report.md` is written
+
+❌ Pre-emptively marking `✅` for unfinished work is a DoD integrity violation.
+<!-- cs: Předčasné označení ✅ pro nedokončenou práci je porušení integrity DoD. -->
+
 ### Step 6 — Write Task Report [FT.6]
 <!-- cs: Krok 6 — Napsat Task Report [FT.6] -->
 
@@ -113,7 +123,9 @@ Stručný popis implementace (2–5 vět).
 
 ## Použité metody a rozhodnutí
 - Popis klíčových architektonických rozhodnutí a důvod.
-- Pokud bylo nutné odchýlit se od spec.md, vysvětlit proč.
+
+## Odchylky od spec.md
+Pokud žádné: `—`. Jinak pro každou odchylku: co, proč, dopad.
 
 ## Reference do kódu
 - `src/db/models.py:15-42` — definice datových modelů
@@ -136,7 +148,9 @@ Before signalling completion, verify:
 - [ ] All new tests pass
 - [ ] Full test suite passes (no regressions)
 - [ ] `dod.md` fully filled (no blank checkboxes)
-- [ ] `report.md` written with all required sections
+- [ ] Every `✅` in `dod.md` that references a file/test/endpoint → artifact actually exists
+- [ ] Every deviation from `spec.md` → documented in `report.md § Odchylky`
+- [ ] `report.md` written with **all** required sections (including `Odchylky od spec.md`)
 - [ ] No `TODO`/`FIXME` left in committed code
 
 ## Output Checklist

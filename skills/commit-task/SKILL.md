@@ -15,6 +15,23 @@ description: >-
 # Skill: Git Commit Workflow
 <!-- cs: Skill: Git commit workflow -->
 
+## Prerequisites
+<!-- cs: Předpoklady -->
+
+- `git` configured: `user.name` and `user.email` set.
+- `gh` CLI installed and authenticated:
+  ```bash
+  gh --version          # must be present
+  gh auth status        # must show: Logged in to github.com
+  ```
+  Install: <https://cli.github.com/> · Auth: `gh auth login`
+- Push access to the repository (for Variants A–D).
+- **CI/CD note**: on GitHub Actions runners `gh` is pre-installed and auto-authenticated
+  via `GITHUB_TOKEN` — no manual setup needed.
+
+<!-- cs: gh CLI musí být nainstalováno a přihlášeno. Na GitHub Actions runnerech je gh předinstalováno
+     a přihlášeno automaticky přes GITHUB_TOKEN. Lokálně: gh auth login. -->
+
 ## Trigger Detection
 <!-- cs: Detekce triggeru -->
 
