@@ -201,6 +201,9 @@ except httpx.TimeoutException as exc:
   <!-- cs: Sdílený connection pool — nevytvářej nové spojení v každé funkci. -->
 - `asyncio.gather()` for parallel I/O operations.
   <!-- cs: asyncio.gather() pro paralelní I/O operace. -->
+- **Celery tasks are synchronous** (`def`, not `async def`). Call async code from a task with
+  `asyncio.run(_async_impl(...))`. See `18-celery.mdc` for the full pattern.
+  <!-- cs: Celery tasky jsou synchronní (def, ne async def). Async kód volej přes asyncio.run(). Viz 18-celery.mdc. -->
 
 ## Testing
 
