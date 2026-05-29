@@ -86,12 +86,23 @@ Rules:
 - If changes span multiple concerns, list them in the body.
 - Never use vague descriptions (`fix stuff`, `update`, `wip`).
 
+**No Cursor attribution in commit messages** (Human policy):
+- Do **not** append `Co-authored-by: Cursor <cursoragent@cursor.com>`, `Made-with: Cursor`,
+  or any similar AI/Cursor trailer to the subject or body.
+- Do **not** use `git commit --trailer=…` or any flag that injects attribution.
+- The commit message must contain **only** what you write in step 4 — nothing else.
+
 <!-- cs:
 Pravidla:
 - Odvoďte type a scope z diff a kontextu nedávné konverzace.
 - Použijte jeden typ, který nejlépe vystihuje dominantní změnu.
 - Pokud změny zahrnují více témat, vypište je v těle.
 - Nikdy nepoužívejte vágní popis (fix stuff, update, wip).
+
+Bez Cursor attribution v commit message (Human policy):
+- NEPŘIDÁVEJTE Co-authored-by: Cursor, Made-with: Cursor ani podobné trailery.
+- NEPOUŽÍVEJTE git commit --trailer=… ani jiné flagy pro attribution.
+- Commit message obsahuje POUZE text ze step 4 — nic navíc.
 -->
 
 ### Step 5 — Commit and push
@@ -106,10 +117,35 @@ EOF
 git push origin master
 ```
 
+**Verify commit message (no attribution):** Cursor may inject attribution at runtime even
+when the agent omits it. After `git commit`, run:
+
+```bash
+git log -1 --format=%B
+```
+
+If the output contains `Co-authored-by: Cursor`, `Made-with: Cursor`, or
+`cursoragent@cursor.com`, **amend** the commit to remove those lines, then push:
+
+```bash
+git commit --amend -m "$(cat <<'EOF'
+<same message from step 4 — no attribution lines>
+EOF
+)"
+```
+
+Re-check with `git log -1 --format=%B` before `git push`. Do not push until the message
+is clean.
+
 **Security note:** This is an explicit exception to the `02-git.mdc` prohibition on
 direct master pushes. It is safe here because CI checks passed in step 1.
 
 <!-- cs:
+Ověření commit message (bez attribution): Cursor může trailer přidat za běhu.
+Po git commit spusť git log -1 --format=%B. Pokud obsahuje Co-authored-by: Cursor,
+Made-with: Cursor nebo cursoragent@cursor.com, amendněte commit (stejný text ze step 4,
+bez attribution řádků), znovu ověřte, teprve pak push.
+
 Bezpečnostní poznámka: Toto je explicitní výjimka ze zákazu přímého push na master
 v 02-git.mdc. Je to bezpečné, protože CI kontroly prošly v kroku 1.
 -->
