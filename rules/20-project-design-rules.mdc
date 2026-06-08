@@ -1,0 +1,30 @@
+---
+description: >-
+  Project-specific design rules lookup. If DESIGN_RULES.md exists at the
+  project root, its contents are binding design invariants for this project.
+  Always read DESIGN_RULES.md before starting any coding task.
+alwaysApply: true
+---
+
+# Project-Specific Design Rules
+
+<!-- cs: Projektově specifická pravidla návrhu -->
+
+## Binding Project Conventions
+
+<!-- cs: Závazné projektové konvence -->
+
+If `DESIGN_RULES.md` exists at the **project root**, its contents are
+**binding design invariants** that take precedence over general rules.
+<!-- cs: Pokud DESIGN_RULES.md existuje v kořeni projektu, jeho obsah jsou závazná
+     pravidla návrhu, která mají přednost před obecnými pravidly. -->
+
+**MANDATORY**: Read `DESIGN_RULES.md` **before starting any coding task** in a
+project where this file is present.
+<!-- cs: POVINNÉ: Přečti DESIGN_RULES.md před zahájením jakéhokoliv coding tasku v projektu,
+     kde tento soubor existuje. -->
+
+The file is typically a symlink to the authoritative English source in `docs/architecture/`.
+The Czech version (for human review) lives alongside it as `*-design-rules.cs.md`.
+<!-- cs: Soubor je typicky symlink na autoritativní anglický zdroj v docs/architecture/.
+     Česká verze (pro review) leží vedle jako *-design-rules.cs.md. -->
