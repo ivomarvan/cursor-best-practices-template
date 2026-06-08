@@ -24,7 +24,4 @@ project where this file is present.
 <!-- cs: POVINNÉ: Přečti DESIGN_RULES.md před zahájením jakéhokoliv coding tasku v projektu,
      kde tento soubor existuje. -->
 
-The file is typically a symlink to the authoritative English source in `docs/architecture/`.
-The Czech version (for human review) lives alongside it as `*-design-rules.cs.md`.
-<!-- cs: Soubor je typicky symlink na autoritativní anglický zdroj v docs/architecture/.
-     Česká verze (pro review) leží vedle jako *-design-rules.cs.md. -->
+<!-- implementation note: symlink in project root → docs/architecture/*-design-rules.en.md; -->
