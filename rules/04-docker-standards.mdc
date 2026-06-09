@@ -96,6 +96,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   <!-- cs: Restart policy pro produkční služby: restart: unless-stopped. -->
 - Named volumes for persistent data; bind mounts only for development hot-reload.
   <!-- cs: Named volumes pro persistentní data; bind mount jen pro development hot-reload. -->
+- **npm/pip package added → image must be rebuilt.** Bind mounts only cover `src/`.
+  Run `docker compose build <service>` after every `package.json` / `requirements.txt` change.
+  <!-- cs: Přidání npm/pip balíčku vyžaduje rebuild image. Bind mounty pokrývají jen src/. Spusť docker compose build <service> po každé změně package.json / requirements.txt. -->
 
 ```yaml
 services:

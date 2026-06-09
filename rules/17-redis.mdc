@@ -1,0 +1,173 @@
+---
+description: >-
+  Redis usage standards — async connection pool, key naming, TTL policy, data type
+  selection, JSON serialization, error handling, fakeredis for testing, Docker setup.
+  Activated for Redis client, cache, task, and worker files.
+globs: "**/redis_client.py, **/cache.py, **/cache_*.py, **/*_cache.py, **/tasks.py, **/worker.py, **/celery*.py, **/celery_app.py"
+alwaysApply: false
+---
+
+# Redis — Usage Standards
+
+<!-- cs: Standardy pro použití Redis — připojení, pojmenování klíčů, TTL, typy, testování -->
+
+## Connection Pool
+
+<!-- cs: Connection pool -->
+
+Use `redis.asyncio.Redis` with a shared pool. Never create per-request connections.
+<!-- cs: Sdílený pool přes redis.asyncio.Redis. Nikdy nevytvářej nové spojení na každý request. -->
+
+```python
+# ✅ Singleton — create once in FastAPI lifespan, inject via dependency
+import redis.asyncio as aioredis
+
+redis_pool: aioredis.Redis | None = None
+
+async def get_redis() -> aioredis.Redis:
+    """FastAPI dependency: returns the shared Redis client."""
+    assert redis_pool is not None, "Redis pool not initialised"
+    return redis_pool
+
+# FastAPI lifespan:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    global redis_pool
+    redis_pool = aioredis.from_url(
+        settings.redis_url,
+        max_connections=20,
+        decode_responses=True,   # always decode bytes → str
+        socket_timeout=5.0,
+        retry_on_timeout=True,
+    )
+    yield
+    await redis_pool.aclose()
+
+# ❌ Never — new connection per call
+async def get_value(key: str) -> str | None:
+    r = aioredis.from_url(settings.redis_url)  # leaks connections
+    return await r.get(key)
+```
+
+## Key Naming
+
+<!-- cs: Pojmenování klíčů -->
+
+Format: `{project}:{domain}:{entity}:{id}`
+<!-- cs: Formát: {projekt}:{doména}:{entita}:{id} -->
+
+```
+cbt:translation:cache:abc123:cs-CZ   # cached translation (hash:locale)
+cbt:translation:job:42               # job status for orig_id=42
+cbt:i18n:locale:cs-CZ               # locale config
+cbt:lock:translate:42               # distributed lock
+```
+
+- Always include project prefix (`cbt:`) to prevent key collisions in shared Redis.
+  <!-- cs: Vždy prefix projektu (cbt:) proti kolizím v sdíleném Redis. -->
+- Only lowercase, digits, `:`, and `-`. No spaces or uppercase.
+  <!-- cs: Pouze malá písmena, číslice, : a -. Žádné mezery ani velká písmena. -->
+
+## TTL Policy
+
+<!-- cs: Politika TTL -->
+
+**Every transient key must have a TTL.** Missing TTL = memory leak.
+<!-- cs: Každý přechodný klíč musí mít TTL. Chybějící TTL = memory leak. -->
+
+```python
+# ✅ Set TTL atomically at write time
+await redis.setex(key, 3600, value)      # or:
+await redis.set(key, value, ex=3600)
+
+# ❌ Never for transient data
+await redis.set(key, value)              # no TTL — leaks memory
+```
+
+Permanent keys (e.g., supported-locale list): TTL-free only if explicitly justified in a comment.
+<!-- cs: Permanentní klíče (např. seznam locales): bez TTL pouze s explicitním komentářem proč. -->
+
+## Data Types
+
+<!-- cs: Datové typy -->
+
+| Type | Use for |
+|---|---|
+| **String** | Cache values, counters, distributed locks (`SET NX`) |
+| **Hash** | Object fields where partial update is needed |
+| **List** | FIFO/LIFO queues (Celery uses internally) |
+| **Set** | Deduplication, membership test |
+| **Sorted Set** | Priority queues, scored leaderboards |
+| **Stream** | Append-only event log |
+
+## Serialization
+
+<!-- cs: Serializace -->
+
+```python
+# ✅ JSON — human-readable, safe across Python versions
+await redis.set(key, json.dumps(data), ex=ttl)
+raw = await redis.get(key)
+data = json.loads(raw) if raw is not None else None
+
+# ❌ Never pickle — security risk with untrusted Redis data; breaks across versions
+await redis.set(key, pickle.dumps(obj))
+```
+
+## Error Handling
+
+<!-- cs: Zpracování chyb -->
+
+Never let a Redis outage crash the application — always provide a graceful fallback.
+<!-- cs: Redis výpadek nesmí shodit aplikaci — vždy graceful fallback. -->
+
+```python
+from redis.exceptions import ConnectionError, TimeoutError
+
+async def get_cached(key: str) -> str | None:
+    try:
+        return await redis.get(key)
+    except (ConnectionError, TimeoutError) as exc:
+        logger.warning("Redis unavailable: key=%s error=%s", key, exc)
+        return None  # caller falls back to DB or recomputes
+```
+
+## Testing
+
+<!-- cs: Testování -->
+
+Use `fakeredis` for unit tests. Never connect to a real Redis in unit tests.
+<!-- cs: fakeredis pro unit testy. Nikdy skutečný Redis v unit testech. -->
+
+```python
+import fakeredis.aioredis
+import pytest
+
+@pytest.fixture
+def redis_client() -> fakeredis.aioredis.FakeRedis:
+    return fakeredis.aioredis.FakeRedis(decode_responses=True)
+```
+
+## Docker
+
+<!-- cs: Docker -->
+
+```yaml
+# docker-compose.yml
+redis:
+  image: redis:7-alpine
+  ports: ["6379:6379"]
+  command: >
+    redis-server
+    --maxmemory 256mb
+    --maxmemory-policy allkeys-lru
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 10s
+    timeout: 5s
+    retries: 3
+```
+
+`allkeys-lru`: evicts LRU keys when memory is full — required when Redis is used as a cache.
+Omit only when Redis is used exclusively as a Celery broker with no caching.
+<!-- cs: allkeys-lru: evikce LRU klíčů při plné paměti — povinné pro cache.
+     Vynech jen pokud Redis slouží výhradně jako Celery broker bez cache. -->
