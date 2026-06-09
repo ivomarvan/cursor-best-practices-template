@@ -3,6 +3,8 @@
 A shared Cursor IDE configuration library — curated `.mdc` rules and agent skills
 enforcing consistent coding standards across all your projects.
 
+![](img/cursor-best-practices-template.jpg)
+
 ## Agentic Project Management (APM)
 
 This template is built around the idea of managing AI models like a real development team. By organizing AI development into a clearly structured process, the results go beyond mindless code generation.
