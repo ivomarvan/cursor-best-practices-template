@@ -52,6 +52,8 @@ Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `per
   <!-- cs: Žádné vágní zprávy (fix stuff, update, wip). -->
 - Use names of epic and task from project progress report.
   <!-- cs: Použij názvy epického a tasku z reportu projektového postupu. -->
+- **No Cursor attribution** — `.cursor/hooks/git/commit-msg` strips it automatically; after clone: `git config --local core.hooksPath .cursor/hooks/git`.
+  <!-- cs: Hook commit-msg odstraňuje Cursor attribution trailer; po klonování aktivuj přes git config. -->
 
 ## Branching (Git Flow lite)
 

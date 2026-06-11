@@ -1,0 +1,19 @@
+#!/bin/bash
+# commit-msg git hook — strip Cursor auto-attribution from commit messages.
+# Git passes the commit message file path as $1.
+# This hook is activated via: git config --local core.hooksPath .cursor/hooks/git
+
+msg_file="$1"
+
+# Strip Co-authored-by: Cursor trailer (injected by Cursor IDE automatically)
+grep -v "Co-authored-by: Cursor" "$msg_file" \
+    | grep -v "cursoragent@cursor.com" \
+    > "$msg_file.tmp" \
+    && mv "$msg_file.tmp" "$msg_file"
+
+# Remove trailing blank lines, keep final newline
+awk 'NF{found=NR} {lines[NR]=$0} END{for(i=1;i<=found;i++) print lines[i]}' \
+    "$msg_file" > "$msg_file.tmp" \
+    && mv "$msg_file.tmp" "$msg_file"
+
+exit 0
