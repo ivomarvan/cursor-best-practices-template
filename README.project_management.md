@@ -16,13 +16,16 @@ Human provides brief
 Planner formalizes → spec.md + roadmap.md  [Human approves]
     ↓
 For each Epic:
-    Planner decomposes → epic plan + task specs  [Human approves]
+    Planner decomposes → epic plan + task specs  [Definition of Ready gate] [Human approves]
     ↓
     For each Task:
-        Coder implements → tests → DoD checklist → report  [Human reviews]
+        Coder implements → tests → DoD checklist → report
+        Reviewer (independent) → review.md (APPROVE / REQUEST CHANGES)
+            ↳ loop with Coder, max 3 rounds
+        [Human reviews]
     ↓
     Coder writes Epic Report
-    Planner + Human review Roadmap validity
+    Planner + Human review Roadmap validity (+ ADR / spec reconciliation)
     ↓
 Project complete
 ```
@@ -31,11 +34,14 @@ Project complete
 
 ---
 
-## The Two Actors
+## The Actors
+
+Model per role is defined centrally in `rules/00-model-policy.mdc` (change it in one place).
 
 ### Planner
 
-Use an expensive, capable model (e.g. claude-opus-4-7 or similar).
+Act in the **Planner role** — a strong-reasoning model assigned per `rules/00-model-policy.mdc`
+(the Human assigns it, or the agent asks before planning).
 
 The Planner never writes production code. Its job is:
 - Understanding the project through discussion with Human
@@ -50,8 +56,9 @@ If the Task Specification is vague or incomplete, the Coder will fail.
 
 ### Coder
 
-Use a cheaper model appropriate to the task complexity (default: Composer-2).
-The Planner recommends a model for each Task in the Epic Plan.
+Act in the **Coder role** — a fast / cost-effective model assigned per
+`rules/00-model-policy.mdc`. The Planner flags Tasks that warrant a stronger model
+(`Complexity: high`); the Human decides what to assign.
 
 The Coder:
 - Reads `spec.md` and `dod.md` before writing a single line of code
@@ -63,6 +70,26 @@ The Coder:
 
 If the spec is ambiguous or contradictory, the Coder stops and reports to Human.
 The Coder never modifies files listed as "Do not modify" in the Context Bundle.
+
+### Reviewer
+
+Act in the **Reviewer role** — a strong-reasoning model assigned per
+`rules/00-model-policy.mdc`. The Reviewer is a **different agent/model than the Coder**: an
+author should never grade their own work.
+
+The Reviewer:
+- Reviews against ground truth — the real `git diff`, `spec.md`, `dod.md`, and a test run
+  it executes itself — not the Coder's narrative in `report.md`
+- Verifies **every** `✅` in `dod.md` against an actual artifact (file/test/endpoint)
+- Hunts scope creep, files touched against the Context Bundle, weak/placeholder tests,
+  missing edge/error cases, quality-gate violations, and undisclosed deviations
+- Writes `review.md` with a verdict (**APPROVE** / **REQUEST CHANGES**) and
+  severity-tagged findings (blocker / major / minor)
+- Never edits production code — the Coder fixes findings in a bounded loop (max 3 rounds);
+  if it exceeds the limit, the Reviewer escalates to the Human
+
+This is the **evaluator–optimizer** pattern: an independent critic between the author and
+the Human. It directly addresses the LLM tendency to over-rate its own output.
 
 ---
 
@@ -112,7 +139,13 @@ The Context Bundle in each Task Specification is critical. It tells the Coder:
 - Which files are off-limits (owned by infrastructure, another Task, etc.)
 - What interfaces prior Tasks have already implemented
 
-**F0.5 gate:** Human reviews the Epic Plan before Coder begins any Task.
+**Definition of Ready (DoR) gate:** before any Task is handed to a Coder, its `spec.md`
+must pass the DoR checklist (goal measurable, Outputs concrete, Context Bundle complete,
+DoD verifiable, tests named, Coder role resolved per `rules/00-model-policy.mdc`). The DoR is
+the counterpart of the DoD and is checked at the FE.2 Human review. A vague spec guarantees a
+failed Task — fix it first.
+
+**FE.2 gate:** Human reviews the Epic Plan before Coder begins any Task.
 
 ### Phase T — Task Execution
 
@@ -141,6 +174,27 @@ or skipped. If fixing a regression requires changing scope, Human decides.
 4. Code references (file paths and line ranges)
 5. Regression check result
 6. Definition of Done summary
+
+**ADR bridge:** if a Task makes a decision that affects structure, dependencies, interfaces,
+or other tasks, the Coder records it as an ADR in `doc/architecture/decisions/` and links it
+from `report.md`. This keeps architectural knowledge out of buried task reports.
+
+### Phase R — Independent Review
+
+**Steps FR.1–FR.3** | Actor: Reviewer (≠ Coder)
+
+After the Coder writes `report.md`, the Task goes to an **independent Reviewer** before the
+Human, not straight to Human review.
+
+| Step | Action |
+|------|--------|
+| FR.1 | Reviewer gathers ground truth: real `git diff`, `spec.md`, `dod.md`; re-runs tests |
+| FR.2 | Reviewer verifies every `✅`, hunts scope creep / weak tests / undisclosed deviations |
+| FR.3 | Reviewer writes `review.md`: verdict (APPROVE / REQUEST CHANGES) + findings |
+
+**On REQUEST CHANGES:** the Coder fixes each finding, updates `report.md`, and resubmits.
+The loop is bounded to **3 rounds**; if still failing, the Reviewer escalates to the Human.
+Only an **APPROVE** verdict advances the Task to Human review (FT.7).
 
 ### Phase ER — Epic Closure
 
@@ -178,11 +232,13 @@ doc/project-progress/
 │   ├── task-010-create-database/
 │   │   ├── spec.md                  # Task Specification + Context Bundle (Planner)
 │   │   ├── dod.md                   # Definition of Done checklist (Planner → Coder fills)
-│   │   └── report.md                # Task Report (Coder)
+│   │   ├── report.md                # Task Report (Coder)
+│   │   └── review.md                # Task Review (Reviewer) — APPROVE / REQUEST CHANGES
 │   └── task-020-configure-docker/
 │       ├── spec.md
 │       ├── dod.md
-│       └── report.md
+│       ├── report.md
+│       └── review.md
 └── epic-020-core-api/
     └── ...
 ```
@@ -216,7 +272,7 @@ apm_category: task-spec         # document type (see table below)
 apm_ref: E010.T020              # reference: PROJECT | E010 | E010.T020
 apm_level: task                 # project | epic | task
 created_by: Planner             # Planner | Coder | Human
-model: claude-opus-4-7          # AI model used; omit if Human
+model: <model-id>               # actual model used (assigned per rules/00-model-policy.mdc); omit if Human
 intended_for: Coder             # Planner | Coder | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
@@ -232,19 +288,21 @@ updated_at: 2026-05-08
 | `task-spec` | `task-NNN/spec.md` |
 | `dod` | `task-NNN/dod.md` |
 | `task-report` | `task-NNN/report.md` |
+| `task-review` | `task-NNN/review.md` |
 | `epic-report` | `epic-NNN/report.md` |
 
 ---
 
 ## Cursor Skills
 
-Four Skills guide AI agents through each APM phase:
+Five Skills guide AI agents through each APM phase:
 
 | Skill | Used by | Phase |
 |-------|---------|-------|
 | `project-init` | Planner | Phase 0 — brief → spec + roadmap |
-| `plan-epic` | Planner | Phase E — roadmap → epic plan + task specs |
+| `plan-epic` | Planner | Phase E — roadmap → epic plan + task specs (+ DoR gate) |
 | `execute-task` | Coder | Phase T — spec → implementation + report |
+| `review-task` | Reviewer | Phase R — diff vs spec/dod → `review.md` verdict |
 | `review-epic` | Coder + Planner | Phase ER — epic report + roadmap review |
 
 To invoke a skill, use `@skill-name` in Cursor chat, or reference it directly:
@@ -283,6 +341,8 @@ Quick reference:
 | Context Bundle | Kontextový balík | section in `spec.md` |
 | Definition of Done | Kritéria splnění | `task-NNN/dod.md` |
 | Task Report | Report tasku | `task-NNN/report.md` |
+| Task Review | Revize tasku (Reviewer) | `task-NNN/review.md` |
+| Definition of Ready | Kritéria připravenosti | DoR gate at FE.2 |
 | Epic Report | Report epiky | `epic-NNN/report.md` |
 | Human Review | Revize člověkem | steps FT.7, FE.2 |
 
@@ -296,9 +356,10 @@ Quick reference:
 [ ] Invoke skill: @project-init
 [ ] Deliver Project Brief to Planner
 [ ] Iterate with Planner until spec.md and roadmap.md are approved [F0.5]
-[ ] For each Epic: invoke @plan-epic, review plan.md, approve [FE.2]
-[ ] For each Task: invoke @execute-task, review report.md [FT.7]
-[ ] After each Epic: invoke @review-epic, review roadmap validity [FER.2]
+[ ] For each Epic: invoke @plan-epic, check DoR per Task, review plan.md, approve [FE.2]
+[ ] For each Task: invoke @execute-task (Coder), then @review-task (Reviewer, different model)
+[ ] Review the Reviewer's review.md, then approve the Task as Human [FT.7]
+[ ] After each Epic: invoke @review-epic, review roadmap + ADR/spec validity [FER.2]
 ```
 
 ---

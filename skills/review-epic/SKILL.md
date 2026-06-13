@@ -13,12 +13,14 @@ description: >-
 ## Prerequisites
 <!-- cs: Předpoklady -->
 
-- All Tasks of the current Epic are completed and Human-approved [FT.7].
-- All `task-NNN/report.md` files exist.
+- All Tasks of the current Epic are completed, **Reviewer-approved** (`review.md` =
+  APPROVE), and Human-approved [Phase R, FT.7].
+- All `task-NNN/report.md` and `task-NNN/review.md` files exist.
 - You switch roles: **Coder** writes Epic Report → **Planner** leads Roadmap review.
 
-<!-- cs: Všechny tasky epiky jsou dokončeny a schváleny člověkem.
-     Všechny task-NNN/report.md existují. Coder píše Epic Report, pak Planner vede roadmap review. -->
+<!-- cs: Všechny tasky epiky jsou dokončeny, schváleny Reviewerem (review.md = APPROVE)
+     i člověkem. Všechny task-NNN/report.md a review.md existují.
+     Coder píše Epic Report, pak Planner vede roadmap review. -->
 
 ## Part A — Epic Report (Coder) [FER.1]
 <!-- cs: Část A — Epic Report (Coder) [FER.1] -->
@@ -95,6 +97,14 @@ Ask: given what we learned in this Epic, are the upcoming Epics still correct?
 - Did new dependencies or risks emerge?
 - Is any planned Epic now unnecessary? Is a new Epic needed?
 
+**ADR + spec reconciliation:** verify that any architectural decision made during the Epic
+is captured as an ADR in `doc/architecture/decisions/` and is consistent with `spec.md`.
+If implementation invalidated part of the spec, propose a spec update to the Human (the
+spec is the single source of truth and must not silently rot).
+<!-- cs: ADR + sladění specu: ověř, že architektonická rozhodnutí z epiky jsou zachycena
+     jako ADR a jsou v souladu se spec.md. Pokud implementace zneplatní část specu,
+     navrhni Humanovi jeho aktualizaci (spec je single source of truth, nesmí tiše zastarat). -->
+
 ### Step B3 — Present assessment to Human
 <!-- cs: Krok B3 — Prezentovat hodnocení člověku -->
 
@@ -121,7 +131,9 @@ Inserting between E010 and E020: use `E015-name`.
 
 Human should verify before approving Epic closure:
 - [ ] All Task `dod.md` files are fully ✅?
+- [ ] All Task `review.md` verdicts are APPROVE?
 - [ ] Epic Report accurately reflects what was built?
+- [ ] Architectural decisions captured as ADRs and consistent with `spec.md`?
 - [ ] Roadmap is still valid or updated with justified changes?
 - [ ] No regressions in full test suite?
 

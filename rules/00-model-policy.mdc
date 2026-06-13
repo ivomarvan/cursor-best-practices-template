@@ -1,0 +1,108 @@
+---
+description: >-
+  Single source of truth for assigning an AI model to each APM role (Planner, Coder,
+  Reviewer). Roles are NOT bound to fixed models — the Human assigns them, or the agent asks.
+alwaysApply: true
+---
+
+# Model Policy
+<!-- cs: Politika výběru modelů -->
+
+<!-- Mirrors 00-communication-language.mdc: the active setting lives in a table in THIS file.
+     Change the table (or use /role-assign) to re-map roles to models. -->
+<!-- cs: Stejný princip jako 00-communication-language.mdc: aktivní nastavení žije v tabulce
+     v TOMTO souboru. Změnou tabulky (nebo příkazem /role-assign) přemapuješ role na modely. -->
+
+## Principle — roles are not bound to fixed models
+<!-- cs: Princip — role nejsou vázané na konkrétní modely -->
+
+Models and their prices evolve. This policy therefore defines **roles and their capability
+intent**, never hardcoded model names. A concrete model is chosen by the **Human** — either
+assigned explicitly via `/role-assign`, or the agent **asks** before acting in a role that
+has no assignment.
+<!-- cs: Modely i ceny se vyvíjejí. Politika proto definuje role a jejich zamýšlenou schopnost,
+     nikdy natvrdo zapsané modely. Konkrétní model volí Human — buď přiřadí příkazem
+     /role-assign, nebo se agent zeptá, než začne pracovat v roli bez přiřazení. -->
+
+The economic core of APM stays the same: **strong model for thinking (Planner, Reviewer),
+cheaper model for typing (Coder).**
+<!-- cs: Ekonomické jádro APM zůstává: silný model na přemýšlení (Planner, Reviewer),
+     levnější na psaní (Coder). -->
+
+## Roles and capability intent
+<!-- cs: Role a zamýšlená schopnost -->
+
+| Role | Used in | Capability intent |
+|------|---------|-------------------|
+| **Planner** | Phase 0, E, ER | strong reasoning — planning, decomposition, context |
+| **Reviewer** | Phase R | strong reasoning, independent of the Coder |
+| **Coder** | Phase T | fast / cost-effective; a stronger model for complex Tasks |
+
+<!-- cs: Planner — silné uvažování (plánování, dekompozice, kontext).
+     Reviewer — silné uvažování, nezávislé na Coderovi.
+     Coder — rychlý/levný; pro složité tasky silnější model. -->
+
+## Active Role Assignments
+<!-- cs: Aktivní přiřazení rolí -->
+
+> Edit via `/role-assign`, or by hand. `unassigned` means the agent **must ask** the Human
+> before acting in that role.
+<!-- cs: Uprav přes /role-assign nebo ručně. `unassigned` = agent se MUSÍ zeptat Humana,
+     než začne v té roli pracovat. -->
+
+| Role | Assigned model | Updated |
+|------|----------------|---------|
+| Planner | `unassigned` | — |
+| Coder | `unassigned` | — |
+| Reviewer | `unassigned` | — |
+
+## Resolution rule (MUST)
+<!-- cs: Pravidlo rozlišení (POVINNÉ) -->
+
+When an APM skill starts work in a role:
+<!-- cs: Když APM skill začne pracovat v roli: -->
+
+1. **Assigned** → state the model to use and remind the Human to select it in Cursor's model
+   selector before continuing.
+   <!-- cs: Přiřazeno → uveď model k použití a připomeň Humanovi vybrat ho v selektoru modelu. -->
+2. **`unassigned`** → **ASK** the Human which model to use for this role before doing any
+   work. Offer to persist the answer via `/role-assign`.
+   <!-- cs: `unassigned` → ZEPTEJ SE Humana, který model pro roli použít, než cokoli uděláš.
+        Nabídni uložení odpovědi přes /role-assign. -->
+
+Never silently assume a model. Never invent model names outside this table.
+<!-- cs: Nikdy tiše nepředpokládej model. Nikdy nevymýšlej názvy modelů mimo tuto tabulku. -->
+
+## Complex Tasks
+<!-- cs: Složité tasky -->
+
+Each role maps to one model. If a Task is unusually complex, the Planner flags it
+(`Complexity: high`) and recommends the Human assign a stronger model to the **Coder** role
+for that Task. The choice is the Human's.
+<!-- cs: Každá role = jeden model. U neobvykle složitého tasku to Planner označí
+     (Complexity: high) a doporučí Humanovi přiřadit Coderovi silnější model. Rozhoduje Human. -->
+
+## Audit trail
+<!-- cs: Auditní stopa -->
+
+The `model:` field in APM document front matter records the **actual** model that produced
+the document. Keep it concrete (it may be a dated snapshot) — that is history, not policy.
+<!-- cs: Pole model: v APM front matteru zaznamenává skutečně použitý model. Drž ho konkrétní
+     (může to být datovaný snapshot) — je to historie, ne politika. -->
+
+## Cursor limitation
+<!-- cs: Omezení Cursoru -->
+
+Cursor does **not** auto-switch the model per skill or role. An assignment is documented
+intent + a reminder for the Human. For true per-role automation, drive agents via the
+Cursor SDK or separate Cloud Agents.
+<!-- cs: Cursor sám nepřepíná model podle skillu ani role. Přiřazení je dokumentovaný záměr
+     + připomínka Humanovi. Pro skutečnou automatizaci per-role použij Cursor SDK nebo Cloud Agents. -->
+
+## Commands
+<!-- cs: Příkazy -->
+
+- `/role-assign` — assign a model to a role (asks if role/model not given).
+  <!-- cs: /role-assign — přiřaď model roli (zeptá se, když role/model chybí). -->
+- `/role-show` — show the current Active Role Assignments.
+  <!-- cs: /role-show — zobraz aktuální přiřazení rolí. -->

@@ -13,26 +13,36 @@ alwaysApply: false
 ## Actors
 <!-- cs: Aktéři -->
 
-| Actor | Role | Model |
+| Actor | Role | Model (assigned per `00-model-policy.mdc`) |
 |-------|------|-------|
-| **Planner** | Planning, decomposition, context preparation | expensive/complex |
-| **Coder** | Implementation, tests, reports | cheaper; per Task Specification |
+| **Planner** | Planning, decomposition, context preparation | strong reasoning |
+| **Coder** | Implementation, tests, reports | fast / cost-effective; per Task Specification |
+| **Reviewer** | Independent adversarial review of a Task before Human | strong reasoning |
 | **Human** | Final authority, reviewer, decision-maker | — |
 
 <!-- cs: Planner — plánování, dekomposice, příprava kontextu.
      Coder — implementace, testy, reporty.
+     Reviewer — nezávislá adversariální revize tasku před Humanem (jiný agent než Coder).
      Human — finální autorita, reviewer, rozhodování. -->
+
+The Reviewer is a **different agent/model than the Coder** (author must not grade own work).
+<!-- cs: Reviewer je jiný agent/model než Coder (autor nehodnotí vlastní práci). -->
 
 ## APM Phases
 <!-- cs: Fáze APM -->
 
 ```
 Phase 0 (Project Init):  Human → brief.md → [Planner ↔ Human] → spec.md + roadmap.md
-Phase E (Epic):          Planner → epic-NNN/plan.md  →  Human approves
+Phase E (Epic):          Planner → epic-NNN/plan.md  →  [DoR gate]  →  Human approves
 Phase T (Task):          Coder reads spec.md → implements → tests → dod.md → report.md
-                         Human reviews → approve or reject
+Phase R (Review):        Reviewer → checks diff vs spec/dod → review.md (APPROVE /
+                         REQUEST CHANGES) → loop with Coder (max 3) → then Human reviews
 Phase ER (Epic Close):   Coder → epic-NNN/report.md  →  [Planner ↔ Human] roadmap review
 ```
+
+<!-- cs: Před Phase E je DoR brána (Definition of Ready, viz níže).
+     Phase R: nezávislý Reviewer kontroluje diff proti spec/dod, píše review.md,
+     smyčka s Coderem (max 3 kola), teprve pak revize Humanem. -->
 
 ## Document Types
 <!-- cs: Typy dokumentů -->
@@ -45,12 +55,14 @@ Phase ER (Epic Close):   Coder → epic-NNN/report.md  →  [Planner ↔ Human] 
 | `epic-NNN/plan.md` | `epic-plan` | Planner | Coder, Human |
 | `epic-NNN/task-NNN/spec.md` | `task-spec` | Planner | Coder |
 | `epic-NNN/task-NNN/dod.md` | `dod` | Planner (template) → Coder (fills) | Human |
-| `epic-NNN/task-NNN/report.md` | `task-report` | Coder | Human |
+| `epic-NNN/task-NNN/report.md` | `task-report` | Coder | Reviewer, Human |
+| `epic-NNN/task-NNN/review.md` | `task-review` | Reviewer | Coder, Human |
 | `epic-NNN/report.md` | `epic-report` | Coder | Human, Planner |
 
 <!-- cs: brief — neformální zadání. spec — specifikace projektu. roadmap — seznam epik.
      epic-plan — plán epiky (dekomposice na tasky). task-spec — zadání tasku + Context Bundle.
-     dod — Definition of Done. task-report — report tasku. epic-report — report epiky. -->
+     dod — Definition of Done. task-report — report tasku. task-review — revize tasku (Reviewer).
+     epic-report — report epiky. -->
 
 ## Directory Structure
 <!-- cs: Adresářová struktura -->
@@ -67,7 +79,8 @@ doc/project-progress/
     └── task-010-name/
         ├── spec.md         # Task Specification + Context Bundle
         ├── dod.md          # Definition of Done checklist
-        └── report.md       # Task Report
+        ├── report.md       # Task Report (Coder)
+        └── review.md       # Task Review (Reviewer) — APPROVE / REQUEST CHANGES
 ```
 
 Numbering in steps of 10 — insertion: `epic-015-name/` between `epic-010` and `epic-020`.
@@ -84,9 +97,9 @@ Every APM document **must** start with this front matter:
 apm_category: task-spec         # see Document Types table above
 apm_ref: E010.T020              # E010 = epic ref; E010.T020 = task ref
 apm_level: task                 # project | epic | task
-created_by: Planner             # Planner | Coder | Human
-model: claude-opus-4-7          # model used; omit if Human
-intended_for: Coder             # Planner | Coder | Human | All
+created_by: Planner             # Planner | Coder | Reviewer | Human
+model: <model-id>               # actual model used (assigned per 00-model-policy.mdc); omit if Human
+intended_for: Coder             # Planner | Coder | Reviewer | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
 ---
@@ -102,7 +115,54 @@ updated_at: 2026-05-08
 5. **Dependencies** — which Tasks must be completed first
 6. **Test Specification** — what tests to write; happy path + edge cases
 7. **Definition of Done** — checklist (→ also written to `dod.md`)
-8. **Recommended Coder model** — default: Composer-2; complex tasks: stronger model
+8. **Recommended Coder model** — names the **Coder role**; flag `Complexity: high` if the
+   Task warrants a stronger model. Actual models are assigned per `00-model-policy.mdc`.
+
+## Definition of Ready (DoR) — Task spec quality gate
+<!-- cs: Definition of Ready (DoR) — brána kvality zadání tasku -->
+
+The Planner's output is the quality gate for everything the Coder does — a vague spec
+guarantees a failed Task. A Task may be handed to a Coder **only** when its `spec.md`
+passes this checklist (the counterpart of the Definition of Done):
+<!-- cs: Výstup Plannera je brána kvality. Vágní spec = selhaný task. Task smí dostat Coder
+     jen když jeho spec.md projde tímto checklistem (protějšek Definition of Done): -->
+
+- [ ] **Goal** is concrete and measurable (not "improve X").
+- [ ] **Outputs** name exact files/interfaces to create or change.
+- [ ] **Context Bundle** lists files to read AND files NOT to modify.
+- [ ] **Dependencies** are listed and already completed (or none).
+- [ ] **Test Specification** names happy path + ≥1 edge + ≥1 error case.
+- [ ] **Definition of Done** is verifiable (each item maps to a checkable artifact).
+- [ ] **Recommended Coder model** names the Coder role (with `Complexity: high` flagged if a
+  stronger model is warranted); models are assigned per `00-model-policy.mdc`.
+- [ ] Task is independently implementable and testable in isolation.
+
+<!-- cs: Goal měřitelný; Outputs konkrétní; Context Bundle úplný (číst i NEsahat);
+     závislosti hotové; testy pojmenované (happy/edge/error); DoD ověřitelné;
+     model z 00-model-policy.mdc; task nezávisle implementovatelný a testovatelný. -->
+
+The DoR is checked at the **FE.2 Human review** of the Epic Plan. If a Task fails DoR,
+the Planner fixes the spec before any Coder starts.
+<!-- cs: DoR se kontroluje při FE.2 (Human review plánu epiky). Když task neprojde,
+     Planner opraví spec dřív, než začne Coder. -->
+
+## Architectural decisions → ADR bridge
+<!-- cs: Architektonická rozhodnutí → most na ADR -->
+
+A significant decision recorded in a Task/Epic Report must not stay buried there. When a
+decision **affects structure, dependencies, interfaces, or cross-task constraints**,
+promote it to an ADR in `doc/architecture/decisions/ADR-NNN-title.md` (see
+`06-project-structure.mdc`), and link the ADR from the report.
+<!-- cs: Významné rozhodnutí z reportu nesmí zůstat pohřbené. Pokud ovlivňuje strukturu,
+     závislosti, rozhraní nebo omezení napříč tasky, povyš ho na ADR v
+     doc/architecture/decisions/ a z reportu na něj odkaž. -->
+
+- Coder: during a Task, if such a decision is made → create/append the ADR and reference it.
+  <!-- cs: Coder: vznikne-li takové rozhodnutí, vytvoř/doplň ADR a odkaž na něj. -->
+- Reviewer: flag any architectural decision in the diff/report that lacks an ADR.
+  <!-- cs: Reviewer: označ architektonické rozhodnutí v diffu/reportu, které nemá ADR. -->
+- Planner: at Epic close, ensure new ADRs are consistent with `spec.md`.
+  <!-- cs: Planner: při uzávěrce epiky ověř, že nové ADR jsou v souladu se spec.md. -->
 
 ## Coder — doc/ Write Permission
 <!-- cs: Coder — oprávnění k zápisu do doc/ -->

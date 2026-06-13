@@ -16,10 +16,10 @@ updated_at: YYYY-MM-DD
 
 ## Task List
 
-| Task | Name | Depends on | Coder model |
-|------|------|-----------|-------------|
-| T010 | <name> | — | Composer-2 |
-| T020 | <name> | T010 | Composer-2 |
+| Task | Name | Depends on | Coder model | Complexity |
+|------|------|-----------|-------------|------------|
+| T010 | <name> | — | Coder role | low |
+| T020 | <name> | T010 | Coder role | low |
 
 ## Task Specifications
 
@@ -54,7 +54,7 @@ updated_at: YYYY-MM-DD
 - [ ] All new tests pass
 - [ ] Full test suite passes (no regressions)
 
-**Recommended Coder model:** Composer-2
+**Recommended Coder model:** Coder role (Complexity: low) — model assigned per `rules/00-model-policy.mdc`
 
 ---
 

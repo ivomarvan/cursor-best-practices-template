@@ -69,11 +69,11 @@ Epic Plan structure:
 One paragraph — what this Epic delivers when complete.
 
 ## Task List
-| Task | Name | Depends on | Coder model |
-|------|------|-----------|-------------|
-| T010 | Create database schema | — | Composer-2 |
-| T020 | Configure Docker services | T010 | Composer-2 |
-| T030 | Write integration tests | T010, T020 | Composer-2 |
+| Task | Name | Depends on | Coder model | Complexity |
+|------|------|-----------|-------------|------------|
+| T010 | Create database schema | — | Coder role | low |
+| T020 | Configure Docker services | T010 | Coder role | low |
+| T030 | Write integration tests | T010, T020 | Coder role | medium |
 
 ## Task Specifications
 
@@ -91,7 +91,7 @@ One paragraph — what this Epic delivers when complete.
 - [ ] Migration runs without error: `alembic upgrade head`
 - [ ] All tests pass
 - [ ] No regressions in full test suite
-**Recommended Coder model:** Composer-2
+**Recommended Coder model:** Coder role (Complexity: low) — model assigned per `00-model-policy.mdc`
 
 ### T020 — Configure Docker services
 ...
@@ -146,14 +146,22 @@ updated_at: <YYYY-MM-DD>
 - [ ] Full test suite passes (no regressions)
 ```
 
-### Step 5 — Human Review [FE.2]
-<!-- cs: Krok 5 — Revize člověkem [FE.2] -->
+### Step 5 — Human Review + Definition of Ready gate [FE.2]
+<!-- cs: Krok 5 — Revize člověkem + brána Definition of Ready [FE.2] -->
+
+Before presenting, self-check **every** Task against the **Definition of Ready (DoR)**
+checklist in `07-project-management.mdc`. A vague spec guarantees a failed Task — the spec
+is the quality gate. Fix any Task that fails DoR before handing it to a Coder.
+<!-- cs: Před prezentací prověř každý task proti Definition of Ready (DoR) v
+     07-project-management.mdc. Vágní spec = selhaný task. Oprav, co neprojde DoR. -->
 
 Present `plan.md` to Human for approval.
 Key review points Human should check:
+- Each Task passes DoR (goal measurable, Context Bundle complete, DoD verifiable)?
 - Task granularity reasonable (not too large, not trivial)?
-- Context Bundle complete (Coder won't be lost without extra context)?
 - Dependencies correct?
+- Recommended Coder model names the Coder role, with `Complexity: high` flagged where a
+  stronger model is warranted (models assigned per `00-model-policy.mdc`)?
 
 Do **not** start any Task until Human approves the Epic Plan.
 
@@ -164,9 +172,11 @@ Do **not** start any Task until Human approves the Epic Plan.
 - [ ] `epic-NNN-name/task-NNN-name/spec.md` for each Task
 - [ ] `epic-NNN-name/task-NNN-name/dod.md` for each Task (blank checkboxes)
 - [ ] Dependencies between Tasks explicitly stated
-- [ ] Recommended Coder model specified per Task
+- [ ] Recommended Coder model per Task names the Coder role + Complexity (models assigned per `00-model-policy.mdc`)
+- [ ] Every Task passes the Definition of Ready checklist
 - [ ] Human approved the Epic Plan [FE.2]
 
 ## Additional resources
 - [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
+- [../../../rules/00-model-policy.mdc](../../../rules/00-model-policy.mdc)
 - [README.project_management.md](../../../README.project_management.md)

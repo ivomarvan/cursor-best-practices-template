@@ -9,10 +9,11 @@ enforcing consistent coding standards across all your projects.
 
 This template is built around the idea of managing AI models like a real development team. By organizing AI development into a clearly structured process, the results go beyond mindless code generation.
 
-The workflow is divided into distinct roles:
+The workflow is divided into distinct roles (model per role: see `rules/00-model-policy.mdc`):
 
-- 🧠 **Planner (Analyst/Architect)**: Handled by high-context reasoning models (e.g., Sonnet 4.6). The Planner analyzes requirements, breaks them down into Epics and Tasks, prepares precise specifications, sets boundaries (Context Bundles), and defines the Definition of Done.
-- 💻 **Coder (Developer)**: Handled by faster, cost-effective models (e.g., Composer 2). The Coder takes the Planner's specifications, implements the code, writes tests, and checks off the DoD requirements.
+- 🧠 **Planner (Analyst/Architect)**: Handled by high-context reasoning models. The Planner analyzes requirements, breaks them down into Epics and Tasks, prepares precise specifications, sets boundaries (Context Bundles), and defines the Definition of Done. Each Task must pass a **Definition of Ready (DoR)** gate before a Coder starts.
+- 💻 **Coder (Developer)**: Handled by faster, cost-effective models. The Coder takes the Planner's specifications, implements the code, writes tests, and checks off the DoD requirements.
+- 🔎 **Reviewer (QA/Critic)**: A **different** agent/model than the Coder (a strong-reasoning model, assigned per `rules/00-model-policy.mdc`). Independently reviews the Coder's diff against `spec.md` and `dod.md`, verifies every `✅` against real artifacts, and returns an APPROVE / REQUEST CHANGES verdict **before** the Human looks at it. This evaluator–optimizer step catches the author-grades-own-work blind spot.
 - 👤 **Human (Tech Lead)**: Has the final say. Conducts code reviews, makes strategic decisions, and ensures no destructive operations happen without explicit approval.
 
 Output quality is enforced by strict repository rules:
@@ -32,7 +33,11 @@ For the full APM workflow documentation, see
 cursor-best-practices-template/
 ├── rules/          # .mdc rule files — Cursor reads these as .cursor/rules/
 ├── skills/         # Agent skill directories — Cursor reads as .cursor/skills/
+├── commands/       # Slash commands — /push, /role-assign, /role-show
+├── hooks/          # Git + session hooks (commit-msg, session-start)
+├── hooks.json      # Cursor hook registration
 ├── doc/            # Template-level documentation and APM document templates
+│   ├── guides/             # How-to guides (e.g. agentic-engineering-resources.md)
 │   └── project-progress/   # APM templates (brief, spec, roadmap, epics, tasks)
 ├── .cursor/
 │   ├── rules  →  ../rules     # symlink — enables rules while editing this repo
@@ -51,13 +56,15 @@ cursor-best-practices-template/
 |------|-------|-----------|
 | `00-communication-language.mdc` | Communication language setting (CS/DE/EN) | always |
 | `00-meta-rules-and-skills.mdc` | How to write rules and skills | always |
+| `00-model-policy.mdc` | Role→model assignment (Planner/Coder/Reviewer): Human assigns via `/role-assign` or agent asks | always |
 | `01-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
 | `02-git.mdc` | Conventional commits, branching, `.gitignore` | always |
 | `03-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
 | `04-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
 | `05-new-technology.mdc` | Process for adding new technologies | on request |
 | `06-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
-| `07-project-management.mdc` | APM workflow, terminology, file headers | `doc/project-progress/**` |
+| `07-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
+| `08-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
 | `10-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
 | `11-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
 | `12-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
@@ -65,6 +72,9 @@ cursor-best-practices-template/
 | `14-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
 | `15-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
 | `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
+| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/*.py` |
+| `18-celery.mdc` | Celery tasks, queues, retries, worker config | `**/*.py` |
+| `20-project-design-rules.mdc` | Honor project-root `DESIGN_RULES.md` as binding invariants | always |
 
 ### Skills (`skills/`)
 
@@ -78,9 +88,25 @@ cursor-best-practices-template/
 | `qdrant-dev/` | Qdrant dev | Docker-based Qdrant collection management and testing |
 | `sqlalchemy-dev/` | SQLAlchemy dev | Scaffold SQLAlchemy + Alembic, migration workflow, troubleshooting |
 | `project-init/` | APM Phase 0 | Formalize brief → `spec.md` + `roadmap.md` |
-| `plan-epic/` | APM Phase E | Decompose Epic into Tasks with Context Bundles |
+| `plan-epic/` | APM Phase E | Decompose Epic into Tasks with Context Bundles (+ DoR gate) |
 | `execute-task/` | APM Phase T | Implement Task: code + tests + DoD + report |
+| `review-task/` | APM Phase R | Independent Reviewer: diff vs spec/dod → `review.md` verdict |
 | `review-epic/` | APM Phase ER | Write Epic Report + review Roadmap validity |
+
+### Commands (`commands/`)
+
+Slash commands invoked in Cursor chat (e.g. `/push`).
+
+| Command | Purpose |
+|---------|---------|
+| `/push` | Run the project CI mirror (`scripts/run_all_tests.sh`); if green, stage, commit (Conventional Commits), and push to `master`. Explicit exception to `02-git.mdc`. |
+| `/role-assign` | Assign a model to an APM role (Planner/Coder/Reviewer) in `rules/00-model-policy.mdc`. Asks if the role or model is not specified. |
+| `/role-show` | Show the current role→model assignments. |
+
+> **Model policy:** roles are **not** bound to fixed models (models and prices change). The
+> Human assigns a model to each role via `/role-assign`, or the agent asks before acting in an
+> unassigned role. The single source of truth is `rules/00-model-policy.mdc`. Cursor does not
+> auto-switch models per role — an assignment is documented intent plus a reminder.
 
 ---
 

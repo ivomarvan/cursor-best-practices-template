@@ -39,6 +39,11 @@ Follow all applicable project rules (language rules, docker policy, git conventi
 - Write code per spec — no scope creep beyond what `spec.md` describes.
 - If you discover the spec is ambiguous or impossible: STOP and report to Human before continuing.
 - Do not modify files listed in Context Bundle as "Do not modify".
+- **Architectural decision?** If you make a decision that affects structure, dependencies,
+  interfaces, or other tasks, create/append an ADR in `doc/architecture/decisions/` and
+  reference it from `report.md` (ADR bridge, see `07-project-management.mdc`).
+  <!-- cs: Architektonické rozhodnutí? Vytvoř/doplň ADR v doc/architecture/decisions/
+       a odkaž na něj z report.md (ADR most, viz 07-project-management.mdc). -->
 
 ### Step 3 — Write and Run Tests [FT.3]
 <!-- cs: Krok 3 — Napsat a spustit testy [FT.3] -->
@@ -153,6 +158,20 @@ Before signalling completion, verify:
 - [ ] `report.md` written with **all** required sections (including `Odchylky od spec.md`)
 - [ ] No `TODO`/`FIXME` left in committed code
 
+## Step 8 — Hand off to Reviewer [Phase R]
+<!-- cs: Krok 8 — Předání Reviewerovi [Fáze R] -->
+
+A Task is **not** done when `report.md` is written — it goes to an **independent Reviewer**
+(a different agent/model than you) before the Human. Signal completion and let the Reviewer
+run `review-task` against your `git diff`, `spec.md`, and `dod.md`.
+<!-- cs: Task není hotový napsáním report.md — jde nezávislému Reviewerovi (jiný agent/model
+     než ty) před Humanem. Reviewer spustí review-task proti tvému diffu, spec.md a dod.md. -->
+
+If the Reviewer returns **REQUEST CHANGES** in `review.md`: fix each finding, update
+`report.md`, and re-submit. Max 3 review rounds, then the Human decides.
+<!-- cs: Pokud Reviewer vrátí REQUEST CHANGES v review.md: oprav každý nález, aktualizuj
+     report.md a odevzdej znovu. Max 3 kola, pak rozhoduje Human. -->
+
 ## Output Checklist
 <!-- cs: Výstupní checklist -->
 
@@ -161,6 +180,8 @@ Before signalling completion, verify:
 - [ ] Full test suite: no regressions [FT.4]
 - [ ] `dod.md` — all checkboxes filled ✅/❌ [FT.5]
 - [ ] `report.md` — all required sections present in `<communication-language>` [FT.6]
+- [ ] Architectural decisions (if any) captured as ADRs and linked from `report.md`
+- [ ] Handed to independent Reviewer (`review-task`); `review.md` verdict APPROVE [Phase R]
 
 ## Git Commit (optional — only when triggered)
 <!-- cs: Git commit (volitelný — jen pokud je trigger v příkazu) -->
@@ -172,5 +193,7 @@ If the Human's message contains a commit trigger phrase (`s commitem`, `s commit
 
 ## Additional resources
 - [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
+- [../../../rules/00-model-policy.mdc](../../../rules/00-model-policy.mdc)
 - [README.project_management.md](../../../README.project_management.md)
+- [../review-task/SKILL.md](../review-task/SKILL.md)
 - [../commit-task/SKILL.md](../commit-task/SKILL.md)

@@ -53,4 +53,4 @@ See `dod.md` for the checklist. Summary:
 - [ ] Full test suite passes (no regressions)
 
 ## Recommended Coder Model
-Composer-2  <!-- or: claude-opus-4-7 for complex reasoning tasks -->
+Coder role  <!-- model assigned per rules/00-model-policy.mdc; flag "Complexity: high" if a stronger model is warranted -->

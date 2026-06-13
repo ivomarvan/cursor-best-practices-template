@@ -36,6 +36,26 @@ the Roadmap — if the spec is ambiguous, it stops and asks Human.
      vyplnění DoD checklistu a psaní reportů.
      Coder vždy čte spec.md a dod.md před zahájením práce. Nikdy neplánuje ani nemění roadmapu. -->
 
+### Reviewer
+**Czech:** Recenzent
+
+A strong-reasoning AI model (assigned per `rules/00-model-policy.mdc`) that is a **different
+agent than the Coder**. It performs an
+independent, adversarial review of a completed Task before the Human: it checks the real
+`git diff` against `spec.md` and `dod.md`, re-runs the tests itself, verifies every `✅`
+against an actual artifact, hunts scope creep and weak tests, and writes `review.md` with an
+APPROVE / REQUEST CHANGES verdict. The Reviewer never edits production code — the Coder fixes
+findings in a bounded loop (max 3 rounds).
+
+An author should never grade their own work; the Reviewer closes that blind spot
+(evaluator–optimizer pattern).
+
+<!-- cs: Silný AI model (úroveň Planner), jiný agent než Coder. Provádí nezávislou adversariální
+     revizi dokončeného tasku před Humanem: kontroluje skutečný git diff proti spec.md a dod.md,
+     sám spustí testy, ověří každou ✅ proti reálnému artefaktu, hledá scope creep a slabé testy,
+     píše review.md s verdiktem APPROVE / REQUEST CHANGES. Reviewer needituje produkční kód —
+     nálezy opravuje Coder ve smyčce (max 3 kola). Autor nemá hodnotit vlastní práci. -->
+
 ### Human
 **Czech:** Člověk
 
@@ -142,6 +162,20 @@ Compensates for the Coder's limited project-wide context.
      které soubory NESMÍ měnit, a jaká rozhraní poskytují předchozí tasky.
      Kompenzuje omezený projektový kontext Codera. -->
 
+### Definition of Ready (DoR)
+**Czech:** Kritéria připravenosti
+
+A quality gate on the **input** side, the counterpart of the Definition of Done. Before a Task
+is handed to a Coder, its `spec.md` must pass the DoR checklist: measurable goal, concrete
+outputs, complete Context Bundle, verifiable DoD, named test cases, and the Coder role
+resolved (model assigned per `rules/00-model-policy.mdc`). Checked
+at the FE.2 Human review of the Epic Plan. A vague spec guarantees a failed Task.
+
+<!-- cs: Brána kvality na vstupní straně, protějšek Definition of Done. Než task dostane Coder,
+     jeho spec.md musí projít DoR checklistem: měřitelný cíl, konkrétní výstupy, úplný Context
+     Bundle, ověřitelné DoD, pojmenované testovací případy a úroveň modelu. Kontroluje se při
+     FE.2. Vágní spec = selhaný task. -->
+
 ### Definition of Done (`task-NNN/dod.md`)
 **Czech:** Kritéria splnění
 
@@ -166,6 +200,18 @@ The primary mechanism by which Human stays informed of what happened.
      Obsahuje: co bylo implementováno, vstupy/výstupy, klíčová rozhodnutí, reference do kódu,
      výsledek regresního testu a shrnutí DoD.
      Primární mechanismus, kterým zůstává člověk informován o tom, co se dělo. -->
+
+### Task Review (`task-NNN/review.md`)
+**Czech:** Revize tasku
+
+Written by the Reviewer (≠ Coder) after the Task Report, before Human review. Contains the
+verdict (APPROVE / REQUEST CHANGES), severity-tagged findings (blocker / major / minor),
+per-item verification of the DoD, and an independent test-run result. Only an APPROVE verdict
+advances the Task to Human review.
+
+<!-- cs: Napsáno Reviewerem (≠ Coder) po Task Reportu, před revizí Humanem. Obsahuje verdikt
+     (APPROVE / REQUEST CHANGES), nálezy podle závažnosti (blocker / major / minor), ověření
+     DoD po položkách a nezávislý výsledek testů. Jen verdikt APPROVE posune task k Humanovi. -->
 
 ### Epic Report (`epic-NNN/report.md`)
 **Czech:** Report epiky
@@ -201,6 +247,7 @@ Numbering in steps of 10: insert `E015` between `E010` and `E020`.
 | Phase | Code | Actor | Output |
 |-------|------|-------|--------|
 | Project Init | F0.1–F0.5 | Human→Planner | `brief.md`, `spec.md`, `roadmap.md` |
-| Epic Planning | FE.1–FE.2 | Planner | `epic-NNN/plan.md`, task dirs |
+| Epic Planning | FE.1–FE.2 | Planner | `epic-NNN/plan.md`, task dirs (+ DoR gate) |
 | Task Execution | FT.1–FT.7 | Coder | implementation, tests, `dod.md`, `report.md` |
-| Epic Closure | FER.1–FER.2 | Coder→Planner | `epic-NNN/report.md`, roadmap review |
+| Task Review | FR.1–FR.3 | Reviewer | `task-NNN/review.md` (APPROVE / REQUEST CHANGES) |
+| Epic Closure | FER.1–FER.2 | Coder→Planner | `epic-NNN/report.md`, roadmap + ADR review |
