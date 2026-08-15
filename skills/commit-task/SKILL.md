@@ -4,7 +4,7 @@ description: >-
   Git commit workflow activated by explicit trigger phrases in Human messages.
   Handles 4 variants: direct master commit, master+CI iterative check,
   new feature branch commit, feature branch+CI with squash merge to master.
-  For groups of tasks: chained feature branches, each task one commit,
+  For groups of runs: chained feature branches, each run one commit,
   only the last branch merges to master.
   Use when: Human uses "s commitem", "s commitem s CI",
   "s commitem do feature", or "s commitem do feature s CI" (CS),
@@ -30,7 +30,7 @@ description: >-
 ## Trigger Detection
 
 Parse the Human's message to identify:
-1. **Task list**: one or more tasks (e.g. T010, T020, T030) — execute in order.
+1. **Run list**: one or more ICE runs (directories under `doc/runs/`) — execute in order.
 2. **Variant** from phrase at end of message:
 
 | Phrase CS | Phrase EN | Variant |
@@ -42,26 +42,36 @@ Parse the Human's message to identify:
 
 ## Branch Naming Convention
 
-Feature branch name is derived automatically from the epic and task directory:
+Feature branch name is derived from the affected intent node and the run slug:
 ```
-feature/e{epic_NNN}-t{task_NNN}-{task-slug}
+feature/{iNNNN}-{run-slug}
 ```
-`task-slug` = part of the task directory name after `task-NNN-`.
+`run-slug` = the descriptive part of the run directory name, without date and suffix.
 
 Examples:
-- epic `epic-020-data-model` / task `task-010-domain-models` → `feature/e020-t010-domain-models`
-- task `task-030-seed-data` → `feature/e020-t030-seed-data`
+- run `20260815-1328-user-email-a7` on node `i0042` → `feature/i0042-user-email`
+- run `20260816-0900-rate-limit-3c` on node `i0031` → `feature/i0031-rate-limit`
+
+## Commit Message Trailers
+
+Every commit produced by this skill ends with machine-checkable trailers, so the history
+links back to the intent:
+
+```
+Intent: i0042
+Run: 20260815-1328-user-email-a7
+```
 
 ## Variant A — Commit to master (no CI)
 
-For each task in order (one commit per task, directly on `master`):
+For each run in order (one commit per run, directly on `master`):
 ```bash
 git add -A
 git commit -m "$(cat <<'EOF'
 <conventional-commit-message>
 
-Epic: <epic-name>
-Task: <task-name>
+Intent: <iNNNN>
+Run: <run_id>
 EOF
 )"
 git push origin master
@@ -69,50 +79,50 @@ git push origin master
 
 ## Variant B — Commit to master with CI (iterative, max 3 attempts)
 
-For each task:
+For each run:
 ```bash
 git add -A && git commit -m "<message>" && git push origin master
 gh run watch --exit-status   # blocks; exit 0 = green, non-zero = failed
 ```
 
 If CI fails → see [CI Fix Loop](#ci-fix-loop).
-After green CI: proceed to next task (if group).
+After green CI: proceed to the next run (if a group).
 
 ## Variant C — Commit to feature branch (no CI)
 
-**First task** (or single task) — branch from `master`:
+**First run** (or single run) — branch from `master`:
 ```bash
 git checkout master
-git checkout -b feature/e{NNN}-t{NNN}-{slug}
+git checkout -b feature/{iNNNN}-{slug}
 git add -A && git commit -m "<message>"
-git push -u origin feature/e{NNN}-t{NNN}-{slug}
+git push -u origin feature/{iNNNN}-{slug}
 ```
 
-**Each subsequent task in group** — branch from the previous feature branch:
+**Each subsequent run in the group** — branch from the previous feature branch:
 ```bash
 # while on previous feature branch:
-git checkout -b feature/e{NNN}-t{NNN}-{slug}
+git checkout -b feature/{iNNNN}-{slug}
 git add -A && git commit -m "<message>"
-git push -u origin feature/e{NNN}-t{NNN}-{slug}
+git push -u origin feature/{iNNNN}-{slug}
 ```
 
 No merge to master — Human decides when to merge.
 
 ## Variant D — Feature branch + CI + squash merge to master
 
-Same branching as Variant C. After each task's push, check CI:
+Same branching as Variant C. After each run's push, check CI:
 ```bash
 gh run watch --exit-status
 ```
 
 If CI fails → see [CI Fix Loop](#ci-fix-loop).
-After **last task** CI is green, squash-merge the last feature branch to master:
+After the **last run's** CI is green, squash-merge the last feature branch to master:
 ```bash
 gh pr create \
   --title "<conventional-commit-title>" \
   --body "$(cat <<'EOF'
-Tasks: <list>
-Epic: <epic-name>
+Runs: <list>
+Intent: <iNNNN>
 EOF
 )" \
   --base master
@@ -142,7 +152,7 @@ if red AND attempt == 3:
 ### Max Attempts Exceeded
 
 1. Stay on current branch — do NOT merge to master.
-2. Add failure section to current task's `report.md`:
+2. Add a failure section to the current run's `report.md`:
    ```markdown
    ## CI Failure — Manual Intervention Required
    - CI step that failed: <step name>
@@ -152,20 +162,20 @@ if red AND attempt == 3:
    ```
 3. Report to Human: summarize what failed, what was tried, what is needed.
 
-## Group Tasks — Sequential Execution with Chained Branches
+## Groups of Runs — Sequential Execution with Chained Branches
 
-Example: `Proveď T010, T020, T030 s commitem do feature s CI`
+Example: `Proveď běhy A, B, C s commitem do feature s CI`
 
 ```
 master
-  └─ feature/e020-t010-domain-models    ← execute T010, commit, CI green
-       └─ feature/e020-t020-repository  ← execute T020, commit, CI green
-            └─ feature/e020-t030-seed   ← execute T030, commit, CI green
+  └─ feature/i0042-domain-models    ← run A, commit, CI green
+       └─ feature/i0043-repository  ← run B, commit, CI green
+            └─ feature/i0044-seed   ← run C, commit, CI green
                  └─ squash merge → master
 ```
 
 Rules:
-- Execute the task before committing (if not yet done).
+- Finish the run (Grader green, review closed) before committing.
 - Each new branch is created from the previous feature branch (not from `master`).
-- Squash merge to master only after the **last task's** CI is green.
-- If any task fails CI after max attempts: STOP, report, do NOT proceed to next task.
+- Squash merge to master only after the **last run's** CI is green.
+- If any run fails CI after max attempts: STOP, report, do NOT proceed to the next run.

@@ -1,0 +1,150 @@
+---
+description: >-
+  Structure and rules of the intent tree (doc/intent): node schema, contracts with
+  machine enforcers, edge types, semantic axioms A1-A6 and machine rules V1-V10.
+  Use when creating, editing, moving or retiring an intent node, or when a request
+  conflicts with the current intent.
+globs: doc/intent/**
+---
+
+# Intent Tree
+
+One node = one chapter of meaning = one file. The tree is the only truth about what the
+system means. Node bodies are written in **English**.
+
+## Edges — three kinds, never mixed
+
+| Field | Meaning | Cycles |
+|-------|---------|--------|
+| `parent` | refinement: the child is a more concrete development of the parent | forbidden |
+| `uses` | semantic dependency: a concept defined elsewhere in the tree | forbidden |
+| `talks_to` | operational dependency: running parts exchanging data | allowed |
+
+`uses` enters a slice as a **definition** (without it the node cannot be understood);
+`talks_to` enters as **context**. A cycle in data is normal; a cycle in definitions is
+always a bug.
+
+## Identity
+
+- Short id `iNNNN` is issued by `doc/intent/_registry.yaml` and **never** changes or is
+  reused. It is what ADRs, commits and chat cite.
+- `slug` is a human mnemonic and may be renamed; the file is `{id}-{slug}.md`.
+- Path and depth are **derived** and live in the generated `MAP.md` / `INDEX.json`.
+  Never store them in the node file — inserting a level would rewrite the whole subtree.
+- Allocate ids only via `intent new`, only on the integration branch. For parallel work,
+  reserve a block of ids in advance.
+
+## Node front matter
+
+```yaml
+---
+id: i0042
+parent: i0007                # null only for the root
+slug: schema
+title: Relational schema
+status: current              # proposed | current | superseded | retired
+uses: [i0019]
+talks_to: [i0031]
+superseded_by: null
+contracts:
+  - id: c1
+    text: "user_id is unique across the users table"
+    enforced_by: "tests/db/test_schema.py::test_user_id_unique"
+code_paths: ["src/db/models/"]
+test_paths: ["tests/db/"]
+open_questions: []
+---
+```
+
+The front matter uses a **restricted YAML subset**: mappings, sequences of scalars,
+sequences of mappings, quoted or bare scalars, integers, booleans, null. No anchors,
+tags or block scalars — the validator rejects them instead of guessing.
+
+There is no `updated_at`: git holds timestamps.
+
+## Contracts
+
+A contract is a statement that must hold **plus** the thing that enforces it.
+
+| `enforced_by` | Meaning |
+|---------------|---------|
+| `path/to/test.py::test_name` | a test; the validator checks the file and symbol exist |
+| `cmd: <command>` | a machine check run by the Grader |
+| `review` | exception: no machine enforcer. Requires `reason` **and** Human approval |
+
+A contract without an enforcer is a wish. `intent coverage` counts the exceptions; that
+number must not grow quietly.
+
+Contracts are inherited: a child may **tighten** a parent's contract, never loosen it.
+Loosening starts at the parent and is always a Human decision.
+
+## Body
+
+```markdown
+# <title>
+
+## Refines            <!-- omitted on the root -->
+One sentence: which part of the parent this node develops further.
+
+## Meaning
+Two to eight sentences. What it is and what it is for, without repeating the parent.
+
+## Contracts
+Explanation, when one line of front matter is not enough.
+
+## Non-goals
+What explicitly does not belong here.
+
+## Open questions
+Empty, or a list. An open question blocks implementation of the affected part.
+```
+
+`## Refines` and `## Meaning` are required. Over 120 body lines is a warning, over 200 an
+error — bounded node size is what keeps slices small.
+
+## Semantic axioms (judged by the Critic, not by the validator)
+
+- **A1 Refinement** — the child is strictly more concrete; deeper means less abstract.
+- **A2 Preservation** — every statement of the parent stays true of the child. If the
+  child would contradict the parent, the change starts at the parent.
+- **A3 New information** — the child does not restate the parent's definitions.
+- **A4 Contract strengthening** — a child narrows or adds, never weakens.
+- **A5 Path sufficiency** — identity follows only from the chain of ancestors; a foreign
+  concept is pulled in through `uses`, never through a sibling.
+- **A6 Frugality** — a node exists only where it carries a contract or meaning the parent
+  does not hold. Not every class deserves a node.
+
+Typical findings: *inversion* (the child's claim holds outside the parent's subject),
+*false nesting* (the child could be a sibling without losing meaning), *skipping* (a
+concept is used that is neither on the path nor in `uses`).
+
+## Machine rules (validator)
+
+V1 identity and registry · V2 single root, parent exists and is current, no cycles ·
+V3 `uses` acyclic, edge targets exist · V4 a node owning `code_paths` declares a contract ·
+V5 every contract has a valid enforcer · V6 `code_paths` overlap only along the ancestor
+chain, the deepest node wins · V7 `superseded` points at its replacement, retired nodes
+live in `_retired/` · V8 body sections and size · V9 generated files are current ·
+V10 no `proposed` node on the default branch.
+
+## Lifecycle
+
+```
+proposed  →  current  →  superseded (points at the replacement)
+                      →  retired    (moved to _retired/, id frozen)
+```
+
+`proposed` lives **only on a working branch**; review is a normal git diff. `superseded`
+and `retired` are never read as valid intent.
+
+## Changing the tree
+
+1. Find the highest node whose contract or meaning the request violates.
+2. Write the delta on a branch (`proposed` nodes + a `change.md` naming ids, contracts,
+   affected edges and the tests that will enforce the new contracts).
+3. `intent validate` must pass, then the Critic (A1–A6), then the Human gate.
+4. Promote to `current`, mark replaced nodes `superseded`, run `intent map`.
+5. Only now may the code change. Mixing old and new intent in one implementation is
+   forbidden.
+
+Never "fix the code so the tree does not have to change" when the meaning changed.

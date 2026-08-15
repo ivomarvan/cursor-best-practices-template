@@ -171,7 +171,7 @@ async def upsert_chunks(session: AsyncSession, rows: list[dict]) -> None:
 | `DetachedInstanceError` | Accessing relationship after session close | eager-load before closing, or use `expire_on_commit=False` |
 
 ## Additional resources
-- [../../../rules/16-sqlalchemy.mdc](../../../rules/16-sqlalchemy.mdc)
-- [../../../rules/13-sql-postgresql.mdc](../../../rules/13-sql-postgresql.mdc)
+- [../../rules/16-sqlalchemy.mdc](../../rules/16-sqlalchemy.mdc)
+- [../../rules/13-sql-postgresql.mdc](../../rules/13-sql-postgresql.mdc)
 - [SQLAlchemy 2.x docs](https://docs.sqlalchemy.org/en/20/)
 - [Alembic docs](https://alembic.sqlalchemy.org/en/latest/)

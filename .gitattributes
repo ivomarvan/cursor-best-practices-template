@@ -1,0 +1,3 @@
+# veilgit managed — do not edit manually
+.veil/config.toml filter=veil diff=veil
+doc/new_ideas/* filter=veil diff=veil

@@ -34,8 +34,21 @@ Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `per
 - Max **72 characters** on the first line.
 - Body separated by a blank line — explains why, not what.
 - No vague messages (`fix stuff`, `update`, `wip`).
-- Use names of epic and task from project progress report.
 - **No Cursor attribution** — `.cursor/hooks/git/commit-msg` strips it automatically; after clone: `git config --local core.hooksPath .cursor/hooks/git`.
+
+### Trailers linking the commit to the intent
+
+When the project has an intent tree, the message ends with machine-checkable trailers:
+
+```
+feat(db): enforce unique user_id at schema level
+
+Intent: i0042
+Run: 20260815-1328-user-email-a7
+```
+
+`Intent:` cites the short node id, `Run:` the run directory under `doc/runs/`. Together
+they give traceability in both directions: from a node to its commits and back.
 
 ## Branching (Git Flow lite)
 

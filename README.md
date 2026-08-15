@@ -1,29 +1,176 @@
 # Cursor-best-practices-template
 
-A shared Cursor IDE configuration library — curated `.mdc` rules and agent skills
-enforcing consistent coding standards across all your projects.
+A shared Cursor IDE configuration library — curated `.mdc` rules, agent skills and a
+dependency-free toolchain that turn "AI writes code" into a process with a source of
+truth and machine-checked proof.
 
 ![](img/cursor-best-practices-template.jpg)
 
-## Agentic Project Management (APM)
+---
 
-This template is built around the idea of managing AI models like a real development team. By organizing AI development into a clearly structured process, the results go beyond mindless code generation.
+## Status: version 2 (ICE)
 
-The workflow is divided into distinct roles (model per role: see `rules/00-model-policy.mdc`):
+**Version 2 replaces the project-management methodology of version 1.** Everything else —
+language rules, Docker standards, development skills, git conventions — carries over
+unchanged.
 
-- 🧠 **Planner (Analyst/Architect)**: Handled by high-context reasoning models. The Planner analyzes requirements, breaks them down into Epics and Tasks, prepares precise specifications, sets boundaries (Context Bundles), and defines the Definition of Done. Each Task must pass a **Definition of Ready (DoR)** gate before a Coder starts.
-- 💻 **Coder (Developer)**: Handled by faster, cost-effective models. The Coder takes the Planner's specifications, implements the code, writes tests, and checks off the DoD requirements.
-- 🔎 **Reviewer (QA/Critic)**: A **different** agent/model than the Coder (a strong-reasoning model, assigned per `rules/00-model-policy.mdc`). Independently reviews the Coder's diff against `spec.md` and `dod.md`, verifies every `✅` against real artifacts, and returns an APPROVE / REQUEST CHANGES verdict **before** the Human looks at it. This evaluator–optimizer step catches the author-grades-own-work blind spot.
-- 👤 **Human (Tech Lead)**: Has the final say. Conducts code reviews, makes strategic decisions, and ensures no destructive operations happen without explicit approval.
+| | Version 1 | Version 2 |
+|---|---|---|
+| Methodology | APM — Agentic Project Management | ICE — Intent, Contract, Evidence |
+| Source of truth | the last approved plan | `doc/intent/` — a maintained tree of meaning |
+| Unit of work | Epic → Task | one **run** |
+| Verification | reviewer reads the report | machine gates first, reviewer second |
+| Tooling | none (prose only) | `tools/intent` + `tools/checks`, no dependencies |
 
-Output quality is enforced by strict repository rules:
-- **Strict Boundaries**: Clean Code, SOLID principles, and intent-focused comments.
-- **Automated Quality**: Mandatory linting and formatting (Ruff, oxlint) and strict type checking (Pyrefly, vue-tsc).
-- **Test-Driven**: Local testing backed by a CI pipeline.
-- **Versioned Reports**: For every completed task, the agent writes a detailed Markdown report detailing files read, changes made, and regression test results, ensuring absolute transparency.
+Version 1 stays available: see [Pinning a version](#pinning-a-version).
 
-For the full APM workflow documentation, see
-[README.project_management.md](README.project_management.md).
+### The idea in three questions
+
+```mermaid
+flowchart LR
+    I["<b>Intent</b><br/>What does it mean?<br/><code>doc/intent/</code>"]
+    C["<b>Contract</b><br/>How do I know it works?<br/><code>enforced_by:</code>"]
+    E["<b>Evidence</b><br/>Where is the proof?<br/><code>VERIFY.md</code> + <code>doc/runs/</code>"]
+    I --> C --> E
+    E -. "a failing gate sends the question back" .-> I
+```
+
+- **Intent** — a tree of nodes, one node per chapter of meaning. It is maintained, not
+  written once. An agent reads it through a computed *slice*, never by browsing.
+- **Contract** — every statement that must hold names the test or command that enforces
+  it. A contract without an enforcer is a wish, and the tooling counts those.
+- **Evidence** — a machine, not a model, decides whether the work is done. The commands
+  live in `VERIFY.md`; the log lives with the run.
+
+---
+
+## Setup
+
+### 1. Mount the harness
+
+```bash
+# In your project root — the repo root maps directly to .cursor/
+git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor
+git commit -m "chore(cursor): add shared cursor rules as submodule"
+```
+
+Cursor now discovers `.cursor/rules/` and `.cursor/skills/` with no further configuration.
+If your project also needs its **own** rules, use the
+[wrapper pattern](#adding-project-specific-rules-wrapper-pattern) instead.
+
+### 2. Activate the git hooks (once per clone)
+
+```bash
+git config --local core.hooksPath .cursor/hooks/git
+```
+
+This strips the automatic Cursor attribution from commit messages.
+
+### 3. Choose the chat language
+
+The default is Czech. Edit only `.cursor/rules/00-communication-language.mdc` — rules,
+skills and code stay in English regardless.
+
+### 4. Decide the models
+
+`.cursor/AGENT_MODELS.md` ships defaults for the five roles. It lives in the submodule,
+so it is **read-only** for your project. To change models for this project only, create
+`AGENT_MODELS.md` in the **project root** and restate just the roles you want to
+override.
+
+### 5. Write `VERIFY.md`
+
+In your project root, list the commands that prove the project is in a valid state — the
+test suite, the linter, the type checker — with their expected exit codes. This is the
+Grader's entire mandate: it runs these and nothing else.
+
+```markdown
+| # | Command | Expected | Proves |
+|---|---------|----------|--------|
+| 1 | `docker compose run --rm app pytest` | exit 0 | behaviour |
+| 2 | `docker compose run --rm app ruff check .` | exit 0 | style |
+| 3 | `python3 .cursor/tools/intent/cli.py validate` | exit 0 | the intent tree |
+```
+
+### 6. Start the intent tree
+
+```bash
+python3 .cursor/tools/intent/cli.py new --slug system --title "<your product>"
+```
+
+Fill in `## Meaning`, `## Non-goals` and at least one contract, then promote the node from
+`proposed` to `current`. The root is always your decision, not an agent's — everything
+else in the tree hangs off it.
+
+Then simply ask the agent for a change. The `ice-run` skill takes over from there.
+
+---
+
+## How a change happens
+
+```mermaid
+flowchart TD
+    REQ["Request from the Human"] --> ROUTE["Route to a node<br/><code>MAP.md</code> · <code>intent owner</code>"]
+    ROUTE --> MEAN{"Did the<br/>meaning change?"}
+    MEAN -- yes --> TREE["Intent change on a branch<br/>proposed → Critic → Human → current"]
+    MEAN -- no --> CX
+    TREE --> CX{"Complexity"}
+    CX -- low --> PLAN
+    CX -- "medium / high" --> CRIT["Critic reviews the plan"]
+    CRIT --> PLAN["Plan: outputs, tests,<br/>Definition of Done"]
+    PLAN --> CODE["Coder implements<br/>inside the slice"]
+    CODE --> GRADE["Grader runs <code>VERIFY.md</code><br/>+ validate + scope guard"]
+    GRADE -- red --> CODE
+    GRADE -- green --> ADV{"medium or high?"}
+    ADV -- yes --> REV["Adversary reviews the diff<br/>APPROVE / REQUEST CHANGES"]
+    ADV -- no --> CLOSE
+    REV -- "REQUEST CHANGES" --> CODE
+    REV -- APPROVE --> CLOSE["Close the run<br/><code>status.md</code>, ADR, Human gate"]
+```
+
+Loops are bounded at three rounds; the fourth escalates to you. A scope violation raises
+the run one level and wakes the reviewer even if the change looked trivial.
+
+### Who is allowed to do what
+
+```mermaid
+flowchart LR
+    H["Human<br/><i>final authority</i>"] --- CO["Coordinator<br/><i>orchestrates, writes no code</i>"]
+    CO --> P["Planner<br/><i>intent + plan</i>"]
+    CO --> CR["Critic<br/><i>ACCEPT / REVISE</i>"]
+    CO --> CD["Coder<br/><i>code + tests</i>"]
+    CO --> G["Grader<br/><i>machine, not a model</i>"]
+    CO --> A["Adversary<br/><i>APPROVE / REQUEST CHANGES</i>"]
+    CD -. "never reviews itself" .-> A
+```
+
+Three separations carry the whole design: the Planner does not implement, the Coder does
+not grade, and the Adversary uses a different model than the Coder.
+
+---
+
+## Tooling
+
+Pure Python 3.11+, no dependencies, no install step.
+
+```bash
+python3 .cursor/tools/intent/cli.py <command>   # in a project
+python3 tools/intent/cli.py <command>           # inside this repo
+```
+
+| Command | Purpose |
+|---------|---------|
+| `validate` | machine rules V1–V10 over the tree; exit 1 on error |
+| `map` | regenerate `MAP.md` and `INDEX.json` |
+| `new --parent iNNNN --slug x` | allocate a short id and scaffold a node |
+| `move iNNNN --parent iMMMM` | re-parent a node; the id never changes |
+| `slice iNNNN --for plan\|implement` | the exact file list for one agent action |
+| `scope --run <dir>` | working diff versus the outputs the plan declared |
+| `coverage` | contracts with no machine enforcer; code owned by no node |
+| `owner <path>` | which node governs this file |
+
+The tool reads `doc/intent/` in the **project root** and ignores `.cursor/` completely —
+the harness carries its own tree, and two registries would make every short id ambiguous.
 
 ---
 
@@ -33,22 +180,28 @@ For the full APM workflow documentation, see
 cursor-best-practices-template/
 ├── rules/          # .mdc rule files — Cursor reads these as .cursor/rules/
 ├── skills/         # Agent skill directories — Cursor reads as .cursor/skills/
-├── commands/       # Slash commands — /push, /role-assign, /role-show
+├── commands/       # Slash commands — /push
 ├── hooks/          # Git + session hooks (commit-msg, session-start)
 ├── hooks.json      # Cursor hook registration
-├── doc/            # Template-level documentation and APM document templates
-│   ├── guides/             # How-to guides (e.g. agentic-engineering-resources.md)
-│   └── project-progress/   # APM templates (brief, spec, roadmap, epics, tasks)
-├── .cursor/
-│   ├── rules  →  ../rules     # symlink — enables rules while editing this repo
-│   └── skills →  ../skills    # symlink — enables skills while editing this repo
-├── README.md
-└── README.project_management.md   # APM workflow documentation
+├── tools/
+│   ├── intent/     # the intent tree CLI + its unittest suite
+│   └── checks/     # contracts this repository declares about itself
+├── doc/
+│   ├── intent/     # this repository's own intent tree (the pilot)
+│   └── guides/     # how-to guides
+├── AGENT_MODELS.md # default model catalog for the five roles
+├── VERIFY.md       # what proves this repository is in a valid state
+└── .cursor/
+    ├── rules  →  ../rules     # symlink — enables rules while editing this repo
+    └── skills →  ../skills    # symlink — enables skills while editing this repo
 ```
+
+This repository **uses its own methodology on itself**: `doc/intent/` describes the
+harness, every contract there points at a real check, and `VERIFY.md` runs them.
 
 ---
 
-## Rules and Skills overview
+## Rules and Skills
 
 ### Rules (`rules/`)
 
@@ -56,128 +209,208 @@ cursor-best-practices-template/
 |------|-------|-----------|
 | `00-communication-language.mdc` | Communication language setting (CS/DE/EN) | always |
 | `00-meta-rules-and-skills.mdc` | How to write rules and skills | `**/.cursor/rules/**`, `**/SKILL.md` |
-| `00-model-policy.mdc` | Role→model assignment (Planner/Coder/Reviewer): `/role-assign` | on request |
+| `00-model-policy.mdc` | Role→model resolution, `AGENT_MODELS.md` catalog | on request |
 | `01-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
-| `02-git.mdc` | Conventional commits, branching, `.gitignore` | always |
+| `02-git.mdc` | Conventional commits, intent trailers, branching | always |
 | `03-docker-policy.mdc` | When Docker is mandatory; exemptions | on request |
 | `04-docker-standards.mdc` | Dockerfile standards, uv multi-stage, Compose Watch | `Dockerfile*`, `docker-compose*` |
 | `05-new-technology.mdc` | Process for adding new technologies | on request |
-| `06-project-structure.mdc` | Universal directory layout, `doc/`, optional `AGENTS.md` | on request |
-| `07-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
-| `08-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
-| `09-testing.mdc` | Testing contract (unit / integration / E2E) | `**/tests/**`, `**/test_*.py` |
-| `10-python.mdc` | Python 3.12+, uv, Ruff, Pyrefly/ty, pytest | `**/*.py`, `pyproject.toml`, `uv.lock` |
-| `11-vuejs-vite-tailwind.mdc` | Vue 3.5 + Vite + Tailwind v4, oxlint, Playwright | `**/*.vue`, `frontend/**/*.ts` |
-| `12-cpp-esp32.mdc` | C/C++ ESP-IDF 5.4+, C++20, FreeRTOS, RAII | `**/*.c`, `**/*.cpp`, `**/*.h` |
+| `06-project-structure.mdc` | Universal directory layout, `doc/`, ADRs | on request |
+| `07-ice-workflow.mdc` | **ICE loop, roles, complexity, gates, escalation** | always |
+| `07-intent-tree.mdc` | **Node schema, edges, axioms A1–A6, rules V1–V10** | `doc/intent/**` |
+| `07-run-artifacts.mdc` | **Run directory, DoR, DoD, report structure** | `doc/runs/**` |
+| `08-agent-security.mdc` | Untrusted content, prompt injection, lethal trifecta | always |
+| `09-testing.mdc` | Testing contract (unit / integration / E2E) | `**/tests/**` |
+| `10-python.mdc` | Python 3.12+, uv, Ruff, Pyrefly/ty, pytest | `**/*.py`, `pyproject.toml` |
+| `11-vuejs-vite-tailwind.mdc` | Vue 3.5 + Vite + Tailwind v4, oxlint, Playwright | `**/*.vue` |
+| `12-cpp-esp32.mdc` | C/C++ ESP-IDF 5.4+, C++20, FreeRTOS, RAII | `**/*.c`, `**/*.cpp` |
 | `13-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
-| `14-fastapi.mdc` | FastAPI, domain exceptions, pydantic-settings | `**/main.py`, `**/router.py` |
-| `15-qdrant.mdc` | Qdrant client, collections, `query_points`, repository | `**/*qdrant*.py`, `**/*vector*.py` |
-| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading | `**/models.py`, `**/session.py` |
-| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/cache*.py`, `**/redis_client.py` |
-| `18-task-queue.mdc` | Taskiq default; Celery only with justification | `**/tasks.py`, `**/taskiq*.py` |
-| `20-project-design-rules.mdc` | Honor project-root `DESIGN_RULES.md` as binding invariants | always |
+| `14-fastapi.mdc` | FastAPI, domain exceptions, pydantic-settings | `**/main.py` |
+| `15-qdrant.mdc` | Qdrant client, collections, `query_points` | `**/*qdrant*.py` |
+| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading | `**/models.py` |
+| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/cache*.py` |
+| `18-task-queue.mdc` | Taskiq default; Celery only with justification | `**/tasks.py` |
+| `20-project-design-rules.mdc` | Honor project-root `DESIGN_RULES.md` | always |
 
 ### Skills (`skills/`)
 
-| Directory | Skill | Purpose |
-|-----------|-------|---------|
-| `docker-new-project/` | Docker setup | Scaffold Dockerfile + compose + README.docker.md |
-| `docker-debug/` | Docker debug | Diagnose container/compose failures |
-| `python-dev/` | Python dev | Docker-based Python development workflow |
-| `postgresql-dev/` | PostgreSQL dev | Docker-based PostgreSQL access and migrations |
-| `vuejs-dev/` | Vue.js dev | Docker-based Vue.js development workflow |
-| `qdrant-dev/` | Qdrant dev | Docker-based Qdrant collection management and testing |
-| `sqlalchemy-dev/` | SQLAlchemy dev | Scaffold SQLAlchemy + Alembic, migration workflow, troubleshooting |
-| `project-init/` | APM Phase 0 | Formalize brief → `spec.md` + `roadmap.md` |
-| `plan-epic/` | APM Phase E | Decompose Epic into Tasks with Context Bundles (+ DoR gate) |
-| `execute-task/` | APM Phase T | Implement Task: code + tests + DoD + report |
-| `review-task/` | APM Phase R | Independent Reviewer: diff vs spec/dod → `review.md` verdict |
-| `review-epic/` | APM Phase ER | Write Epic Report + review Roadmap validity |
+| Directory | Role | Purpose |
+|-----------|------|---------|
+| `ice-run/` | Coordinator | drive one run from request to closure |
+| `intent-change/` | Planner | create, insert, move or retire intent nodes |
+| `ice-implement/` | Coder | implement inside the slice, with failing-test evidence |
+| `ice-review/` | Adversary | independent review of the diff and the DoD |
+| `commit-task/` | — | git commit workflow behind explicit trigger phrases |
+| `docker-new-project/` | — | scaffold Dockerfile + compose + README.docker.md |
+| `docker-debug/` | — | diagnose container and compose failures |
+| `python-dev/` | — | Docker-based Python development workflow |
+| `postgresql-dev/` | — | Docker-based PostgreSQL access and migrations |
+| `vuejs-dev/` | — | Docker-based Vue.js development workflow |
+| `qdrant-dev/` | — | Qdrant collections and testing |
+| `sqlalchemy-dev/` | — | SQLAlchemy + Alembic scaffolding and migrations |
 
 ### Commands (`commands/`)
 
-Slash commands invoked in Cursor chat (e.g. `/push`).
-
 | Command | Purpose |
 |---------|---------|
-| `/push` | Run the project CI mirror (`scripts/run_all_tests.sh`); if green, stage, commit (Conventional Commits), and push to `master`. Explicit exception to `02-git.mdc`. |
-| `/role-assign` | Assign a model to an APM role (Planner/Coder/Reviewer) in `rules/00-model-policy.mdc`. Asks if the role or model is not specified. |
-| `/role-show` | Show the current role→model assignments. |
-
-> **Model policy:** roles are **not** bound to fixed models (models and prices change). The
-> Human assigns a model to each role via `/role-assign`, or the agent asks before acting in an
-> unassigned role. The single source of truth is `rules/00-model-policy.mdc`. Cursor does not
-> auto-switch models per role — an assignment is documented intent plus a reminder.
+| `/push` | Run the project CI mirror; if green, stage, commit and push. Explicit exception to `02-git.mdc`. |
 
 ---
 
-## Using this repo in your projects
+## What changed from version 1
 
-### Option A — Git submodule (recommended)
+### The process, side by side
 
-The repo root maps directly to `.cursor/`, so Cursor discovers `rules/` and `skills/`
-without any extra configuration.
+```mermaid
+flowchart TB
+    subgraph V1["Version 1 — APM"]
+        direction TB
+        A1["brief.md"] --> A2["spec.md + roadmap.md"]
+        A2 --> A3["epic plan"]
+        A3 --> A4["task spec + Context Bundle<br/><i>hand-written</i>"]
+        A4 --> A5["Coder implements"]
+        A5 --> A6["Reviewer reads the report"]
+        A6 --> A7["Human"]
+        A7 -. "next epic — the spec ages" .-> A3
+    end
+    subgraph V2["Version 2 — ICE"]
+        direction TB
+        B0["<b>Intent tree</b><br/><i>maintained, validated</i>"]
+        B0 --> B1["slice — <i>computed</i>"]
+        B1 --> B2["plan + declared outputs"]
+        B2 --> B3["Coder implements"]
+        B3 --> B4["Grader — <i>machine</i>"]
+        B4 --> B5["Adversary reads the diff"]
+        B5 --> B6["Human"]
+        B6 -. "next run reads the same tree" .-> B0
+    end
+```
+
+The structural difference is the loop at the bottom. In version 1 the specification was
+written once and aged; after a few epics nobody could say what still held. In version 2
+the tree is the artifact that survives, and every run both reads it and is checked
+against it.
+
+### Point by point
+
+| | Version 1 (APM) | Version 2 (ICE) |
+|---|---|---|
+| **Planning** | Planner decomposes an Epic into Tasks; hand-written Context Bundle per task | Planner writes an intent delta and a run plan; context is **computed** by `intent slice` |
+| **What is authoritative** | the most recently approved plan | `doc/intent/` nodes with `status: current` |
+| **Acceptance criteria** | `dod.md` checklist, prose | Definition of Done where every item is an artifact or a command, plus contracts with `enforced_by` |
+| **Verification order** | Coder claims → Reviewer reads the claim | machine gates run **first**; the reviewer sees the diff, not the story |
+| **Reviewer wake-up** | every task | complexity-driven; a scope violation forces it |
+| **Scope control** | "do not modify" list in the Context Bundle | `intent scope` compares the real diff with declared outputs |
+| **Model policy** | role→model table inside a rule, `/role-assign` | `AGENT_MODELS.md` catalog with complexity bands and constraints |
+| **Loop limits** | reviewer loop, max 3 | every loop bounded at 3, then escalation to the Human |
+| **New tests** | "write tests" | failing-test evidence required: the test must fail on unchanged code |
+| **Audit trail** | epic and task reports | run directory + `Intent:` / `Run:` commit trailers |
+| **Tooling** | none | `validate`, `map`, `new`, `move`, `slice`, `scope`, `coverage`, `owner` |
+
+### What is gone
+
+`rules/07-project-management.mdc`, the skills `project-init`, `plan-epic`,
+`execute-task`, `review-task`, `review-epic`, the commands `/role-assign` and
+`/role-show`, `README.project_management.md`, and the `doc/project-progress/` templates.
+
+### What is unchanged
+
+Every language and technology rule, every development skill, the git conventions, the
+security rule, the hooks, and the submodule workflow. Version 2 is a replacement of the
+planning layer, not a rewrite of the harness.
+
+---
+
+## Migrating a project from version 1 to version 2
+
+Nothing in your product code changes. What changes is where meaning lives.
+
+**Step 1 — update the submodule on a branch.**
 
 ```bash
-# In your project root:
-git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor
-
-# Clone a project that already has this submodule:
-git clone --recurse-submodules <your-project-url>
-
-# Update the submodule to the latest version of this template:
+git checkout -b chore/ice-v2
 git submodule update --remote .cursor
-git add .cursor
-git commit -m "chore(cursor): update shared rules to latest"
+git config --local core.hooksPath .cursor/hooks/git
 ```
 
-After adding the submodule, `.cursor/rules/` and `.cursor/skills/` are immediately
-available to Cursor.
+**Step 2 — freeze the old artifacts, do not delete them.** Keep
+`doc/project-progress/` as an archive and put one line at the top of every top-level
+document there so agents stop reading it as a specification:
 
-### Option B — Symbolic links (single machine, no team sharing)
+```markdown
+> ARCHIVE (methodology v1). Not a specification. The truth about meaning lives in `doc/intent/`.
+```
+
+**Step 3 — create the root of the tree.**
 
 ```bash
-git clone git@github.com:ivomarvan/cursor-best-practices-template.git ~/dev/cursor-template
-
-# In each project:
-ln -s ~/dev/cursor-template/rules  .cursor/rules
-ln -s ~/dev/cursor-template/skills .cursor/skills
+python3 .cursor/tools/intent/cli.py new --slug system --title "<your product>"
 ```
+
+Write the root from what you know today, not from the old `spec.md`. If a statement in
+the old spec is no longer true, that is exactly the information the migration exists to
+surface.
+
+**Step 4 — add the first level of children.** One node per part of the system that has
+its own meaning — not one per package. Give each `code_paths` and at least one contract
+with a real `enforced_by`. Stop when `intent coverage` shows no production code outside
+any node; you do not need the whole tree on day one.
+
+**Step 5 — write `VERIFY.md`** with the commands you already run, plus
+`python3 .cursor/tools/intent/cli.py validate`.
+
+**Step 6 — run one small change through `ice-run`.** Use something you understand
+completely. The point is to find out whether the tree helps or whether it has bloated,
+while the stakes are low.
+
+**Step 7 — remove the archive** once nobody has needed it for a few weeks.
+
+Migrate one project at a time. Two methodologies in one repository are worse than either
+one alone, because an agent picks whichever lands in its context window first.
+
+---
+
+## Pinning a version
+
+The submodule is pinned to a commit, so each project moves to version 2 when you decide.
+
+```bash
+# stay on version 1
+cd .cursor && git checkout v1 && cd ..
+git add .cursor && git commit -m "chore(cursor): pin harness to v1"
+
+# move to version 2
+cd .cursor && git fetch --tags && git checkout v2 && cd ..
+git add .cursor && git commit -m "chore(cursor): move harness to v2 (ICE)"
+
+# track the tip of the default branch instead of a tag
+git submodule update --remote .cursor
+```
+
+Check what a project currently uses with `git submodule status`.
 
 ---
 
 ## Adding project-specific rules (wrapper pattern)
 
-When a project needs its own rules **in addition to** the shared ones, do not mount
-this repo directly at `.cursor/`. Use a wrapper instead:
+When a project needs its own rules **in addition to** the shared ones, do not mount this
+repo directly at `.cursor/`. Use a wrapper:
 
 ```bash
 # 1. Add the template as a submodule at a named path (not .cursor)
 git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor-shared
 
-# 2. Create your project's .cursor/ with symlinks to shared rules
+# 2. Create your project's .cursor/ with symlinks to the shared files
 mkdir -p .cursor/rules .cursor/skills
-
-# Symlink all shared rules
 for f in .cursor-shared/rules/*.mdc; do
   ln -s "../../${f}" ".cursor/rules/$(basename $f)"
 done
-
-# Symlink all shared skills
 for d in .cursor-shared/skills/*/; do
-  name=$(basename "$d")
-  ln -s "../../.cursor-shared/skills/${name}" ".cursor/skills/${name}"
+  ln -s "../../${d%/}" ".cursor/skills/$(basename $d)"
 done
+ln -s ../.cursor-shared/tools .cursor/tools
 
 # 3. Add project-specific rules directly into .cursor/rules/
-cat > .cursor/rules/20-project-specific.mdc << 'EOF'
----
-description: Project-specific conventions for <your-project>.
-alwaysApply: true
----
-# Project-specific Rules
-...
-EOF
 ```
 
 Resulting layout:
@@ -186,183 +419,79 @@ Resulting layout:
 your-project/
 ├── .cursor/
 │   ├── rules/
-│   │   ├── 00-communication-language.mdc  →  ../../.cursor-shared/rules/...  (symlink)
-│   │   ├── 10-python.mdc                  →  ../../.cursor-shared/rules/...  (symlink)
-│   │   └── 20-project-specific.mdc        ← your own rule, tracked in your repo
-│   └── skills/
-│       ├── python-dev/                    →  ../../.cursor-shared/skills/...  (symlink)
-│       └── my-custom-skill/               ← your own skill, tracked in your repo
-├── .cursor-shared/                        ← this template repo as submodule
-└── ...
+│   │   ├── 07-ice-workflow.mdc   →  ../../.cursor-shared/rules/...  (symlink)
+│   │   └── 20-project-specific.mdc   ← your own rule, tracked in your repo
+│   ├── skills/
+│   │   ├── ice-run/              →  ../../.cursor-shared/skills/...  (symlink)
+│   │   └── my-custom-skill/      ← your own skill, tracked in your repo
+│   └── tools/                    →  ../.cursor-shared/tools          (symlink)
+├── .cursor-shared/               ← this template repo as submodule
+└── doc/intent/                   ← your project's intent tree
 ```
 
-To update the shared rules later:
-
-```bash
-git submodule update --remote .cursor-shared
-# Re-run the symlinking loop if new rule files were added upstream
-```
+Re-run the symlink loop after an update that adds new files upstream.
 
 ---
 
-## Creating a clone for a different communication language
-
-This repo defaults to **Czech** (`cs`) as the communication language
-(see `rules/00-communication-language.mdc`). Rules and skills stay in **English**;
-only chat with the user (and Human-facing APM documents) uses that setting.
-
-To use a different chat language (e.g. German), edit only
-`rules/00-communication-language.mdc`:
-
-```
-| `<communication-language>` | German (Deutsch) |
-| `<lang-code>`              | `de`             |
-```
-
-For English chat, set both values to `English` / `en`. No other files need translating.
-
----
-
-## Git Submodule Guide
-
-This section covers everything you need to know about using this template (or any Git submodule) day-to-day.
-
-### Adding the submodule to a project
-
-```bash
-# Option A — mount directly as .cursor/ (no project-specific rules needed)
-git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor
-
-# Option B — mount at .cursor-shared/ (use wrapper pattern for project-specific rules)
-git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor-shared
-```
-
-After running this command, Git creates a `.gitmodules` file and a committed reference (not the full content) to the submodule. Commit both:
-
-```bash
-git add .gitmodules .cursor    # (or .cursor-shared)
-git commit -m "chore(cursor): add shared cursor rules as submodule"
-```
-
----
+## Git submodule guide
 
 ### Cloning a project that has a submodule
 
 ```bash
-# ✅ Recommended — clone and initialize all submodules in one step
 git clone --recurse-submodules git@github.com:<you>/<your-project>.git
 
-# If you already cloned without --recurse-submodules, initialize afterwards:
+# if you already cloned without it:
 git submodule update --init --recursive
 ```
 
-Without `--recurse-submodules`, the `.cursor/` (or `.cursor-shared/`) directory exists but is **empty**.
+Without `--recurse-submodules`, `.cursor/` exists but is **empty**.
 
----
-
-### Updating the submodule to the latest version
-
-The submodule is pinned to a specific commit. To update it to the latest template commit:
+### Updating to the latest harness
 
 ```bash
-# Pull latest from the submodule's remote and pin the new commit
 git submodule update --remote .cursor
-
-# Commit the updated pin in your project
 git add .cursor
 git commit -m "chore(cursor): update shared rules to latest"
 ```
 
-To update all submodules at once: `git submodule update --remote --merge`
-
----
-
-### Making changes inside the submodule
-
-The submodule is a full Git repository inside your project. To contribute a fix or addition to the template:
+### Contributing a change back to the harness
 
 ```bash
-# 1. Enter the submodule directory
-cd .cursor       # (or .cursor-shared)
-
-# 2. Check out the branch you want to work on
-git checkout main
-git pull
-
-# 3. Make your changes, then commit inside the submodule
+cd .cursor
+git checkout master && git pull
+# edit, then verify before committing:
+python3 tools/intent/cli.py validate \
+  && python3 -m unittest discover -s tools/intent/tests -t tools \
+  && python3 tools/checks/template_checks.py --root . \
+  && python3 tools/checks/hook_checks.py --root .
 git add rules/15-qdrant.mdc
 git commit -m "feat(qdrant): add vector database rule"
-
-# 4. Push the submodule changes to the template repo
 git push
-
-# 5. Return to the parent project and update the pinned commit
 cd ..
-git add .cursor
-git commit -m "chore(cursor): update shared rules (added qdrant rule)"
-git push
+git add .cursor && git commit -m "chore(cursor): update shared rules"
 ```
 
-> The parent project stores only a **commit SHA** pointing into the submodule repo.
-> After you push inside the submodule, you must also update + commit + push the parent.
+The parent project stores only a commit SHA, so after pushing inside the submodule you
+must also commit the moved pointer in the parent.
 
----
-
-### Checking submodule status
+### Status and removal
 
 ```bash
-# Show which commit each submodule is pinned to + whether it has local changes
-git submodule status
+git submodule status            # which commit each submodule is pinned to
+git diff --submodule            # what the pointer moved across
 
-# Show submodule details in git status
-git status   # submodule shows as "modified" when its pinned SHA changed
-
-# Show the full diff of which commit the submodule moved to
-git diff --submodule
-```
-
----
-
-### Pulling a project when the submodule was updated upstream
-
-When a teammate updated the pinned submodule commit and pushed, your local clone will show the submodule as "modified". Sync it:
-
-```bash
-git pull
-git submodule update --init --recursive
-```
-
-Add this to CI pipelines and onboarding scripts to ensure submodules are always initialized.
-
----
-
-### Removing a submodule
-
-```bash
-# 1. Remove the entry from .gitmodules
-git submodule deinit -f .cursor
-
-# 2. Remove from Git's index
+git submodule deinit -f .cursor # remove
 git rm -f .cursor
-
-# 3. Clean up the internal Git state
 rm -rf .git/modules/.cursor
-
-# 4. Commit the removal
-git commit -m "chore: remove cursor submodule"
 ```
 
 ---
 
-## Keeping your fork up to date
+## Keeping a fork up to date
 
 ```bash
-# Add the upstream remote (once):
 git remote add upstream git@github.com:ivomarvan/cursor-best-practices-template.git
-
-# Pull upstream improvements into your fork:
 git fetch upstream
-git merge upstream/main
-# Resolve any conflicts (typically in 00-communication-language.mdc
-# and translated comments).
+git merge upstream/master
+# conflicts are typically in 00-communication-language.mdc and AGENT_MODELS.md
 ```

@@ -1,73 +1,84 @@
 ---
 description: >-
-  APM role-to-model assignment (Planner, Coder, Reviewer). Use when starting an APM
-  skill, assigning models via /role-assign or /role-show, or when a role is unassigned.
+  Which model plays which ICE role: the AGENT_MODELS.md catalog, its resolution order,
+  complexity bands and hard constraints. Use when starting a role, picking a model, or
+  when a role has no assigned model.
 alwaysApply: false
 ---
 
 # Model Policy
 
-<!-- Mirrors 00-communication-language.mdc: the active setting lives in a table in THIS file.
-     Change the table (or use /role-assign) to re-map roles to models. -->
+Models and their prices change; role capabilities do not. This rule therefore defines
+**where the assignment lives**, never a hardcoded model name.
 
-## Principle — roles are not bound to fixed models
+Economic core: **strong model for thinking (Planner, Critic, Adversary), cheaper model
+for typing (Coder).**
 
-Models and their prices evolve. This policy therefore defines **roles and their capability
-intent**, never hardcoded model names. A concrete model is chosen by the **Human** — either
-assigned explicitly via `/role-assign`, or the agent **asks** before acting in a role that
-has no assignment.
+## Two files
 
-The economic core of APM stays the same: **strong model for thinking (Planner, Reviewer),
-cheaper model for typing (Coder).**
+| File | Where | Purpose |
+|------|-------|---------|
+| Default catalog | `.cursor/AGENT_MODELS.md` | ships with this rule set |
+| Project override | `AGENT_MODELS.md` in the project root | binding for that product |
 
-## Roles and capability intent
+The rule set is usually mounted as a git submodule at `.cursor/`, so the default catalog
+is **read-only**: editing it changes every project. Anything project-specific belongs in
+the project root.
 
-| Role | Used in | Capability intent |
-|------|---------|-------------------|
-| **Planner** | Phase 0, E, ER | strong reasoning — planning, decomposition, context |
-| **Reviewer** | Phase R | strong reasoning, independent of the Coder |
-| **Coder** | Phase T | fast / cost-effective; a stronger model for complex Tasks |
+## Resolution (MUST)
 
-## Active Role Assignments
+1. Read `.cursor/AGENT_MODELS.md`.
+2. If `AGENT_MODELS.md` exists in the project root, override **per role**, not per file.
+   A project must not have to restate roles it does not want to change.
+3. If a role is still unset after merging, **ask the Human**. Never invent a slug.
+4. Before starting a subagent, verify the slug is available in this environment. If it is
+   not, ask — do not substitute silently.
+5. Record the **actually used** slug in the run artifact (`model:`). That is history.
 
-> Edit via `/role-assign`, or by hand. `unassigned` means the agent **must ask** the Human
-> before acting in that role.
+## Catalog shape
 
-| Role | Assigned model | Updated |
-|------|----------------|---------|
-| Planner | `unassigned` | — |
-| Coder | `unassigned` | — |
-| Reviewer | `unassigned` | — |
+```yaml
+schema_version: 1
+authority: Human
+coordinator_may_select: true    # may the Coordinator pick a row by complexity?
 
-## Resolution rule (MUST)
+roles:
+  Coordinator: { intent: "orchestration, strong reasoning", low: <slug>, medium: <slug>, high: <slug> }
+  Planner:     { intent: "decomposition, intent deltas",    low: <slug>, medium: <slug>, high: <slug> }
+  Critic:      { intent: "adversarial reading",             low: <slug>, medium: <slug>, high: <slug> }
+  Coder:       { intent: "implementation and tests",        low: <slug>, medium: <slug>, high: <slug> }
+  Adversary:   { intent: "independent review of the diff",  low: <slug>, medium: <slug>, high: <slug> }
 
-When an APM skill starts work in a role:
+constraints:
+  adversary_differs_from_coder: true
+  critic_differs_from_planner: true
+  grader_is_not_an_llm: true
+```
 
-1. **Assigned** → state the model to use and remind the Human to select it in Cursor's model
-   selector before continuing.
-2. **`unassigned`** → **ASK** the Human which model to use for this role before doing any
-   work. Offer to persist the answer via `/role-assign`.
+A role with `lock: true` uses its `pinned` slug regardless of complexity — that is a
+Human decision and the Coordinator does not vary it.
 
-Never silently assume a model. Never invent model names outside this table.
+## Hard constraints
 
-## Complex Tasks
+- The Adversary must not use the Coder's model. The same model tends to approve its own
+  reasoning.
+- The Critic should differ from the Planner whenever the catalog allows it.
+- The Grader is not an LLM at all; it is the command list in `VERIFY.md`.
 
-Each role maps to one model. If a Task is unusually complex, the Planner flags it
-(`Complexity: high`) and recommends the Human assign a stronger model to the **Coder** role
-for that Task. The choice is the Human's.
+## Who decides what
 
-## Audit trail
-
-The `model:` field in APM document front matter records the **actual** model that produced
-the document. Keep it concrete (it may be a dated snapshot) — that is history, not policy.
+| Decision | Who |
+|----------|-----|
+| Which slugs are allowed at all | Human (content of `AGENT_MODELS.md`) |
+| Whether the Coordinator may pick within a band | Human (`coordinator_may_select`, `lock`) |
+| Which band applies to this run | Coordinator, from the run's complexity |
+| Raising complexity (and thus the model) | Coordinator |
+| Lowering complexity | Human only |
+| Any exception outside the catalog | Human, recorded in the file or in `status.md` |
 
 ## Cursor limitation
 
-Cursor does **not** auto-switch the model per skill or role. An assignment is documented
-intent + a reminder for the Human. For true per-role automation, drive agents via the
-Cursor SDK or separate Cloud Agents.
-
-## Commands
-
-- `/role-assign` — assign a model to a role (asks if role/model not given).
-- `/role-show` — show the current Active Role Assignments.
+Cursor does not switch the parent chat's model by itself. The Coordinator passes the slug
+when starting a subagent, and **reminds the Human** which model to select for the parent
+window. Full automation without that reminder needs the Cursor SDK or Cloud Agents, with
+the same catalog.

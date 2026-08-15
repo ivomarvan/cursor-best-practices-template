@@ -22,12 +22,12 @@ alwaysApply: true
 - **Chat with the user**: always in `<communication-language>`, unless the user writes otherwise.
 - **Language of rules and skills**: always **English**. Do not add translation comments or a second-language copy of the rule or skill text.
 - **Language of code**: identifiers, docstrings, inline comments, and commit messages are always **English**.
-- **APM prose for the Human** (`report.md`, `review.md`, and similar): write in `<communication-language>`.
+- **Run prose for the Human** (`report.md`, `review.md`, `status.md`, and similar): write in `<communication-language>`. Intent nodes are always English.
 
 ## How to Change the Communication Language
 
 Edit only this file — change `<communication-language>` and `<lang-code>` in the table above.
-All other rules read the setting from here. Changing this table affects chat and Human-facing APM documents; it does not require translating `.mdc` or `SKILL.md` files.
+All other rules read the setting from here. Changing this table affects chat and Human-facing run documents; it does not require translating `.mdc` or `SKILL.md` files.
 
 | Language | `<communication-language>` | `<lang-code>` |
 |----------|---------------------------|---------------|

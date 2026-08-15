@@ -1,7 +1,8 @@
 # Agentic Engineering — studijní materiály
 
 > Kurátorovaný seznam zdrojů k vylepšení vedení projektů, na kterých pracují AI agenti.
-> Každá položka je napojená na konkrétní doporučení nebo prvek tohoto APM systému.
+> Každá položka je napojená na konkrétní doporučení nebo prvek metodiky ICE
+> (Intent – Contract – Evidence) v tomto repozitáři.
 > Odkazy ověřeny: 2026-06-13.
 
 ---
@@ -15,8 +16,8 @@ Referenční přehled vzorů: rozdíl mezi *workflow* (předdefinované kroky) a
 (model řídí vlastní postup) a katalog vzorů — prompt chaining, routing, orchestrator–workers
 a **evaluator–optimizer**.
 
-- **Souvislost s naším APM:** evaluator–optimizer = naše nová role **Reviewer**
-  (`skills/review-task/`). Orchestrator–workers = vztah Planner → Coder.
+- **Souvislost s ICE:** evaluator–optimizer = role **Adversary** (`skills/ice-review/`)
+  a strojový **Grader**. Orchestrator–workers = vztah Coordinator → Planner/Coder.
 - Hlavní zásada: *„Najdi nejjednodušší řešení a složitost přidávej, jen když je potřeba."*
 
 ### Effective context engineering for AI agents — Anthropic
@@ -25,7 +26,7 @@ a **evaluator–optimizer**.
 Jak spravovat *attention budget* modelu: hledat nejmenší množinu vysoce signálních tokenů.
 Strategie: compaction, tool-result clearing, externí paměť (note-taking), izolace přes subagenty.
 
-- **Souvislost s naším APM:** přímá teorie za naším **Context Bundle** a dokumentovou pamětí
+- **Souvislost s ICE:** přímá teorie za **řezem kontextu** (`intent slice`) a stromem záměru
   (spec/report). Nápad na zlepšení: cross-task „memory" a handover mezi instancemi.
 
 ### Effective harnesses for long-running agents / Harness design — Anthropic
@@ -45,7 +46,7 @@ a paralelní běh (doporučení #5 — worktrees / Cloud Agents).
 Dvanáct principů pro spolehlivé LLM aplikace (analogie 12-Factor App). Mj.: vlastni si svoje
 prompty, kontext i control flow; malé fokusované agenty; human-in-the-loop; stateless reducer.
 
-- **Souvislost s naším APM:** potvrzuje náš design (Human gate, malé role, dokumentový stav)
+- **Souvislost s ICE:** potvrzuje design (Human gate, malé role, stav v souborech)
   a dává slovník pro další vylepšení.
 
 ### Agentic Project Management (APM) — sdi2200262
@@ -56,7 +57,7 @@ Upstream framework, kterým je náš systém inspirovaný. Stojí za prostudová
   pro přenos „pracovní paměti" do čerstvé instance, když se zaplní kontext.
 - Návrh: <https://agentic-project-management.dev/docs/context-and-memory-management>
 
-- **Souvislost s naším APM:** chybějící dílek u nás — co dělat, když Coder/Planner narazí na
+- **Souvislost s ICE:** eskalační pravidla — co dělat, když Coder nebo Planner narazí na
   strop kontextu uprostřed dlouhého tasku (kandidát na budoucí skill `handover`).
 
 ---
@@ -70,7 +71,7 @@ Krádež dat je možná, když agent má současně: (1) přístup k privátním
 (2) příjem nedůvěryhodného obsahu, (3) možnost odchozí komunikace. Odstranění libovolné nohy
 útok zablokuje.
 
-- **Souvislost s naším APM:** přímý základ pravidla `rules/08-agent-security.mdc`.
+- **Souvislost s ICE:** přímý základ pravidla `rules/08-agent-security.mdc`.
 - Navazující: *Design Patterns for Securing LLM Agents against Prompt Injections* (odkazováno
   v článku) — šest vzorů obrany.
 
@@ -85,15 +86,15 @@ Komentář M. Fowlera: <https://martinfowler.com/bliki/ArchitectureDecisionRecor
 Lehký formát záznamu rozhodnutí (Title, Status, Context, Decision, Consequences) verzovaný
 vedle kódu.
 
-- **Souvislost s naším APM:** základ pro **ADR most** (doporučení #2) — povyšování rozhodnutí
-  z Task/Epic reportů do `doc/architecture/decisions/`.
+- **Souvislost s ICE:** základ pro **ADR most** — povyšování rozhodnutí z reportů běhu
+  do `doc/architecture/decisions/` s citací krátkých identifikátorů uzlů.
 
 ### The Practical Test Pyramid — Ham Vocke (na webu M. Fowlera)
 <https://martinfowler.com/articles/practical-test-pyramid.html>
 
 Vyvážené portfolio testů: hodně rychlých unit testů, méně integračních, minimum e2e.
 
-- **Souvislost s naším APM:** podklad pro budoucí samostatné pravidlo `19-testing.mdc`
+- **Souvislost s ICE:** podklad pro pravidlo `09-testing.mdc`
   (doporučení #6) — coverage brána a test pyramida nad rámec „happy + edge + error".
 
 ---
@@ -123,12 +124,12 @@ Vyvážené portfolio testů: hodně rychlých unit testů, méně integračníc
 
 | # | Doporučení | Hlavní zdroj | Stav |
 |---|------------|--------------|------|
-| 1 | Nezávislý Reviewer | Building Effective Agents (evaluator–optimizer) | hotovo — `skills/review-task/` |
-| 2 | ADR most | Nygard — ADR | hotovo — rule 07 + skills |
-| 3 | Definition of Ready | (vlastní; protějšek DoD) | hotovo — rule 07 + plan-epic |
+| 1 | Nezávislá recenze | Building Effective Agents (evaluator–optimizer) | hotovo — `skills/ice-review/` |
+| 2 | ADR most | Nygard — ADR | hotovo — `rules/07-run-artifacts.mdc` |
+| 3 | Definition of Ready | (vlastní; protějšek DoD) | hotovo — `rules/07-run-artifacts.mdc` |
 | 7 | Prompt-injection obrana | Willison — lethal trifecta | hotovo — `rules/08-agent-security.mdc` |
-| 8 | Model-policy single source | 12-Factor Agents (own your config) | hotovo — `rules/00-model-policy.mdc` |
-| 4 | Spec reconciliation | APM memory/handover | částečně — v `review-epic` |
-| 5 | Paralelní tasky | Anthropic harness / Cursor Cloud Agents | navrženo |
+| 8 | Katalog modelů | 12-Factor Agents (own your config) | hotovo — `AGENT_MODELS.md` |
+| 4 | Udržovaný zdroj pravdy | APM memory/handover | hotovo — strom záměru `doc/intent/` |
+| 5 | Paralelní běhy | Anthropic harness / Cursor Cloud Agents | navrženo |
 | 6 | Testovací strategie | Practical Test Pyramid | navrženo |
-| 9 | Měření procesu | building evals (Anthropic/OpenAI) | navrženo |
+| 9 | Měření procesu | building evals (Anthropic/OpenAI) | navrženo — metriky nad `doc/runs/` |

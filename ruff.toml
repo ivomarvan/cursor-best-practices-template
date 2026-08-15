@@ -1,0 +1,15 @@
+# Linter and formatter settings for the harness tooling under tools/.
+# This repository is not a Python package; the config exists so editors and CI use the
+# same width and rule set as rules/10-python.mdc prescribes for consuming projects.
+
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+# Docstrings quote the methodology, which uses en dashes and typographic quotes.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[lint.per-file-ignores]
+# Tests reach into private helpers on purpose to check behaviour at the seam.
+"tools/intent/tests/*" = ["SLF001"]

@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "nodes": {
+    "i0001": {
+      "id": "i0001",
+      "slug": "harness",
+      "title": "Cursor agent harness",
+      "status": "current",
+      "parent": null,
+      "path": "i0001",
+      "depth": 0,
+      "children": [
+        "i0002",
+        "i0003",
+        "i0004",
+        "i0005"
+      ],
+      "uses": [],
+      "talks_to": [],
+      "code_paths": [],
+      "test_paths": [],
+      "contracts": [
+        {
+          "id": "c1",
+          "text": "Relative links inside rules and skills resolve to existing files",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        },
+        {
+          "id": "c2",
+          "text": "Cursor discovers rules and skills through the .cursor symlinks",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        }
+      ],
+      "open_questions": [],
+      "file": "doc/intent/nodes/i0001-harness.md"
+    },
+    "i0002": {
+      "id": "i0002",
+      "slug": "rules",
+      "title": "Rules",
+      "status": "current",
+      "parent": "i0001",
+      "path": "i0001/i0002",
+      "depth": 1,
+      "children": [],
+      "uses": [],
+      "talks_to": [],
+      "code_paths": [
+        "rules/"
+      ],
+      "test_paths": [],
+      "contracts": [
+        {
+          "id": "c1",
+          "text": "Every rule declares its activation: description, globs, or alwaysApply true",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        },
+        {
+          "id": "c2",
+          "text": "An always-applied rule stays within 150 lines, a scoped rule within 250",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        }
+      ],
+      "open_questions": [],
+      "file": "doc/intent/nodes/i0002-rules.md"
+    },
+    "i0003": {
+      "id": "i0003",
+      "slug": "skills",
+      "title": "Skills",
+      "status": "current",
+      "parent": "i0001",
+      "path": "i0001/i0003",
+      "depth": 1,
+      "children": [],
+      "uses": [
+        "i0002"
+      ],
+      "talks_to": [],
+      "code_paths": [
+        "skills/"
+      ],
+      "test_paths": [],
+      "contracts": [
+        {
+          "id": "c1",
+          "text": "Every skill directory holds a SKILL.md declaring name and description",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        },
+        {
+          "id": "c2",
+          "text": "A skill stays within 500 lines",
+          "enforced_by": "cmd: python3 tools/checks/template_checks.py --root .",
+          "reason": null
+        }
+      ],
+      "open_questions": [],
+      "file": "doc/intent/nodes/i0003-skills.md"
+    },
+    "i0004": {
+      "id": "i0004",
+      "slug": "intent-tooling",
+      "title": "Intent tooling",
+      "status": "current",
+      "parent": "i0001",
+      "path": "i0001/i0004",
+      "depth": 1,
+      "children": [],
+      "uses": [],
+      "talks_to": [],
+      "code_paths": [
+        "tools/"
+      ],
+      "test_paths": [
+        "tools/intent/tests/"
+      ],
+      "contracts": [
+        {
+          "id": "c1",
+          "text": "Node front matter survives a dump and parse round trip unchanged",
+          "enforced_by": "tools/intent/tests/test_miniyaml.py::test_dump_then_parse",
+          "reason": null
+        },
+        {
+          "id": "c2",
+          "text": "Constructs outside the supported YAML subset are rejected, never ignored",
+          "enforced_by": "tools/intent/tests/test_miniyaml.py::test_anchor_is_rejected",
+          "reason": null
+        },
+        {
+          "id": "c3",
+          "text": "A structurally correct tree produces no validator errors",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_minimal_valid_tree_has_no_errors",
+          "reason": null
+        },
+        {
+          "id": "c4",
+          "text": "code_paths may overlap only along the ancestor chain, never between siblings",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_siblings_may_not_overlap",
+          "reason": null
+        },
+        {
+          "id": "c5",
+          "text": "A contract pointing at a missing test is an error, not a warning",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_contract_pointing_at_missing_test_is_rejected",
+          "reason": null
+        },
+        {
+          "id": "c6",
+          "text": "A slice carries ancestors and semantic dependencies but never siblings",
+          "enforced_by": "tools/intent/tests/test_tools.py::test_slice_contains_ancestors_and_uses_but_not_siblings",
+          "reason": null
+        },
+        {
+          "id": "c7",
+          "text": "Path and depth exist only in generated views, never in a node file",
+          "enforced_by": "tools/intent/tests/test_tools.py::test_index_holds_derived_path_and_depth",
+          "reason": null
+        }
+      ],
+      "open_questions": [],
+      "file": "doc/intent/nodes/i0004-intent-tooling.md"
+    },
+    "i0005": {
+      "id": "i0005",
+      "slug": "git-hooks",
+      "title": "Git hooks",
+      "status": "current",
+      "parent": "i0001",
+      "path": "i0001/i0005",
+      "depth": 1,
+      "children": [],
+      "uses": [],
+      "talks_to": [],
+      "code_paths": [
+        "hooks/"
+      ],
+      "test_paths": [],
+      "contracts": [
+        {
+          "id": "c1",
+          "text": "The commit-msg hook removes agent attribution and keeps everything else",
+          "enforced_by": "cmd: python3 tools/checks/hook_checks.py --root .",
+          "reason": null
+        },
+        {
+          "id": "c2",
+          "text": "Every shipped hook is executable",
+          "enforced_by": "cmd: python3 tools/checks/hook_checks.py --root .",
+          "reason": null
+        }
+      ],
+      "open_questions": [],
+      "file": "doc/intent/nodes/i0005-git-hooks.md"
+    }
+  },
+  "reverse_code_map": [
+    {
+      "code_path": "hooks/",
+      "node": "i0005",
+      "depth": "1"
+    },
+    {
+      "code_path": "rules/",
+      "node": "i0002",
+      "depth": "1"
+    },
+    {
+      "code_path": "skills/",
+      "node": "i0003",
+      "depth": "1"
+    },
+    {
+      "code_path": "tools/",
+      "node": "i0004",
+      "depth": "1"
+    }
+  ]
+}

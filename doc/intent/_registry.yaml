@@ -1,0 +1,13 @@
+prefix: i
+next_serial: 6
+issued:
+  i0001:
+    slug: harness
+  i0002:
+    slug: rules
+  i0003:
+    slug: skills
+  i0004:
+    slug: intent-tooling
+  i0005:
+    slug: git-hooks

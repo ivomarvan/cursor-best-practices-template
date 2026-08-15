@@ -1,0 +1,129 @@
+---
+description: >-
+  Artifacts of one ICE run in doc/runs: directory layout, front matter, Definition of
+  Ready, Definition of Done, report structure and run states. Use when starting,
+  documenting, reviewing or closing a run.
+globs: doc/runs/**
+---
+
+# Run Artifacts
+
+A **run** is one bounded change from request to finished work. Artifacts live in
+`doc/runs/<YYYYMMDD>-<HHMM>-<slug>-<suffix>/`. The suffix is a short random string so two
+runs in the same minute cannot collide.
+
+`doc/runs/` is never loaded wholesale. It is read only when the Coordinator hands over a
+specific path.
+
+## How many files
+
+**`low`** — a single `run.md` with sections: request, plan, report, grader log, status.
+
+**`medium` and `high`** — separate files:
+
+| File | Written by | Content |
+|------|-----------|---------|
+| `request.md` | Coordinator | the request in its own words |
+| `change.md` | Planner | intent delta (only when the tree changed) |
+| `plan.md` | Planner | goal, outputs, test spec, Definition of Done |
+| `slice.md` | Coordinator | output of `intent slice` |
+| `critique.md` | Critic | `ACCEPT` / `REVISE` with reasons |
+| `report.md` | Coder | what was done, read, changed, decided |
+| `grader.md` | Grader | machine log of `VERIFY.md` |
+| `review.md` | Adversary | `APPROVE` / `REQUEST CHANGES` |
+| `status.md` | Coordinator | final state, models, loop counts, Human gate |
+
+## Front matter
+
+Every artifact starts with:
+
+```yaml
+---
+run_id: 20260815-1328-user-email-a7
+intent_ids: ["i0042"]
+role: Coder
+model: <the slug actually used>
+complexity: medium
+status: in-progress        # in-progress | done | escalated | abandoned
+---
+```
+
+`plan.md` (or `run.md`) additionally declares what the run is allowed to touch — the
+scope guard reads exactly these two lists:
+
+```yaml
+outputs: ["src/db/models/user.py", "tests/db/test_user.py"]
+incidental: ["uv.lock", "doc/intent/MAP.md"]
+```
+
+Incidental files are named **in advance**, so they cannot be added once the guard
+complains.
+
+## Definition of Ready — the plan is not accepted without it
+
+- [ ] The goal is measurable, not "improve X".
+- [ ] Outputs name concrete files or interfaces.
+- [ ] The slice comes from `intent slice`, not from "read everything".
+- [ ] Every affected contract has a named enforcer, including new ones.
+- [ ] Test spec: happy path + at least one edge case + at least one error case.
+      For a pure refactor: unchanged behaviour + the regression set.
+- [ ] Every Definition of Done item maps to an artifact or a command.
+- [ ] Incidental files are listed.
+- [ ] No node in the slice has a blocking open question.
+- [ ] The run is implementable and testable in isolation.
+
+## Definition of Done — filled by the Coder, verified by the Adversary
+
+Each item is a checkable artifact or command. Two items are mandatory:
+
+- [ ] Failing-test evidence: the new test fails on unchanged code (log in `grader.md`).
+- [ ] `VERIFY.md` passes, including `intent validate` and `intent scope`.
+
+## Report structure
+
+Write `report.md` prose in `<communication-language>` (see `00-communication-language.mdc`);
+keep file paths, symbols and commands as they are.
+
+| # | Section | Czech heading |
+|---|---------|---------------|
+| 1 | What was implemented | `## Co bylo implementováno` |
+| 2 | Inputs and outputs | `## Vstupy a výstupy` |
+| 3 | Methods and decisions | `## Použité metody a rozhodnutí` |
+| 4 | Code references | `## Reference do kódu` |
+| 5 | Evidence | `## Důkazy` |
+| 6 | Definition of Done | `## Definition of Done` |
+
+- **Inputs and outputs**: `###` subsections (Read / Created / Changed / Not touched),
+  **one repo path per bullet**, always in backticks.
+- **Code references**: a table `| File | Lines | Summary |`.
+- **Evidence**: a table `| Command | Result | Exit code |`. Numbers written here are
+  *claims*; the trustworthy record is `grader.md`.
+- **Definition of Done**: a short paragraph, not a duplicated checklist.
+
+❌ One bullet with comma-separated paths.
+✅ One path per line.
+
+## Run states
+
+| State | Meaning | The branch |
+|-------|---------|-----------|
+| `in-progress` | running | kept |
+| `done` | approved | ready to merge or commit |
+| `escalated` | rounds exhausted or blocking finding | frozen, waiting for the Human |
+| `abandoned` | the Human cancelled it | branch deleted, artifacts kept as audit |
+
+## Closing a run
+
+1. Write `status.md`: final state, models used, loop counts, Human gate decision.
+2. A decision that changes boundaries or interfaces across nodes becomes an ADR in
+   `doc/architecture/decisions/`, citing the short ids. It must not stay in the report.
+3. Skipping the Human review is recorded, never silent:
+
+```yaml
+human_review: skipped
+skipped_by: Coordinator
+skip_reason: "complexity=low; grader passed; scope clean; no intent change"
+```
+
+4. Commit only when the Human asks. The message ends with `Intent: iNNNN` and
+   `Run: <run_id>`.

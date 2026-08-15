@@ -95,15 +95,24 @@ that does not reflect reality.
 
 ```
 doc/
+├── intent/                     # Intent tree — the only truth about meaning
+│   ├── _registry.yaml          # issuer of short node ids
+│   ├── MAP.md                  # generated routing map
+│   ├── INDEX.json              # generated machine index (paths, reverse code map)
+│   ├── nodes/                  # active nodes: {id}-{slug}.md
+│   └── _retired/               # retired nodes — never read as valid intent
 ├── architecture/               # System design: component diagrams, data models, flows
 │   └── decisions/              # ADR-NNN-title.md — Architecture Decision Records
 ├── guides/                     # How-to guides, operational runbooks, onboarding
 ├── api/                        # API docs (OpenAPI specs, request/response examples)
 ├── external/                   # External: downloaded specs, standards, vendor docs
 │                               # Files here are references only — not our work
-└── project-progress/           # APM artifacts — see 07-project-management.mdc
-                                # brief, spec, roadmap, epic plans, task specs, reports
+└── runs/                       # Audit of ICE runs — see 07-run-artifacts.mdc
+                                # request, plan, slice, report, grader log, review
 ```
+
+`doc/intent/` and `doc/runs/` are not interchangeable: the tree says what the system
+means, the runs say what happened. Runs are evidence, never specification.
 
 ### Architecture Decision Records (ADR)
 

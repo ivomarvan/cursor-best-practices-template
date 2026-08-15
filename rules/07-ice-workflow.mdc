@@ -1,0 +1,101 @@
+---
+alwaysApply: true
+---
+
+# ICE Workflow — Intent, Contract, Evidence
+
+Every change answers three questions: **what does it mean** (intent), **how do I know**
+(contract), **where is the proof** (evidence). Production code does not change until all
+three have an answer.
+
+## Source of truth
+
+- `doc/intent/` is the only truth about **meaning**. Read `status: current` nodes only.
+- Reports, run artifacts and git history are **audit**, never specification.
+- `doc/intent/MAP.md` is the routing map: always readable, used to find the right node.
+- Everything else is read through a **slice**, not by browsing `doc/`.
+- No `doc/intent/` in the project yet → work under the existing rules and offer to start
+  the tree. Never invent a tree silently.
+
+## Tooling
+
+```bash
+python3 .cursor/tools/intent/cli.py <command>   # in a project (template is a submodule)
+python3 tools/intent/cli.py <command>           # inside the template repo itself
+```
+
+| Command | Purpose |
+|---------|---------|
+| `validate` | machine rules V1–V10 over the tree; exit 1 on error |
+| `map` | regenerate `MAP.md` and `INDEX.json` (never edit them by hand) |
+| `new --parent iNNNN --slug x` | allocate an id and scaffold a node |
+| `slice iNNNN --for plan\|implement` | the file list for one action |
+| `scope --run <dir>` | diff versus declared outputs (scope guard) |
+| `coverage` | contracts without a machine enforcer; code outside any node |
+| `owner <path>` | which node governs a file |
+
+## Roles
+
+| Role | May | May not |
+|------|-----|---------|
+| **Coordinator** (parent chat) | start other roles, pick models, count loops, allocate ids | write production code; grade its own output |
+| **Planner** | intent deltas, run plan, slice, test spec | write production code; approve its own plan |
+| **Critic** | verdict `ACCEPT` / `REVISE` on plans and intent changes | rewrite the plan; write code |
+| **Coder** | production code, tests, report | change `current` nodes; start its own review |
+| **Grader** | run `VERIFY.md` (machine, not an LLM) | interpret intent; weaken a test to pass |
+| **Adversary** | `APPROVE` / `REQUEST CHANGES` on the diff | fix production code |
+
+The Coder never starts the Adversary. The Adversary always uses a different model than
+the Coder. Loops are bounded: after 3 rounds, escalate to the Human.
+
+## Complexity
+
+| Level | Definition |
+|-------|------------|
+| `low` | does **not** change the tree, stays inside one node's `code_paths`, adds no dependency and no public interface |
+| `medium` | anything else that is not `high` |
+| `high` | any deterministic trigger below |
+
+Triggers forcing `high`: weakening or removing a contract; changing non-goals; retiring a
+node; changing a node that has children; auth, cryptography or secrets; database
+migration or schema change; changing an interface another node cites; adding or removing
+a third-party dependency; deleting files; touching `.cursor/`, `hooks/`, CI or
+`VERIFY.md`.
+
+Coordinator may raise the level at any time. **Only the Human may lower it.**
+
+## Gates
+
+| Gate | low | medium | high |
+|------|-----|--------|------|
+| `intent validate` | yes | yes | yes |
+| Grader (`VERIFY.md`) | yes | yes | yes |
+| Scope guard (`intent scope`) | yes | yes | yes |
+| Failing-test evidence for every new test | yes | yes | yes |
+| Critic on the plan | no | yes | yes |
+| Critic on an intent change | not applicable | yes | yes |
+| Adversary | no | yes | yes |
+| Human after the result | skipped, with a recorded reason | notified | required |
+
+Scope guard failure raises the run to `medium` and wakes the Adversary, whatever the
+original level was.
+
+## Always the Human
+
+- Weakening or removing a contract — an agent may tighten one, never loosen it.
+- The first root of the tree, changes to non-goals, retiring a node.
+- A contract with `enforced_by: review` (a contract without a test).
+- `git commit`, `push`, merge, database migration, deleting data.
+- Any escalation, lowering complexity, changing this methodology, `AGENT_MODELS.md`,
+  `VERIFY.md` or the list of allowed MCP servers.
+
+## Stop and escalate when
+
+The request contradicts a `current` node and no approved intent change exists; the slice
+is incomplete; a node in the slice has a blocking open question; a gate ran out of
+rounds; a commit, push, migration, deletion or new tool server is needed.
+
+## Model selection
+
+Capability intent per role lives in `AGENT_MODELS.md` (see `00-model-policy.mdc`).
+Never invent a model slug outside that catalog.
