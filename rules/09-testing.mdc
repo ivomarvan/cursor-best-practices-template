@@ -1,0 +1,44 @@
+---
+description: >-
+  Testing contract — unit vs integration vs E2E, markers, determinism, naming.
+  Use when writing or running tests (pytest, Vitest, Playwright, firmware tests).
+globs: "**/tests/**, **/test_*.py, **/*.test.ts, **/*.spec.ts, **/conftest.py"
+alwaysApply: false
+---
+
+# Testing Contract
+
+## Layers
+
+| Layer | What it covers | Default tools |
+|-------|----------------|---------------|
+| **Unit** | One module, no I/O | pytest / Vitest |
+| **Integration** | DB, queue, HTTP to local infra | pytest + Docker services |
+| **E2E** | Browser or full HTTP API | Playwright (frontend); HTTPX/TestClient (API) |
+
+Firmware tests: Unity / pytest-embedded — see `12-cpp-esp32.mdc`.
+
+## Rules
+
+- Every new public function/module: happy path + ≥1 edge + ≥1 error case.
+- Tests are **deterministic** — no wall-clock time, random seed, or network without a mock/fake.
+- Name: `test_<what>_<condition>_<expected_result>` (Python) or `it('does X when Y')` (Vitest).
+- Mark slow or I/O tests: `unit` / `integration` / `slow` (pytest) or equivalent.
+- Coverage is a **signal**, not a target — do not add asserts that only exist to raise coverage.
+- Do not commit tests that require unpaid cloud APIs or production credentials.
+
+## Python
+
+- `pytest` with `asyncio_mode = "auto"`.
+- Default local run: `pytest -m "not slow"`; CI runs the full suite including `integration` when Compose is up.
+- Hypothesis for parsers and codecs.
+
+## Frontend
+
+- Unit: **Vitest** next to the component (`*.test.ts`).
+- E2E: **Playwright**. Cypress only as an explicit exception.
+
+## Verification
+
+Before claiming work is done, run the relevant suite and report **command, counts, and exit code**.
+See `01-general-programming.mdc` (verification before completion).

@@ -9,17 +9,13 @@ alwaysApply: false
 
 # Qdrant — Best Practices
 
-<!-- cs: Best practices pro Qdrant vektorovou databázi -->
-
 ## Docker Setup
-
-<!-- cs: Docker setup -->
 
 ```yaml
 # docker-compose.yml — infrastructure section
 services:
   qdrant:
-    image: qdrant/qdrant:v1.9.2        # always pin the version
+    image: qdrant/qdrant:v1.16.0       # always pin the version
     ports:
       - "6333:6333"                     # REST API
       - "6334:6334"                     # gRPC
@@ -39,8 +35,6 @@ volumes:
 
 ## Python Client Setup
 
-<!-- cs: Python klient -->
-
 ```python
 # Use grpc for production (faster batch operations); http for dev/scripts
 from qdrant_client import QdrantClient
@@ -57,41 +51,28 @@ client = QdrantClient(url="http://localhost:6333")
 
 ## Collection Design
 
-<!-- cs: Návrh kolekcí -->
-
 ```python
 from qdrant_client.models import Distance, VectorParams, HnswConfigDiff
 
-# ✅ Create collection — idempotent (recreate_collection replaces existing)
-await client.recreate_collection(
-    collection_name="documents",
-    vectors_config=VectorParams(
-        size=1536,              # must match embedding model output dimension
-        distance=Distance.COSINE,
-    ),
-    hnsw_config=HnswConfigDiff(
-        m=16,                   # higher → better recall, more memory
-        ef_construct=200,       # higher → better index quality, slower indexing
-    ),
-    on_disk_payload=True,       # ✅ keep payload on disk — saves RAM for large corpora
-)
+# ✅ create_collection — skip if it already exists (never wipe production data)
+existing = {c.name for c in (await client.get_collections()).collections}
+if "documents" not in existing:
+    await client.create_collection(
+        collection_name="documents",
+        vectors_config=VectorParams(
+            size=1536,              # must match embedding model output dimension
+            distance=Distance.COSINE,
+        ),
+        hnsw_config=HnswConfigDiff(m=16, ef_construct=200),
+        on_disk_payload=True,       # keep payload on disk — saves RAM
+    )
 
-# ✅ Named vectors — for multi-vector (e.g. title + body) search
-await client.recreate_collection(
-    collection_name="articles",
-    vectors_config={
-        "title": VectorParams(size=1536, distance=Distance.COSINE),
-        "body":  VectorParams(size=1536, distance=Distance.COSINE),
-    },
-)
+# ❌ recreate_collection / delete+create — destructive; only with explicit Human approval
 ```
 
 ## Payload Indexing
 
-<!-- cs: Indexování payloadu -->
-
 Always index fields used in `filter` — without index, filter scans all vectors:
-<!-- cs: Vždy indexuj pole používaná ve filter — bez indexu probíhá full scan. -->
 
 ```python
 from qdrant_client.models import PayloadSchemaType
@@ -110,8 +91,6 @@ await client.create_payload_index(
 ```
 
 ## Point Upsert
-
-<!-- cs: Vkládání bodů -->
 
 ```python
 from qdrant_client.models import PointStruct
@@ -135,17 +114,16 @@ await client.upsert(
 )
 ```
 
-## Search with Filter
+## Query with Filter
 
-<!-- cs: Vyhledávání s filtrem -->
+`search()` is removed. Use **Query API** `query_points()`.
 
 ```python
-from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
-# ✅ Filtered semantic search
-results = await client.search(
+response = await client.query_points(
     collection_name="documents",
-    query_vector=query_embedding,
+    query=query_embedding,
     query_filter=Filter(
         must=[
             FieldCondition(key="source_id", match=MatchValue(value="feed-42")),
@@ -155,19 +133,16 @@ results = await client.search(
         ],
     ),
     limit=10,
-    with_payload=True,   # ✅ return payload — avoids a second DB lookup
-    with_vectors=False,  # ❌ don't return vectors unless you need them (bandwidth)
-    score_threshold=0.7, # optional: minimum cosine similarity
+    with_payload=True,
+    with_vectors=False,
+    score_threshold=0.7,
 )
 
-# Access results
-for hit in results:
+for hit in response.points:
     print(hit.id, hit.score, hit.payload["content"])
 ```
 
 ## Batch Operations
-
-<!-- cs: Dávkové operace -->
 
 ```python
 # ✅ Always upsert in batches — individual upserts are slow for bulk loading
@@ -192,8 +167,6 @@ await client.delete(
 
 ## Repository Pattern
 
-<!-- cs: Repository pattern -->
-
 ```
 src/
 └── <module>/
@@ -201,8 +174,5 @@ src/
 ```
 
 - One `VectorRepository` class per collection.
-  <!-- cs: Jedna třída VectorRepository na kolekci. -->
 - Business logic never calls `qdrant_client` directly — only through the repository.
-  <!-- cs: Business logika nevolá qdrant_client přímo — jen přes repository. -->
 - Constructor accepts `AsyncQdrantClient` — injectable for testing with `AsyncQdrantClient(":memory:")`.
-  <!-- cs: Konstruktor přijímá AsyncQdrantClient — injectovatelný pro testy přes in-memory klient. -->

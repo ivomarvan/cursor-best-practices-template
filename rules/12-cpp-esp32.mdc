@@ -8,25 +8,15 @@ alwaysApply: false
 
 # C/C++ and ESP-IDF — Coding Standards
 
-<!-- cs: Standardy pro C/C++ firmware na ESP32 s ESP-IDF -->
-
 ## Language Standard
 
-<!-- cs: Jazykový standard -->
-
-- **C**: C11 (`-std=c11`), **C++**: C++17 (`-std=c++17`).
-  <!-- cs: C: C11, C++: C++17. -->
+- **C**: C11 (`-std=c11`). **C++**: C++20 (`-std=c++20`) for new C++ components; C++17 only to match an existing component.
 - Prefer C where sufficient — C++ only for OOP abstractions (drivers, HAL layers).
-  <!-- cs: Preferuj C tam kde postačuje — C++ jen pro OOP abstrakce (drivers, HAL vrstvy). -->
-- ESP-IDF target: ESP32 / ESP32-S3 / ESP32-C3 — always specify in `CMakeLists.txt`.
-  <!-- cs: ESP-IDF target vždy specifikuj v CMakeLists.txt. -->
+- ESP-IDF **5.4+**; target (ESP32 / ESP32-S3 / ESP32-C3 / …) always specified in `CMakeLists.txt`.
 
 ## Docstrings — Doxygen Style
 
-<!-- cs: Dokumentace — Doxygen -->
-
 Every public function and class in `.h` / `.hpp` has a Doxygen comment:
-<!-- cs: Každá veřejná funkce a třída v .h / .hpp má Doxygen komentář. -->
 
 ```c
 /**
@@ -45,11 +35,8 @@ esp_err_t wifi_manager_connect(const wifi_config_t *config, esp_netif_ip_info_t 
 ```
 
 - Implementation files (`.c`/`.cpp`) may use shorter comments — details belong in `.h`.
-  <!-- cs: Implementační soubory mohou mít stručnější komentáře — detaily patří do .h. -->
 
 ## Naming Conventions
-
-<!-- cs: Pojmenování -->
 
 | Type | Convention | Example |
 |---|---|---|
@@ -62,8 +49,6 @@ esp_err_t wifi_manager_connect(const wifi_config_t *config, esp_netif_ip_info_t 
 | ESP-IDF components | `lowercase` directory | `components/wifi_manager/` |
 
 ## Include Guards and Order
-
-<!-- cs: Include guards a pořadí include souborů -->
 
 ```c
 #pragma once   // preferred over classic include guards
@@ -79,11 +64,14 @@ esp_err_t wifi_manager_connect(const wifi_config_t *config, esp_netif_ip_info_t 
 
 ## Error Handling — Mandatory
 
-<!-- cs: ESP-IDF error handling — povinné -->
-
 ```c
-// ✅ Always check esp_err_t return values
+#include "esp_check.h"
+#include "esp_log.h"
+
 static const char *TAG = "wifi_manager";
+
+// ✅ Project-wide: ESP_RETURN_ON_ERROR from esp_check.h — do not redefine it
+ESP_RETURN_ON_ERROR(esp_wifi_init(&cfg), TAG, "wifi init failed");
 
 esp_err_t ret = esp_wifi_connect();
 if (ret != ESP_OK) {
@@ -91,21 +79,10 @@ if (ret != ESP_OK) {
     return ret;
 }
 
-// ✅ Macro for repeated error-check pattern (define project-wide)
-#define ESP_RETURN_ON_ERROR(x, tag, msg) do {               \
-    esp_err_t err_ = (x);                                   \
-    if (err_ != ESP_OK) {                                   \
-        ESP_LOGE(tag, "%s: %s", msg, esp_err_to_name(err_)); \
-        return err_;                                        \
-    }                                                       \
-} while(0)
-
-ESP_RETURN_ON_ERROR(esp_wifi_init(&cfg), TAG, "wifi init failed");
+// ❌ ESP_ERROR_CHECK() in library/component code — it aborts. OK only in app_main.
 ```
 
 ## Logging — ESP-IDF Macros Only
-
-<!-- cs: Logging — výhradně ESP-IDF makra -->
 
 ```c
 static const char *TAG = "module_name";  // each module has its own TAG
@@ -119,8 +96,6 @@ ESP_LOGD(TAG, "Raw packet: %d bytes", len);  // debug level only
 ```
 
 ## Memory Management
-
-<!-- cs: Správa paměti -->
 
 ```c
 // ✅ Prefer static allocation (stack or static keyword)
@@ -141,8 +116,6 @@ free(buf);
 
 ## FreeRTOS
 
-<!-- cs: FreeRTOS -->
-
 ```c
 // Task creation — always check return value
 BaseType_t res = xTaskCreatePinnedToCore(
@@ -161,8 +134,6 @@ while (!connected) {
 
 ## Defensive Programming
 
-<!-- cs: Bezpečnost a defensive programming -->
-
 ```c
 // Validate all inputs at function entry
 void process_data(const uint8_t *data, size_t len) {
@@ -178,13 +149,9 @@ configASSERT(handle != NULL);  // invariants — disabled in Release build
 
 ## OOP in C++ — RAII
 
-<!-- cs: OOP v C++ — RAII a návrhové vzory -->
-
 **RAII** — every resource (memory, mutex, handle) is owned by an object; destructor guarantees release:
-<!-- cs: RAII — každý zdroj je vlastněn objektem; destruktor zaručuje uvolnění. -->
 
 **Rule of Five** — if you define any of {destructor, copy constructor, copy assignment, move constructor, move assignment}, define all five explicitly:
-<!-- cs: Rule of Five — pokud definuješ destruktor nebo jakýkoliv copy/move, definuj všech pět explicitně. -->
 
 ```cpp
 // Pattern: RAII — FreeRTOS mutex guard (analogous to std::lock_guard)
@@ -212,7 +179,6 @@ void critical_section() {
 ```
 
 **`std::optional`** — use for values that may be absent; avoids sentinel values (C++17, supported in ESP-IDF):
-<!-- cs: std::optional — pro hodnoty, které mohou chybět; vyhýbá se sentinel hodnotám (C++17, podporováno v ESP-IDF). -->
 
 ```cpp
 #include <optional>
@@ -232,10 +198,7 @@ if (data.has_value()) {
 
 ## .gitignore — C/C++ and ESP-IDF-Specific Entries
 
-<!-- cs: .gitignore — C/C++ a ESP-IDF-specific záznamy -->
-
 Add these to the project `.gitignore` when C/C++ or ESP-IDF is used:
-<!-- cs: Přidej toto do .gitignore při použití C/C++ nebo ESP-IDF: -->
 
 ```gitignore
 *.o
@@ -254,16 +217,15 @@ managed_components/
 
 ## ESP-IDF Component Structure
 
-<!-- cs: Struktura ESP-IDF komponenty -->
-
 ```
 components/
 └── wifi_manager/
     ├── CMakeLists.txt
+    ├── idf_component.yml     # component manager dependencies
     ├── include/
     │   └── wifi_manager.h    # Public API
     ├── wifi_manager.c
-    └── README.md             # Component description, API, usage example
+    └── README.md
 ```
 
 ```cmake
@@ -273,3 +235,14 @@ idf_component_register(
     REQUIRES esp_wifi nvs_flash freertos
 )
 ```
+
+`compile_commands.json` stays gitignored (generated). Symlink it from `build/` for clangd:
+
+```bash
+ln -sf build/compile_commands.json compile_commands.json
+```
+
+## Tests
+
+- Host/unit: **Unity** in the component (`test/` + `idf.py test` / `pytest --embedded`).
+- On-device: **pytest-embedded**. See `09-testing.mdc` for the testing contract.

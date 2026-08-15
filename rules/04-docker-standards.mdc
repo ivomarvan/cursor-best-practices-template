@@ -8,97 +8,83 @@ alwaysApply: false
 
 # Docker — Technical Standards
 
-<!-- cs: Technické standardy pro psaní Dockerfile a docker-compose.yml -->
-
 ## Dockerfile
-
-<!-- cs: Dockerfile -->
 
 ### Core Rules
 
-<!-- cs: Základní pravidla -->
-
 - **Never `latest` tag** — always a pinned version: `python:3.12.3-slim`, not `python:latest`.
-  <!-- cs: Nikdy latest tag — vždy pinovaná verze: python:3.12.3-slim, ne python:latest. -->
 - **Multi-stage builds** — separate build stage from runtime stage; minimize final image size.
-  <!-- cs: Multi-stage builds — odděl build fázi od runtime fáze; minimalizuj výsledný image. -->
 - **Non-root user** — the application never runs as `root`; create a dedicated user.
-  <!-- cs: Non-root user — aplikace nikdy neběží jako root; vytvoř dedikovaného uživatele. -->
 - **`.dockerignore`** — every project must have `.dockerignore` (`.git`, `__pycache__`, `node_modules`, `data/`).
-  <!-- cs: .dockerignore — každý projekt musí mít .dockerignore (.git, __pycache__, node_modules, data/). -->
 
-### Multi-stage Build Pattern
+### Multi-stage Build Pattern (Python + uv)
 
-<!-- cs: Vzor multi-stage buildu -->
+Pin both the Python base and the **uv** image. Production stage has no Ruff/Pyrefly/pytest.
 
 ```dockerfile
-# Stage 1: install dependencies (cached separately from source code)
-FROM python:3.12.3-slim AS builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Pin uv; bump deliberately with the lockfile workflow
+FROM ghcr.io/astral-sh/uv:0.8.22 AS uv
 
-# Stage 2: dev — includes test and lint tools
-FROM python:3.12.3-slim AS dev
+FROM python:3.12.11-slim AS builder
+COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
-COPY --from=builder /install /usr/local
-RUN pip install --no-cache-dir pytest ruff mypy
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+FROM python:3.12.11-slim AS dev
+COPY --from=uv /uv /usr/local/bin/uv
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
 COPY . .
 
-# Stage 3: production — lean, no dev tooling
-FROM python:3.12.3-slim AS production
+FROM python:3.12.11-slim AS production
 WORKDIR /app
-COPY --from=builder /install /usr/local
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 RUN useradd --create-home --shell /bin/bash appuser
 USER appuser
 COPY --chown=appuser:appuser src/ ./src/
 EXPOSE 8000
+# No curl in slim images — use the interpreter already in PATH
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
 CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ### Cache Optimization
 
-<!-- cs: Cache optimalizace — závislosti před zdrojovým kódem -->
-
 ```dockerfile
-# ✅ Copy dependencies first — code changes don't invalidate pip cache
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# ✅ Lockfile first — code changes do not invalidate uv sync
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 COPY src/ ./src/
 
-# ❌ Any code change invalidates the entire pip install layer
+# ❌ Any code change invalidates the entire install layer
 COPY . .
-RUN pip install -r requirements.txt
+RUN uv sync
 ```
 
 ### System Packages — Cleanup
 
-<!-- cs: Systémové balíčky — čistota -->
-
 ```dockerfile
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    libpq5 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 ```
 
+Do **not** install `curl` solely for `HEALTHCHECK`.
+
 ## Docker Compose
 
-<!-- cs: Docker Compose -->
-
 - No `version:` field — obsolete since Compose V2.
-  <!-- cs: Bez version: fieldu — obsolete od Compose V2. -->
 - Secrets and config in `.env` file — never hardcoded in `docker-compose.yml`.
-  <!-- cs: Secrets a konfigurace do .env souboru — nikdy hardcodovány v docker-compose.yml. -->
 - Restart policy for production services: `restart: unless-stopped`.
-  <!-- cs: Restart policy pro produkční služby: restart: unless-stopped. -->
-- Named volumes for persistent data; bind mounts only for development hot-reload.
-  <!-- cs: Named volumes pro persistentní data; bind mount jen pro development hot-reload. -->
-- **npm/pip package added → image must be rebuilt.** Bind mounts only cover `src/`.
-  Run `docker compose build <service>` after every `package.json` / `requirements.txt` change.
-  <!-- cs: Přidání npm/pip balíčku vyžaduje rebuild image. Bind mounty pokrývají jen src/. Spusť docker compose build <service> po každé změně package.json / requirements.txt. -->
+- Named volumes for persistent data. For live reload prefer Compose **Watch**; bind mounts are acceptable for simple `src/` hot-reload.
+- **npm / uv.lock / package.json changed → rebuild the image.** Bind mounts and Watch only cover source, not installed packages.
+  Run `docker compose build <service>` after every lockfile change.
 
 ```yaml
 services:
@@ -113,9 +99,16 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: rebuild
+          path: ./uv.lock
 
   db:
-    image: postgres:16.2-alpine
+    image: postgres:17.5-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -135,11 +128,6 @@ volumes:
 
 ## Security
 
-<!-- cs: Bezpečnost -->
-
 - Scan image after build: `docker scout cves <image>` or `trivy image <image>`.
-  <!-- cs: Scan image po buildu: docker scout cves nebo trivy image. -->
 - Never add SSH keys, API tokens, or `.env` with real values into the image.
-  <!-- cs: Nikdy nepřidávej SSH klíče, API tokeny ani .env s reálnými hodnotami do image. -->
 - Read-only filesystem where possible: `read_only: true` in compose.
-  <!-- cs: Read-only filesystem kde je to možné: read_only: true v compose. -->

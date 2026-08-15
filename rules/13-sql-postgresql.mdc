@@ -8,11 +8,7 @@ alwaysApply: false
 
 # SQL and PostgreSQL — Standards
 
-<!-- cs: Konvence pro SQL, PostgreSQL schema design a přístup z Pythonu -->
-
 ## Naming Conventions
-
-<!-- cs: Naming conventions -->
 
 | Object | Convention | Example |
 |---|---|---|
@@ -24,8 +20,6 @@ alwaysApply: false
 | Sequences / serial | Use `gen_random_uuid()` | See schema design below |
 
 ## Data Types (PostgreSQL-Specific)
-
-<!-- cs: Datové typy (PostgreSQL-specific) -->
 
 ```sql
 -- Primary keys: UUID, not SERIAL
@@ -46,8 +40,6 @@ is_active BOOLEAN NOT NULL DEFAULT TRUE
 ```
 
 ## Schema Design Principles
-
-<!-- cs: Schema design principy -->
 
 ```sql
 CREATE TABLE documents (
@@ -76,8 +68,6 @@ ALTER TABLE document_versions
 
 ## Immutability and Versioning
 
-<!-- cs: Immutabilita a verzování -->
-
 ```sql
 -- Records are NEVER modified (UPDATE) — only new versions are inserted.
 -- Exception: toggling the is_latest flag.
@@ -92,12 +82,8 @@ WHERE document_id = $1 AND version < $2;
 
 ## Migrations (Alembic)
 
-<!-- cs: Migrace (Alembic) -->
-
 > When using **SQLAlchemy ORM**, use `--autogenerate` and follow `16-sqlalchemy.mdc`.
 > The example below applies to **raw SQL / psycopg3** projects without SQLAlchemy.
-<!-- cs: Při použití SQLAlchemy ORM použij --autogenerate a viz 16-sqlalchemy.mdc.
-     Příklad níže platí pro projekty s raw SQL / psycopg3 bez SQLAlchemy. -->
 
 ```python
 # Every migration must be idempotent and provide a downgrade
@@ -119,13 +105,9 @@ def downgrade() -> None:
 ```
 
 - Never delete columns without a prior deprecation migration.
-  <!-- cs: Nikdy nemazat sloupce bez předchozí deprecation migrace. -->
 - Every migration has both a working `upgrade()` and `downgrade()`.
-  <!-- cs: Každá migrace má funkční upgrade() i downgrade(). -->
 
 ## Python — psycopg 3
-
-<!-- cs: Python — psycopg 3 -->
 
 ```python
 # ✅ Parameterised queries — NEVER f-strings or string concatenation
@@ -159,8 +141,6 @@ async def store_new_version(self, doc_id: str, content: str) -> None:
 
 ## Repository Pattern
 
-<!-- cs: Repository pattern -->
-
 ```
 src/
 └── <module>/
@@ -168,26 +148,16 @@ src/
 ```
 
 - SQL queries **exclusively** in `*_repository.py` files.
-  <!-- cs: SQL dotazy výhradně v *_repository.py souborech. -->
 - Business logic never calls SQL directly — it calls repository methods.
-  <!-- cs: Business logika nevolá SQL přímo — volá repository metody. -->
 
 ## Query Writing Conventions
 
-<!-- cs: Konvence pro psaní SQL dotazů -->
-
 - **Formatting**: SQL keywords lowercase; root clauses (`select`, `from`, `where`) on their own line.
-  <!-- cs: Klíčová slova lowercase; root klauzule každá na vlastním řádku. -->
 - **Always explicit `JOIN`** — never implicit `FROM a, b WHERE a.id = b.id`.
-  <!-- cs: Vždy explicitní JOIN — nikdy implicitní spojení v FROM. -->
 - **CTEs over nested subqueries** — `WITH` clauses are more readable and composable.
-  <!-- cs: CTEs místo zanořených poddotazů — WITH klauzule jsou čitelnější. -->
 - **Never `NOT IN`** — use `NOT EXISTS` or `LEFT JOIN ... IS NULL` (avoids NULL traps).
-  <!-- cs: Nikdy NOT IN — použij NOT EXISTS nebo LEFT JOIN IS NULL (NULL pasti). -->
 - **Never `BETWEEN` for timestamps** — use `>= ... AND <` (off-by-one hazard with `BETWEEN`).
-  <!-- cs: Nikdy BETWEEN pro timestamps — použij >= ... AND < (off-by-one problém). -->
 - **Never `serial`/`bigserial`** for integer PKs — use `bigint generated always as identity`.
-  <!-- cs: Nikdy serial/bigserial — použij bigint generated always as identity. -->
 
 ```sql
 -- ✅ formatting + explicit join + CTE
@@ -204,10 +174,7 @@ where not exists (select 1 from blacklist b where b.user_id = u.user_id);  -- no
 
 ## Schema Documentation
 
-<!-- cs: Dokumentace schématu -->
-
 Every table and non-obvious column must have a `COMMENT ON`:
-<!-- cs: Každá tabulka a méně zřejmý sloupec musí mít COMMENT ON. -->
 
 ```sql
 comment on table documents is 'Crawled source documents — immutable, append-only.';
@@ -215,8 +182,6 @@ comment on column documents.source_id is 'Stable external identifier (URL hash o
 ```
 
 ## Database Roles — Least Privilege
-
-<!-- cs: Databázové role — princip nejmenších oprávnění -->
 
 ```sql
 create role app_reader nologin;
@@ -234,13 +199,7 @@ alter default privileges in schema public
 
 ## Performance
 
-<!-- cs: Výkon -->
-
 - Run `EXPLAIN ANALYZE` for queries called frequently or on large tables.
-  <!-- cs: EXPLAIN ANALYZE pro dotazy volané často nebo nad velkými tabulkami. -->
 - Explicit column list — no `SELECT *` in production code.
-  <!-- cs: Explicitní výčet sloupců — žádné SELECT * v produkčním kódu. -->
 - Partial indexes for filtered queries: `WHERE is_latest = TRUE`.
-  <!-- cs: Partial indexy pro filtrované dotazy: WHERE is_latest = TRUE. -->
 - Add `LIMIT` where semantically correct.
-  <!-- cs: LIMIT tam kde je to sémanticky správné. -->

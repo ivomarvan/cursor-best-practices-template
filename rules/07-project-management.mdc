@@ -8,10 +8,8 @@ alwaysApply: false
 ---
 
 # APM — Agentic Project Management
-<!-- cs: APM — Agentem Řízený Vývoj -->
 
 ## Actors
-<!-- cs: Aktéři -->
 
 | Actor | Role | Model (assigned per `00-model-policy.mdc`) |
 |-------|------|-------|
@@ -20,16 +18,9 @@ alwaysApply: false
 | **Reviewer** | Independent adversarial review of a Task before Human | strong reasoning |
 | **Human** | Final authority, reviewer, decision-maker | — |
 
-<!-- cs: Planner — plánování, dekomposice, příprava kontextu.
-     Coder — implementace, testy, reporty.
-     Reviewer — nezávislá adversariální revize tasku před Humanem (jiný agent než Coder).
-     Human — finální autorita, reviewer, rozhodování. -->
-
 The Reviewer is a **different agent/model than the Coder** (author must not grade own work).
-<!-- cs: Reviewer je jiný agent/model než Coder (autor nehodnotí vlastní práci). -->
 
 ## APM Phases
-<!-- cs: Fáze APM -->
 
 ```
 Phase 0 (Project Init):  Human → brief.md → [Planner ↔ Human] → spec.md + roadmap.md
@@ -40,12 +31,7 @@ Phase R (Review):        Reviewer → checks diff vs spec/dod → review.md (APP
 Phase ER (Epic Close):   Coder → epic-NNN/report.md  →  [Planner ↔ Human] roadmap review
 ```
 
-<!-- cs: Před Phase E je DoR brána (Definition of Ready, viz níže).
-     Phase R: nezávislý Reviewer kontroluje diff proti spec/dod, píše review.md,
-     smyčka s Coderem (max 3 kola), teprve pak revize Humanem. -->
-
 ## Document Types
-<!-- cs: Typy dokumentů -->
 
 | File | Category value | Written by | Read by |
 |------|---------------|------------|---------|
@@ -59,13 +45,7 @@ Phase ER (Epic Close):   Coder → epic-NNN/report.md  →  [Planner ↔ Human] 
 | `epic-NNN/task-NNN/review.md` | `task-review` | Reviewer | Coder, Human |
 | `epic-NNN/report.md` | `epic-report` | Coder | Human, Planner |
 
-<!-- cs: brief — neformální zadání. spec — specifikace projektu. roadmap — seznam epik.
-     epic-plan — plán epiky (dekomposice na tasky). task-spec — zadání tasku + Context Bundle.
-     dod — Definition of Done. task-report — report tasku. task-review — revize tasku (Reviewer).
-     epic-report — report epiky. -->
-
 ## Directory Structure
-<!-- cs: Adresářová struktura -->
 
 ```
 doc/project-progress/
@@ -84,13 +64,10 @@ doc/project-progress/
 ```
 
 Numbering in steps of 10 — insertion: `epic-015-name/` between `epic-010` and `epic-020`.
-<!-- cs: Číslování po 10 — vkládání: epic-015-name/ mezi epic-010 a epic-020. -->
 
 ## File Header (YAML front matter)
-<!-- cs: Záhlaví souboru (YAML front matter) -->
 
 Every APM document **must** start with this front matter:
-<!-- cs: Každý APM dokument musí začínat tímto front matter: -->
 
 ```yaml
 ---
@@ -106,7 +83,6 @@ updated_at: 2026-05-08
 ```
 
 ## Task Specification — required sections
-<!-- cs: Task Specification — povinné sekce -->
 
 1. **Goal** — what to build (1–3 sentences)
 2. **Inputs** — files to read, APIs to call, data provided
@@ -119,13 +95,10 @@ updated_at: 2026-05-08
    Task warrants a stronger model. Actual models are assigned per `00-model-policy.mdc`.
 
 ## Definition of Ready (DoR) — Task spec quality gate
-<!-- cs: Definition of Ready (DoR) — brána kvality zadání tasku -->
 
 The Planner's output is the quality gate for everything the Coder does — a vague spec
 guarantees a failed Task. A Task may be handed to a Coder **only** when its `spec.md`
 passes this checklist (the counterpart of the Definition of Done):
-<!-- cs: Výstup Plannera je brána kvality. Vágní spec = selhaný task. Task smí dostat Coder
-     jen když jeho spec.md projde tímto checklistem (protějšek Definition of Done): -->
 
 - [ ] **Goal** is concrete and measurable (not "improve X").
 - [ ] **Outputs** name exact files/interfaces to create or change.
@@ -137,35 +110,21 @@ passes this checklist (the counterpart of the Definition of Done):
   stronger model is warranted); models are assigned per `00-model-policy.mdc`.
 - [ ] Task is independently implementable and testable in isolation.
 
-<!-- cs: Goal měřitelný; Outputs konkrétní; Context Bundle úplný (číst i NEsahat);
-     závislosti hotové; testy pojmenované (happy/edge/error); DoD ověřitelné;
-     model z 00-model-policy.mdc; task nezávisle implementovatelný a testovatelný. -->
-
 The DoR is checked at the **FE.2 Human review** of the Epic Plan. If a Task fails DoR,
 the Planner fixes the spec before any Coder starts.
-<!-- cs: DoR se kontroluje při FE.2 (Human review plánu epiky). Když task neprojde,
-     Planner opraví spec dřív, než začne Coder. -->
 
 ## Architectural decisions → ADR bridge
-<!-- cs: Architektonická rozhodnutí → most na ADR -->
 
 A significant decision recorded in a Task/Epic Report must not stay buried there. When a
 decision **affects structure, dependencies, interfaces, or cross-task constraints**,
 promote it to an ADR in `doc/architecture/decisions/ADR-NNN-title.md` (see
 `06-project-structure.mdc`), and link the ADR from the report.
-<!-- cs: Významné rozhodnutí z reportu nesmí zůstat pohřbené. Pokud ovlivňuje strukturu,
-     závislosti, rozhraní nebo omezení napříč tasky, povyš ho na ADR v
-     doc/architecture/decisions/ a z reportu na něj odkaž. -->
 
 - Coder: during a Task, if such a decision is made → create/append the ADR and reference it.
-  <!-- cs: Coder: vznikne-li takové rozhodnutí, vytvoř/doplň ADR a odkaž na něj. -->
 - Reviewer: flag any architectural decision in the diff/report that lacks an ADR.
-  <!-- cs: Reviewer: označ architektonické rozhodnutí v diffu/reportu, které nemá ADR. -->
 - Planner: at Epic close, ensure new ADRs are consistent with `spec.md`.
-  <!-- cs: Planner: při uzávěrce epiky ověř, že nové ADR jsou v souladu se spec.md. -->
 
 ## Coder — doc/ Write Permission
-<!-- cs: Coder — oprávnění k zápisu do doc/ -->
 
 Task specs and epic plans often state **"Do NOT modify `doc/**`"** in their Context Bundle.
 This constraint means: do not touch **other tasks'** `spec.md`/`dod.md`, the epic `plan.md`,
@@ -176,17 +135,11 @@ It does **NOT** prevent — and in fact **requires** — Coder to:
 - Create `report.md` in the **current task's own directory** (e.g. `task-010-foo/report.md`)
 - Fill checkboxes in the **current task's own `dod.md`**
 
-<!-- cs: "Do NOT modify doc/**" v Context Bundle znamená: nesahej na spec, plan, roadmap, ADRs
-     a cizí taskové soubory. Coder MUSÍ zapsat report.md a vyplnit dod.md v adresáři svého tasku. -->
-
 ## Coder — Task Report
-<!-- cs: Coder — Task Report -->
 
 Write `task-NNN/report.md` prose in `<communication-language>` (see `00-communication-language.mdc`). This section defines structure in **English**; rendered `##`/`###` headings must follow the mapping table when `<lang-code>` ≠ `en`.
-<!-- cs: Prostý text reportu piš v <communication-language>. Tato sekce je anglicky; nadpisy v reportu musí odpovídat tabulce mapping pro cs (ne en). -->
 
 ### Required content (ordered `##` sections)
-<!-- cs: Povinný obsah (pořadí sekcí ##) -->
 
 | # | Section (English) | Czech (`cs`) `##` heading in `report.md` |
 |---|-------------------|-------------------------------------------|
@@ -198,7 +151,6 @@ Write `task-NNN/report.md` prose in `<communication-language>` (see `00-communic
 | 6 | Definition of Done | `## Definition of Done` |
 
 When `<lang-code>` = `en`, use the English phrase as the `##` heading (e.g. `## What was implemented`). Optional follow-ups: extra `##` (e.g. *Notes*) only if needed; title in `<communication-language>`.
-<!-- cs: Pro `en` použij anglický název z prvního sloupce tabulky jako `##` nadpis. Volitelné `##` (např. poznámky) jen pokud dává smysl; titulek v <communication-language>. -->
 
 1. **What was implemented** — short summary (bullets preferred).
 2. **Inputs and outputs** — read / created / changed / not touched lists.
@@ -208,38 +160,20 @@ When `<lang-code>` = `en`, use the English phrase as the `##` heading (e.g. `## 
 6. **Definition of Done** — short summary + link to `dod.md` (do not duplicate the full checklist).
 
 ### Mandatory Markdown layout (task `report.md`)
-<!-- cs: Povinné Markdown rozložení (task report.md) -->
 
 - Between top-level `##` sections, optional `---` **only** if it improves scanability (avoid spamming rules).
-  <!-- cs: Mezi sekcemi ## volitelně --- jen pro čitelnost. -->
-
 - **What was implemented:** use bullets; avoid one continuous paragraph longer than ~4 sentences.
-  <!-- cs: Co bylo implementováno: odrážky; žádný mega-odstavec. -->
-
 - **Inputs and outputs:** use `###` subsections; **one repo path per bullet**, always in backticks. For `cs`: `### Přečteno`, `### Vytvořeno`, `### Změněno`, `### Nedotčeno (Context Bundle)`. For `en`: `### Read`, `### Created`, `### Changed`, `### Not modified (Context Bundle)`.
-  <!-- cs: Vstupy/výstupy: podsekce ###; jedna cesta na řádek v backticks. -->
-
 - **Methods and decisions:** split themes: either separate `### Topic` blocks or bullets with a **bold** lead-in line followed by a short paragraph; do not merge unrelated topics in one bullet.
-  <!-- cs: Metody: odděl témata (### nebo tučný úvod); neslučuj nesouvisející body. -->
-
 - **Code references:** include a **Markdown table**: `| File | Lines | Summary |` (lines = range such as `1-42`). Put function/class names in Summary when useful.
-  <!-- cs: Reference: tabulka Soubor | Řádky | Shrnutí. -->
-
 - **Regression test results:** use a **table** (`| Command / scope | Result | Notes |`) or clearly structured bullets with command, outcome, and exit code (state **0 tests** / pytest exit **5** when applicable).
-  <!-- cs: Regrese: tabulka nebo jasné odrážky včetně exit kódů. -->
-
 - **Definition of Done:** one short paragraph + `[dod.md](dod.md)` link.
-  <!-- cs: DoD: krátce + odkaz na dod.md. -->
 
-❌ One bullet with comma-separated paths for “created” files.  
+❌ One bullet with comma-separated paths for “created” files.
 ✅ One path per line under `### Created` / `### Vytvořeno`.
 
 ## Security guard
-<!-- cs: Bezpečnostní zábrany -->
 
 - No `git commit/push` without explicit Human approval.
-  <!-- cs: Žádný git commit/push bez explicitního souhlasu člověka. -->
 - No database migrations without Human approval.
-  <!-- cs: Žádné DB migrace bez souhlasu člověka. -->
 - No destructive file operations without confirmation.
-  <!-- cs: Žádné destruktivní operace se soubory bez potvrzení. -->

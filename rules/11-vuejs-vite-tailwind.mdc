@@ -2,41 +2,28 @@
 description: >-
   Vue.js 3 + Vite + Tailwind CSS standards — Composition API, TypeScript,
   component structure, state management, testing. Activated for Vue and TS files.
-globs: "**/*.vue, **/*.ts, **/*.tsx, **/vite.config.*, **/tailwind.config.*"
+globs: "**/*.vue, frontend/**/*.{ts,tsx}, **/vite.config.*, **/*.css"
 alwaysApply: false
 ---
 
 # Vue.js 3 + Vite + Tailwind CSS
 
-<!-- cs: Moderní Vue.js stack — Composition API, TypeScript, Tailwind -->
-
 ## Technology Stack
 
-<!-- cs: Technologický stack -->
-
-- **Vue 3** with Composition API (`<script setup>`) — no Options API in new code.
-  <!-- cs: Vue 3 s Composition API — žádné Options API v novém kódu. -->
+- **Vue 3.5+** with Composition API (`<script setup>`) — no Options API in new code. Use `defineModel()` and `useTemplateRef()`.
 - **TypeScript** strict mode (`"strict": true` in `tsconfig.json`).
-  <!-- cs: TypeScript v striktním módu. -->
 - **Vite** as build tool — leverage HMR and lazy loading.
-  <!-- cs: Vite jako build tool — využívej HMR a lazy loading. -->
-- **Tailwind CSS** — utility-first; no custom CSS if Tailwind suffices.
-  <!-- cs: Tailwind CSS — utility-first; žádné custom CSS pokud Tailwind postačuje. -->
+- **Tailwind CSS v4** — CSS-first (`@import "tailwindcss"`, `@theme`). No `tailwind.config.*` unless you have a documented exception.
+- **oxlint** as the primary linter; ESLint only for rules oxlint does not cover.
 - **Pinia** for global state (replaces Vuex).
-  <!-- cs: Pinia pro globální stav (místo Vuex). -->
 - **Vue Router 4** for routing.
-  <!-- cs: Vue Router 4 pro routing. -->
 - **VueUse** for composable utilities — prefer over custom implementations.
-  <!-- cs: VueUse pro kompozable utility — preferuj před vlastní implementací. -->
 
 ## Project Structure
-
-<!-- cs: Struktura projektu -->
 
 In a web application with a separate backend, the Vue.js project lives in `frontend/`
 at the project root (see `06-project-structure.mdc` — web application layout).
 The `src/` below is the internal Vite layout inside `frontend/`.
-<!-- cs: Ve webové aplikaci s backendem žije Vue.js projekt ve frontend/ v kořeni projektu (viz 06-project-structure.mdc). Níže uvedené src/ je interní layout Vite uvnitř frontend/. -->
 
 ```
 frontend/
@@ -60,24 +47,18 @@ frontend/
 
 ## Components
 
-<!-- cs: Komponenty -->
-
 ```vue
 <!-- ✅ Correct pattern — <script setup> with TypeScript -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { User } from '@/types/user'
 
-interface Props {
-  user: User
-  isLoading?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), { isLoading: false })
-const emit = defineEmits<{ update: [user: User]; delete: [id: string] }>()
+const user = defineModel<User>('user', { required: true })
+const isLoading = defineModel<boolean>('isLoading', { default: false })
+const emit = defineEmits<{ delete: [id: string] }>()
 
 const displayName = computed(() =>
-  `${props.user.firstName} ${props.user.lastName}`
+  `${user.value.firstName} ${user.value.lastName}`
 )
 </script>
 
@@ -95,27 +76,16 @@ const displayName = computed(() =>
 
 ### Component Rules
 
-<!-- cs: Pravidla pro komponenty -->
-
 - File and component names: **PascalCase** (`UserCard.vue`).
-  <!-- cs: Pojmenování: PascalCase pro soubory i komponenty (UserCard.vue). -->
 - Max ~200 lines per component; split into sub-components otherwise.
-  <!-- cs: Max ~200 řádků na komponentu; rozděl na sub-komponenty jinak. -->
-- Props always typed via `defineProps<Interface>()`.
-  <!-- cs: Props vždy typované přes defineProps<Interface>(). -->
+- Props always typed (`defineProps` or `defineModel`). Prefer `defineModel()` for v-model.
 - Emits always typed via `defineEmits<{...}>()`.
-  <!-- cs: Emits vždy typované přes defineEmits<{...}>(). -->
 - No `any` types.
-  <!-- cs: Žádné any typy. -->
 - Extract logic beyond 2–3 computed/refs into a composable (SRP).
-  <!-- cs: Logiku přesahující 2–3 computed/refs extrahuj do composable (SRP). -->
 
 ## Composables — Composition Pattern
 
-<!-- cs: Composables — Composition Pattern -->
-
 Composables are the primary logic-composition mechanism in Vue 3 — GoF **Composition Pattern**.
-<!-- cs: Composables jsou primárním mechanismem kompozice logiky ve Vue 3 — GoF Composition Pattern. -->
 
 ```typescript
 // composables/useUser.ts
@@ -139,20 +109,13 @@ export function useUser(userId: Ref<string>) {
 ```
 
 - Name starts with `use` (`useUser`, `useAuth`, `useNotifications`).
-  <!-- cs: Název začíná use (useUser, useAuth, useNotifications). -->
 - Returns reactive data — never plain values.
-  <!-- cs: Vrací reaktivní data — nikdy plain hodnoty. -->
 - One composable = one concern (SRP).
-  <!-- cs: Jeden composable = jeden concern (SRP). -->
 - Test composables independently of components (`@vue/test-utils` not required).
-  <!-- cs: Testuj composables nezávisle na komponentách (@vue/test-utils není nutný). -->
 
 ## Docstrings — TSDoc Style
 
-<!-- cs: Dokumentace — TSDoc / JSDoc (Doxygen úroveň) -->
-
 Every exported function, composable, and class has a TSDoc comment:
-<!-- cs: Každá exportovaná funkce, composable a třída má TSDoc komentář. -->
 
 ```typescript
 /**
@@ -169,15 +132,10 @@ export function useDocuments(page: Ref<number>, pageSize = 20) { ... }
 ```
 
 - Types are not repeated in JSDoc (they are in the TypeScript signature) — describe semantics only.
-  <!-- cs: Typy se nepíší do JSDoc (jsou v TypeScript signature) — jen popis sémantiky. -->
 - Add `@example` for composables and utility functions with non-trivial usage.
-  <!-- cs: @example přidej u composables a utility funkcí s netriviálním použitím. -->
 - Document Props interfaces with an inline comment above each prop.
-  <!-- cs: Props interface dokumentuj inline komentářem nad každou prop. -->
 
 ## Pinia Store
-
-<!-- cs: Pinia store -->
 
 ```typescript
 // stores/auth.ts
@@ -195,59 +153,42 @@ export const useAuthStore = defineStore('auth', () => {
 ```
 
 - Prefer **Setup store** (function syntax) over Options store.
-  <!-- cs: Preferuj Setup store (function syntax) před Options store. -->
 - One store = one domain area.
-  <!-- cs: Jeden store = jedna doménová oblast. -->
 
-## Tailwind CSS
+## Tailwind CSS v4
 
-<!-- cs: Tailwind CSS -->
+```css
+/* src/assets/main.css */
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #2563eb;
+}
+```
 
 ```vue
 <!-- ✅ Utility-first — no custom CSS for trivial styles -->
 <div class="flex flex-col gap-6 max-w-2xl mx-auto px-4 py-8">
   <h1 class="text-2xl font-bold text-gray-900">Title</h1>
 </div>
-
-<!-- ✅ @apply only for repeated patterns in component CSS -->
-<style scoped>
-.btn-primary {
-  @apply px-4 py-2 bg-blue-600 text-white rounded-lg
-         hover:bg-blue-700 transition-colors duration-200;
-}
-</style>
 ```
 
-- Responsive prefixes: `sm:`, `md:`, `lg:` — mobile-first approach.
-  <!-- cs: Responsive prefix: sm:, md:, lg: — mobile-first přístup. -->
-- Dark mode: `dark:` prefix — configure `darkMode: 'class'` in `tailwind.config`.
-  <!-- cs: Dark mode: dark: prefix — nakonfiguruj darkMode: 'class' v tailwind.config. -->
-- Avoid inline styles (`style="..."`) — always use Tailwind.
-  <!-- cs: Vyhýbej se inline stylům (style="...") — vždy Tailwind. -->
+- Responsive prefixes: `sm:`, `md:`, `lg:` — mobile-first.
+- Dark mode: `dark:` prefix (class strategy).
+- Avoid inline styles (`style="..."`). `@apply` only for repeated component patterns.
 
 ## Performance
 
-<!-- cs: Výkon -->
-
 - Lazy-load routes: `component: () => import('./pages/Dashboard.vue')`.
-  <!-- cs: Lazy loading routes: component: () => import('./pages/Dashboard.vue'). -->
 - Lazy-load heavy components: `defineAsyncComponent(() => import('./HeavyChart.vue'))`.
-  <!-- cs: Lazy loading komponent: defineAsyncComponent(() => import('./HeavyChart.vue')). -->
 - `v-memo` for expensive render lists.
-  <!-- cs: v-memo pro drahé render listy. -->
 - `computed` instead of methods for derived data — auto-cached.
-  <!-- cs: computed místo method pro derivovaná data — automaticky se cachuje. -->
 
 ## Testing
 
-<!-- cs: Testování -->
-
-- **Vitest** for unit tests (replaces Jest, integrated with Vite).
-  <!-- cs: Vitest pro unit testy (nahrazuje Jest, integrován s Vite). -->
+- **Vitest** for unit tests.
 - **Vue Test Utils** for component testing.
-  <!-- cs: Vue Test Utils pro testování komponent. -->
-- **Playwright** or **Cypress** for E2E tests.
-  <!-- cs: Playwright nebo Cypress pro E2E testy. -->
+- **Playwright** for E2E. Cypress only as an explicit exception.
 
 ```typescript
 import { mount } from '@vue/test-utils'
@@ -263,10 +204,7 @@ test('displays full name', () => {
 
 ## .gitignore — Node/Vue-Specific Entries
 
-<!-- cs: .gitignore — Node/Vue-specific záznamy -->
-
 Add these to the project `.gitignore` when Node.js / Vue / Vite is used:
-<!-- cs: Přidej toto do .gitignore při použití Node.js / Vue / Vite: -->
 
 ```gitignore
 node_modules/

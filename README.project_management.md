@@ -324,7 +324,7 @@ To invoke a skill, use `@skill-name` in Cursor chat, or reference it directly:
 
 ## Terminology Reference
 
-For full bilingual definitions of all APM terms, see
+For full definitions of all APM terms, see
 [`doc/project-progress/GLOSSARY.md`](doc/project-progress/GLOSSARY.md).
 
 Quick reference:

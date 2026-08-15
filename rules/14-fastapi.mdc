@@ -3,20 +3,15 @@ description: >-
   FastAPI best practices — project structure, dependency injection, service layer,
   Pydantic v2, pydantic-settings, lifespan, async patterns, error handling.
   Activated for Python files in FastAPI projects.
-globs: "**/*.py"
+globs: "**/main.py, **/router.py, **/routers/**, **/schemas.py, **/dependencies.py, **/api/**"
 alwaysApply: false
 ---
 
 # FastAPI — Best Practices
 
-<!-- cs: Best practices pro FastAPI projekty -->
-
 ## Project Structure — Domain-Driven
 
-<!-- cs: Struktura projektu — domain-driven organizace -->
-
 Organize by domain, not by file type.
-<!-- cs: Organizuj podle domény, ne podle typu souboru. -->
 
 ```
 # ❌ — file-type grouping (hard to navigate as project grows)
@@ -45,8 +40,6 @@ src/
 
 ## Configuration — pydantic-settings
 
-<!-- cs: Konfigurace — pydantic-settings -->
-
 ```python
 # src/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -70,8 +63,6 @@ SECRET_KEY=change-me
 
 ## Application Lifespan
 
-<!-- cs: Životní cyklus aplikace -->
-
 ```python
 # ✅ lifespan — replaces deprecated @app.on_event("startup"/"shutdown")
 from contextlib import asynccontextmanager
@@ -87,8 +78,6 @@ app = FastAPI(lifespan=lifespan)
 ```
 
 ## Dependency Injection
-
-<!-- cs: Dependency injection -->
 
 ```python
 # ✅ inject DB session and current user via Depends — never instantiate directly
@@ -108,24 +97,20 @@ async def read_me(db: SessionDep, user: UserDep) -> UserOut:
 
 ## Thin Endpoints — Service Layer
 
-<!-- cs: Tenké endpointy — service vrstva -->
-
 ```python
 # ✅ router.py — validation and routing only
 @router.post("/", response_model=UserOut, status_code=201)
 async def create_user(body: UserCreate, db: SessionDep) -> UserOut:
     return await user_service.create(db, body)
 
-# ✅ service.py — all business logic lives here
+# ✅ service.py — domain exceptions, never FastAPI HTTPException
 async def create(db: AsyncSession, body: UserCreate) -> User:
     if await user_repo.exists_by_email(db, body.email):
-        raise HTTPException(status_code=409, detail="Email already registered")
+        raise EmailTakenError(body.email)
     return await user_repo.create(db, body)
 ```
 
 ## API Versioning
-
-<!-- cs: Verzování API -->
 
 ```python
 # Version prefix from day one — impossible to add later without breaking clients
@@ -134,25 +119,30 @@ router = APIRouter(prefix="/v1/users", tags=["Users"])
 
 ## Error Handling
 
-<!-- cs: Zpracování chyb -->
+Services raise **domain exceptions**. Routers stay thin. Map exceptions in `main.py`:
 
 ```python
-# ✅ HTTPException for API errors — never raise generic Exception in routes
-from fastapi import HTTPException, status
+# src/users/errors.py
+class EmailTakenError(Exception):
+    def __init__(self, email: str) -> None:
+        self.email = email
 
-raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-raise HTTPException(status_code=status.HTTP_409_CONFLICT,  detail="Already exists")
+# src/main.py
+@app.exception_handler(EmailTakenError)
+async def email_taken_handler(request: Request, exc: EmailTakenError):
+    return JSONResponse(status_code=409, content={"detail": "Email already registered"})
 
-# ✅ global handler for unexpected errors (in main.py)
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error", extra={"path": request.url.path})
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 ```
 
-## Async Patterns
+HTTPException in a **router** is acceptable for purely HTTP concerns (e.g. malformed header). Never import FastAPI in the service layer.
 
-<!-- cs: Async vzory -->
+API tests: `httpx.ASGITransport` + `AsyncClient`, or `TestClient`.
+
+## Async Patterns
 
 ```python
 # ✅ async def for all I/O-bound handlers
@@ -174,8 +164,6 @@ async def process(file: UploadFile) -> ProcessResult:
 
 ## Structured Logging
 
-<!-- cs: Strukturované logování -->
-
 ```python
 # src/core/logging.py — configure once, import logger everywhere
 import logging
@@ -195,10 +183,8 @@ logger.warning("Rate limit reached", extra={"ip": client_ip, "endpoint": path})
 
 ## Pydantic Models
 
-<!-- cs: Pydantic modely -->
-
 ```python
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserCreate(BaseModel):
     email: EmailStr

@@ -8,27 +8,16 @@ description: >-
 
 # Docker New Project Setup
 
-<!-- cs: Přidání Dockeru do nového projektu -->
-
 ## Prerequisites
 
-<!-- cs: Předpoklady -->
-
 - Project type is not in the Docker Exclude List (see `03-docker-policy.mdc`).
-  <!-- cs: Typ projektu není v Docker Exclude List (viz 03-docker-policy.mdc). -->
 - You know the primary runtime (Python, Node.js, etc.) and the required infrastructure services (DB, cache, etc.).
-  <!-- cs: Znáš primární runtime a potřebné infrastrukturní služby. -->
 
 ## Steps
 
-<!-- cs: Kroky -->
-
 ### 1. Determine what to containerize
 
-<!-- cs: 1. Zjisti, co kontejnerizovat -->
-
 Ask the user (or infer from the codebase):
-<!-- cs: Zeptej se uživatele nebo zjisti z codebase: -->
 
 - What is the primary application runtime? (Python / Node / Go / …)
 - What infrastructure services are needed? (PostgreSQL, Redis, Qdrant, …)
@@ -36,8 +25,6 @@ Ask the user (or infer from the codebase):
   Use `profiles` for the app container if native env is preferred.
 
 ### 2. Create `.dockerignore`
-
-<!-- cs: 2. Vytvoř .dockerignore -->
 
 ```dockerignore
 .git
@@ -47,6 +34,8 @@ __pycache__
 *.pyo
 .pytest_cache
 .mypy_cache
+.pyrefly_cache
+.ty_cache
 .ruff_cache
 node_modules
 dist
@@ -61,44 +50,26 @@ README*.md
 
 ### 3. Create `Dockerfile` (multi-stage)
 
-<!-- cs: 3. Vytvoř Dockerfile (multi-stage) -->
-
 Use the appropriate template from `04-docker-standards.mdc`.
 Key requirements:
-<!-- cs: Použij odpovídající šablonu z 04-docker-standards.mdc. Klíčové požadavky: -->
 
-- Three stages: `builder` → `dev` → `production`
-  <!-- cs: Tři fáze: builder → dev → production -->
+- Three stages: `builder` → `dev` → `production` (Python: **uv** + `uv.lock`, see `04-docker-standards.mdc`)
 - Pinned base image version (never `latest`)
-  <!-- cs: Pinovaná verze base image (nikdy latest) -->
-- Dependencies copied before source code (cache optimization)
-  <!-- cs: Závislosti zkopírovány před zdrojovým kódem (cache optimalizace) -->
+- Dependencies / lockfile copied before source code (cache optimization)
 - Non-root user in `production` stage
-  <!-- cs: Non-root user ve fázi production -->
-- `HEALTHCHECK` for every service exposing an HTTP endpoint
-  <!-- cs: HEALTHCHECK pro každou službu s HTTP endpointem -->
+- `HEALTHCHECK` without installing `curl` in slim images (use `python -c` / `pg_isready` / the runtime already in PATH)
 
 ### 4. Create `docker-compose.yml`
 
-<!-- cs: 4. Vytvoř docker-compose.yml -->
-
 - No `version:` field.
-  <!-- cs: Bez version: fieldu. -->
 - Application service uses `profiles: ["full"]` if native env is preferred for development.
-  <!-- cs: Aplikační service používá profiles: ["full"] pokud nativní prostředí postačuje pro vývoj. -->
 - Every infrastructure service has a `healthcheck`.
-  <!-- cs: Každá infrastrukturní služba má healthcheck. -->
 - Secrets via `env_file: .env` — never hardcoded.
-  <!-- cs: Secrets přes env_file: .env — nikdy hardcoded. -->
 - Named volumes for persistent data.
-  <!-- cs: Named volumes pro persistentní data. -->
 
 ### 5. Create `README.docker.md`
 
-<!-- cs: 5. Vytvoř README.docker.md -->
-
 Use this structure:
-<!-- cs: Použij tuto strukturu: -->
 
 ```markdown
 # Docker Usage
@@ -135,8 +106,6 @@ docker volume prune -f
 ```
 
 ### 6. Verify
-
-<!-- cs: 6. Ověření -->
 
 ```bash
 docker compose config          # validate compose syntax

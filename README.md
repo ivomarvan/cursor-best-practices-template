@@ -18,7 +18,7 @@ The workflow is divided into distinct roles (model per role: see `rules/00-model
 
 Output quality is enforced by strict repository rules:
 - **Strict Boundaries**: Clean Code, SOLID principles, and intent-focused comments.
-- **Automated Quality**: Mandatory linting and formatting (Ruff, ESLint) and strict type checking (Mypy, vue-tsc).
+- **Automated Quality**: Mandatory linting and formatting (Ruff, oxlint) and strict type checking (Pyrefly, vue-tsc).
 - **Test-Driven**: Local testing backed by a CI pipeline.
 - **Versioned Reports**: For every completed task, the agent writes a detailed Markdown report detailing files read, changes made, and regression test results, ensuring absolute transparency.
 
@@ -55,25 +55,26 @@ cursor-best-practices-template/
 | File | Topic | Activation |
 |------|-------|-----------|
 | `00-communication-language.mdc` | Communication language setting (CS/DE/EN) | always |
-| `00-meta-rules-and-skills.mdc` | How to write rules and skills | always |
-| `00-model-policy.mdc` | Role→model assignment (Planner/Coder/Reviewer): Human assigns via `/role-assign` or agent asks | always |
+| `00-meta-rules-and-skills.mdc` | How to write rules and skills | `**/.cursor/rules/**`, `**/SKILL.md` |
+| `00-model-policy.mdc` | Role→model assignment (Planner/Coder/Reviewer): `/role-assign` | on request |
 | `01-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
 | `02-git.mdc` | Conventional commits, branching, `.gitignore` | always |
-| `03-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
-| `04-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
+| `03-docker-policy.mdc` | When Docker is mandatory; exemptions | on request |
+| `04-docker-standards.mdc` | Dockerfile standards, uv multi-stage, Compose Watch | `Dockerfile*`, `docker-compose*` |
 | `05-new-technology.mdc` | Process for adding new technologies | on request |
-| `06-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
+| `06-project-structure.mdc` | Universal directory layout, `doc/`, optional `AGENTS.md` | on request |
 | `07-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
 | `08-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
-| `10-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
-| `11-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
-| `12-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
+| `09-testing.mdc` | Testing contract (unit / integration / E2E) | `**/tests/**`, `**/test_*.py` |
+| `10-python.mdc` | Python 3.12+, uv, Ruff, Pyrefly/ty, pytest | `**/*.py`, `pyproject.toml`, `uv.lock` |
+| `11-vuejs-vite-tailwind.mdc` | Vue 3.5 + Vite + Tailwind v4, oxlint, Playwright | `**/*.vue`, `frontend/**/*.ts` |
+| `12-cpp-esp32.mdc` | C/C++ ESP-IDF 5.4+, C++20, FreeRTOS, RAII | `**/*.c`, `**/*.cpp`, `**/*.h` |
 | `13-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
-| `14-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
-| `15-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
-| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
-| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/*.py` |
-| `18-celery.mdc` | Celery tasks, queues, retries, worker config | `**/*.py` |
+| `14-fastapi.mdc` | FastAPI, domain exceptions, pydantic-settings | `**/main.py`, `**/router.py` |
+| `15-qdrant.mdc` | Qdrant client, collections, `query_points`, repository | `**/*qdrant*.py`, `**/*vector*.py` |
+| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading | `**/models.py`, `**/session.py` |
+| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/cache*.py`, `**/redis_client.py` |
+| `18-task-queue.mdc` | Taskiq default; Celery only with justification | `**/tasks.py`, `**/taskiq*.py` |
 | `20-project-design-rules.mdc` | Honor project-root `DESIGN_RULES.md` as binding invariants | always |
 
 ### Skills (`skills/`)
@@ -207,41 +208,18 @@ git submodule update --remote .cursor-shared
 ## Creating a clone for a different communication language
 
 This repo defaults to **Czech** (`cs`) as the communication language
-(see `rules/00-communication-language.mdc`).
+(see `rules/00-communication-language.mdc`). Rules and skills stay in **English**;
+only chat with the user (and Human-facing APM documents) uses that setting.
 
-To create your own version for a different language (e.g. German):
+To use a different chat language (e.g. German), edit only
+`rules/00-communication-language.mdc`:
 
-```bash
-# 1. Fork this repo on GitHub, then clone your fork
-git clone git@github.com:<you>/cursor-best-practices-template-de.git
-cd cursor-best-practices-template-de
-
-# 2. Change the communication language setting
-#    Edit rules/00-communication-language.mdc:
-#    Replace: | `<communication-language>` | Czech (čeština) |
-#    With:    | `<communication-language>` | German (Deutsch) |
-#    Replace: | `<lang-code>`              | `cs`             |
-#    With:    | `<lang-code>`              | `de`             |
-
-# 3. Update all existing <!-- cs: ... --> comments in every rule and skill
-#    to <!-- de: ... --> with translated text.
-#    Tip: ask Cursor agent to do this — it understands the bilingual principle
-#    from 00-meta-rules-and-skills.mdc and will translate all comments in one pass.
-
-# 4. If lang-code = en: omit translation comments entirely —
-#    English text is already the communication language.
+```
+| `<communication-language>` | German (Deutsch) |
+| `<lang-code>`              | `de`             |
 ```
 
-For an **English-only** version (no translation comments):
-
-```bash
-# In rules/00-communication-language.mdc set:
-#   <communication-language>  →  English
-#   <lang-code>               →  en
-#
-# Then remove all <!-- cs: ... --> comments from rules/ and skills/.
-# Ask the Cursor agent: "Remove all cs comments from all rules and skills."
-```
+For English chat, set both values to `English` / `en`. No other files need translating.
 
 ---
 

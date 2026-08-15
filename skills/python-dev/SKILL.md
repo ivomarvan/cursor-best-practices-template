@@ -1,133 +1,90 @@
 ---
 name: python-dev
 description: >-
-  Python development workflow in Docker: run scripts, pytest tests (by marker, file,
-  coverage), Ruff linter + formatter, mypy strict type checking, dependency management.
+  Python development workflow in Docker: uv, pytest (by marker, file, coverage),
+  Ruff linter + formatter, Pyrefly type checking, ty editor notes.
   Use when running Python scripts, tests, or code quality checks inside the project.
 ---
 
 # Python Development Workflow
 
-<!-- cs: Workflow pro vývoj v Pythonu v Dockeru -->
-
 ## Prerequisites
 
-<!-- cs: Předpoklady -->
-
 - Docker Compose environment is running: `docker compose up -d`
-  <!-- cs: Docker Compose prostředí běží: docker compose up -d -->
 - Check `docker-compose.yml` for the Python service name (commonly `api`, `backend`, `app`).
-  <!-- cs: Zkontroluj docker-compose.yml pro název Python služby (typicky api, backend, app). -->
+- The service image is installed via **uv** (`uv.lock` copied at build time). After `pyproject.toml` / `uv.lock` changes: `docker compose build <service>`.
 
 ## Running Scripts
 
-<!-- cs: Spouštění skriptů -->
+The project is installed in the image (`uv sync`). Absolute `src.*` imports work; do not use `git_root_to_syspath`.
 
 ```bash
-# Run any script — absolute imports work regardless of cwd (git_root_to_syspath)
 docker compose exec <service> python src/module/script.py
-
-# Pass arguments
 docker compose exec <service> python src/module/script.py --arg value
-
-# Interactive (stdin open)
 docker compose exec -it <service> python src/module/script.py
-
-# Open REPL
 docker compose exec -it <service> python
 ```
 
+Native (no Docker app container): `uv run python src/module/script.py`
+
 ## Running Tests (pytest)
 
-<!-- cs: Spouštění testů (pytest) -->
-
 ```bash
-# All tests
 docker compose exec <service> pytest
-
-# By marker (defined in pyproject.toml)
 docker compose exec <service> pytest -m unit
 docker compose exec <service> pytest -m integration
 docker compose exec <service> pytest -m "not slow"
-
-# Single file or directory
 docker compose exec <service> pytest tests/module/test_parser.py
-docker compose exec <service> pytest tests/module/
-
-# Verbose + stop on first failure
 docker compose exec <service> pytest -v -x
-
-# Coverage report
 docker compose exec <service> pytest --cov=src --cov-report=term-missing
 ```
 
 ## Code Quality
 
-<!-- cs: Kontrola kvality kódu -->
-
 ### Ruff — Linter and Formatter
 
-<!-- cs: Ruff — linter a formatter -->
-
 ```bash
-# Check and auto-fix linting issues
 docker compose exec <service> ruff check --fix .
-
-# Format code
 docker compose exec <service> ruff format .
-
-# Check only — no changes (for CI)
 docker compose exec <service> ruff check .
 docker compose exec <service> ruff format --check .
 ```
 
-### mypy — Static Type Checking
-
-<!-- cs: mypy — statická analýza typů -->
+### Pyrefly — Type Checking (CI)
 
 ```bash
-# Check src/ (uses settings from pyproject.toml)
-docker compose exec <service> mypy src/
-
-# Single file
-docker compose exec <service> mypy src/module/parser.py
-
-# Override to strict for one-off check
-docker compose exec <service> mypy src/ --strict
+docker compose exec <service> pyrefly check
+docker compose exec <service> pyrefly check src/module/parser.py
 ```
 
-### Full Quality Gate
+Editor: **ty** language server (not a substitute for `pyrefly check` in CI).
 
-<!-- cs: Plná kontrola před commitem -->
+### Full Quality Gate
 
 ```bash
 docker compose exec <service> ruff check --fix . \
   && docker compose exec <service> ruff format . \
-  && docker compose exec <service> mypy src/
+  && docker compose exec <service> pyrefly check
 ```
 
 ## Dependency Management
 
-<!-- cs: Správa závislostí -->
-
 ```bash
-# After changing requirements.txt / pyproject.toml — rebuild and restart
+# Add a dependency on the host, then rebuild the image
+uv add <package>          # updates pyproject.toml + uv.lock
+uv lock
 docker compose build <service>
 docker compose up -d <service>
 
-# Quick test of a new package inside a running container
-docker compose exec <service> pip install <package>
-# ⚠️ Then add to requirements.txt/pyproject.toml and rebuild — lost on container restart
+# Audit
+uv pip audit
 ```
+
+Never `uv add` / `pip install` only inside a running container — it is lost on restart.
 
 ## Container Shell
 
-<!-- cs: Shell kontejneru -->
-
 ```bash
-# Open bash in container
 docker compose exec -it <service> bash
-
-# As root (for debugging permission issues)
 docker compose exec -it -u root <service> bash
 ```

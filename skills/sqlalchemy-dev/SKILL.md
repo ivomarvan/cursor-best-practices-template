@@ -9,17 +9,12 @@ description: >-
 ---
 
 # Skill: SQLAlchemy + Alembic Development Workflow
-<!-- cs: Skill: Vývojový workflow pro SQLAlchemy + Alembic -->
 
 ## Prerequisites
-<!-- cs: Předpoklady -->
 
 - Docker Compose with PostgreSQL is running (see `postgresql-dev` skill).
-- `pyproject.toml` exists with Python 3.11+.
+- `pyproject.toml` exists with Python 3.12+.
 - Rule `16-sqlalchemy.mdc` is in context.
-
-<!-- cs: Docker Compose s PostgreSQL běží (viz skill postgresql-dev).
-     pyproject.toml existuje s Python 3.11+. Pravidlo 16-sqlalchemy.mdc je v kontextu. -->
 
 ## Step 1 — Install dependencies
 

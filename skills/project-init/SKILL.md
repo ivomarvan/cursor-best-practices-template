@@ -8,22 +8,16 @@ description: >-
 ---
 
 # Skill: APM Project Initialization (Phase 0)
-<!-- cs: Skill: APM Inicializace projektu (Fáze 0) -->
 
 ## Prerequisites
-<!-- cs: Předpoklady -->
 
 - You are acting as **Planner**.
 - Human has provided a **Project Brief** (informal input — text, bullet list, or verbal).
 - Rule `07-project-management.mdc` is in context (provides APM conventions).
 
-<!-- cs: Jsi v roli Planner. Člověk poskytl Project Brief. Pravidlo 07-project-management.mdc je v kontextu. -->
-
 ## Steps
-<!-- cs: Kroky -->
 
 ### Step 1 — Save the Project Brief [F0.1]
-<!-- cs: Krok 1 — Uložit Project Brief [F0.1] -->
 
 Create `doc/project-progress/brief.md` with front matter:
 
@@ -42,7 +36,6 @@ updated_at: <YYYY-MM-DD>
 Paste or transcribe the Human's informal input verbatim. Do not interpret yet.
 
 ### Step 2 — Iterative Clarification [F0.2]
-<!-- cs: Krok 2 — Iterativní upřesnění [F0.2] -->
 
 Ask Human targeted questions to resolve ambiguities. Cover:
 - **Scope**: what is explicitly IN and OUT of scope?
@@ -54,7 +47,6 @@ Ask Human targeted questions to resolve ambiguities. Cover:
 REPEAT until Human confirms the brief is complete.
 
 ### Step 3 — Write Project Specification [F0.3]
-<!-- cs: Krok 3 — Napsat specifikaci projektu [F0.3] -->
 
 Create `doc/project-progress/spec.md`:
 
@@ -80,7 +72,6 @@ Required sections:
 6. **Project-Level Definition of Done** — criteria for project completion
 
 ### Step 4 — Write Roadmap [F0.4]
-<!-- cs: Krok 4 — Napsat Roadmapu [F0.4] -->
 
 Create `doc/project-progress/roadmap.md`:
 
@@ -110,13 +101,11 @@ Brief description. Estimated complexity: low/medium/high.
 Rationale for step-of-10: allows inserting `E015` between `E010` and `E020`.
 
 ### Step 5 — Human Review [F0.5]
-<!-- cs: Krok 5 — Revize člověkem [F0.5] -->
 
 Present `spec.md` and `roadmap.md` to Human for approval.
 If rejected: revise and resubmit. Do not proceed to Epic planning until approved.
 
 ### Step 6 — Create Directory Structure
-<!-- cs: Krok 6 — Vytvořit adresářovou strukturu -->
 
 ```bash
 mkdir -p doc/project-progress
@@ -125,7 +114,6 @@ cp .cursor/skills/project-init/templates/GLOSSARY.md doc/project-progress/GLOSSA
 ```
 
 ## Output Checklist
-<!-- cs: Výstupní checklist -->
 
 - [ ] `doc/project-progress/brief.md` — Human's input preserved verbatim
 - [ ] `doc/project-progress/spec.md` — all 6 required sections present

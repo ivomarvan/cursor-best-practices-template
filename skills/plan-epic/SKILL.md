@@ -8,23 +8,17 @@ description: >-
 ---
 
 # Skill: APM Epic Planning (Phase E)
-<!-- cs: Skill: APM Plánování Epiky (Fáze E) -->
 
 ## Prerequisites
-<!-- cs: Předpoklady -->
 
 - You are acting as **Planner**.
 - `doc/project-progress/spec.md` and `doc/project-progress/roadmap.md` exist and are approved.
 - You know which Epic to plan (e.g. `E010`).
 - Read the entire `spec.md` before starting — every Task must align with project goals.
 
-<!-- cs: Jsi Planner. spec.md a roadmap.md existují a jsou schváleny. Znáš epiku k naplánování. -->
-
 ## Steps
-<!-- cs: Kroky -->
 
 ### Step 1 — Create Epic Directory [FE.1]
-<!-- cs: Krok 1 — Vytvořit adresář epiky [FE.1] -->
 
 ```bash
 mkdir -p doc/project-progress/epic-NNN-short-name
@@ -33,7 +27,6 @@ mkdir -p doc/project-progress/epic-NNN-short-name
 Naming: `epic-010-setup-infrastructure`, `epic-020-core-api`, etc.
 
 ### Step 2 — Analyze and Decompose [FE.1]
-<!-- cs: Krok 2 — Analyzovat a dekomponovat [FE.1] -->
 
 Before writing, think through:
 - What is the minimal deliverable of this Epic?
@@ -44,7 +37,6 @@ Before writing, think through:
 Tasks should be **independently implementable** and **testable in isolation**.
 
 ### Step 3 — Write Epic Plan [FE.1]
-<!-- cs: Krok 3 — Napsat plán epiky [FE.1] -->
 
 Create `doc/project-progress/epic-NNN-name/plan.md`:
 
@@ -98,7 +90,6 @@ One paragraph — what this Epic delivers when complete.
 ```
 
 ### Step 4 — Create Task Directories and Files [FE.1]
-<!-- cs: Krok 4 — Vytvořit adresáře a soubory tasků [FE.1] -->
 
 For each Task, create:
 ```
@@ -147,13 +138,10 @@ updated_at: <YYYY-MM-DD>
 ```
 
 ### Step 5 — Human Review + Definition of Ready gate [FE.2]
-<!-- cs: Krok 5 — Revize člověkem + brána Definition of Ready [FE.2] -->
 
 Before presenting, self-check **every** Task against the **Definition of Ready (DoR)**
 checklist in `07-project-management.mdc`. A vague spec guarantees a failed Task — the spec
 is the quality gate. Fix any Task that fails DoR before handing it to a Coder.
-<!-- cs: Před prezentací prověř každý task proti Definition of Ready (DoR) v
-     07-project-management.mdc. Vágní spec = selhaný task. Oprav, co neprojde DoR. -->
 
 Present `plan.md` to Human for approval.
 Key review points Human should check:
@@ -166,7 +154,6 @@ Key review points Human should check:
 Do **not** start any Task until Human approves the Epic Plan.
 
 ## Output Checklist
-<!-- cs: Výstupní checklist -->
 
 - [ ] `epic-NNN-name/plan.md` — Epic goal + task table + all task specs
 - [ ] `epic-NNN-name/task-NNN-name/spec.md` for each Task

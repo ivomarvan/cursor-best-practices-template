@@ -2,37 +2,19 @@
 description: >-
   Meta-rules for writing Cursor rules (.mdc) and skills (SKILL.md).
   Apply these rules whenever creating or editing agent rules and skills.
-alwaysApply: true
+globs: "**/.cursor/rules/**/*.mdc, **/rules/**/*.mdc, **/SKILL.md, **/.cursor/skills/**/SKILL.md"
+alwaysApply: false
 ---
 
 # Meta-Rules: Writing Cursor Rules and Skills
 
-<!-- cs: Meta-pravidla: Psaní Cursor rules a skills -->
-
 ## Language and Communication
 
-<!-- cs: Jazyk a komunikace -->
-
-- **Language of code and rules**: all text in `.mdc` files and `SKILL.md` is always in **technical English** — concise, clear, no filler.
-  <!-- cs: Jazyk kódu a rules: veškerý text v .mdc a SKILL.md je vždy v technické angličtině — stručně, jasně, bez zbytečných slov. -->
-- **Communication language**: defined in `communication-language.mdc` as `<communication-language>` (`<lang-code>`).
-  <!-- cs: Jazyk komunikace s uživatelem: definován v communication-language.mdc jako <communication-language> (<lang-code>). -->
-- **Bilingual principle** (when `<lang-code>` ≠ `en`):
-  <!-- cs: Princip dvojjazyčnosti (pokud <lang-code> ≠ en): -->
-  - Every `.mdc` file and `SKILL.md` contains **`<communication-language>` comments** faithfully mirroring the English text.
-    <!-- cs: Každý .mdc a SKILL.md obsahuje komentáře v <communication-language>, které věrně zrcadlí anglický text. -->
-  - English is the **sole source of truth**. English wins on conflict.
-    <!-- cs: Anglická verze je jediným zdrojem pravdy. Při konfliktu platí angličtina. -->
-  - Comments are prefixed `<!-- <lang-code>: ... -->` (or `# <lang-code>: ...` in YAML/code).
-    <!-- cs: Komentáře jsou označeny prefixem <!-- <lang-code>: ... --> (nebo # <lang-code>: ... v YAML/kódu). -->
-  - The agent automatically keeps `<communication-language>` comments synchronized with the English text on every edit.
-    <!-- cs: Agent automaticky udržuje komentáře synchronizované s anglickým textem při každé editaci pravidla. -->
-  - If `<lang-code>` = `en`, omit communication-language comments.
-    <!-- cs: Pokud je <lang-code> = en, komentáře v komunikačním jazyce se vynechávají. -->
+- **Language of rules and skills**: all text in `.mdc` files and `SKILL.md` is always **technical English** — concise, clear, no filler. No translation comments, no second-language copy.
+- **Language of code**: identifiers, docstrings, inline comments, and commit messages are always **English**.
+- **Chat with the user**: always in `<communication-language>` (see `00-communication-language.mdc`), unless the user writes otherwise.
 
 ## `.mdc` File Structure
-
-<!-- cs: Struktura souboru .mdc -->
 
 ```markdown
 ---
@@ -41,42 +23,26 @@ globs: **/*.ts        # file pattern; omit if alwaysApply: true
 alwaysApply: false    # true = applies regardless of context
 ---
 
-# Rule Title (English)
-<!-- <lang-code>: Název pravidla v <communication-language> -->
+# Rule Title
 
-## Section (English)
-<!-- <lang-code>: Sekce v <communication-language> -->
+## Section
 
 - Bullet point in English.
-  <!-- <lang-code>: Bullet point v <communication-language>. -->
 ```
 
 ## Rule Writing Principles
 
-<!-- cs: Principy psaní rules -->
-
 ### Conciseness and Focus
 
-<!-- cs: Stručnost a zaměřenost -->
-
 - One rule = **one concern** (one file = one topic).
-  <!-- cs: Jedno pravidlo = jeden concern (jeden soubor = jedno téma). -->
 - **Line limit depends on activation type** (cost rationale below):
-  <!-- cs: Limit řádků závisí na typu aktivace (zdůvodnění nákladů níže). -->
   - `alwaysApply: true` → **strict 150 lines** — loaded on **every** AI call; every extra line costs tokens.
-    <!-- cs: alwaysApply: true → přísný limit 150 řádků — načítá se při každém AI volání; každý řádek stojí tokeny. -->
   - `globs` / auto-attached → **250 lines** acceptable — loaded only when matching files are in context.
-    <!-- cs: globs / auto-attached → 250 řádků přijatelné — načítá se jen pokud odpovídající soubory jsou v kontextu. -->
   - Move anything longer to a skill's `reference.md`.
-    <!-- cs: Delší obsah přesuň do reference.md skillu. -->
 - No explaining the obvious — the agent is an expert.
-  <!-- cs: Žádné vysvětlování triviálního — agent je expert, nepotřebuje přednášku. -->
 - Use **❌ / ✅ code examples** instead of vague instructions.
-  <!-- cs: Používej ❌ / ✅ příklady kódu místo vágních pokynů. -->
 
 ### Activation Type (choose deliberately)
-
-<!-- cs: Typ aktivace (vybírej záměrně) -->
 
 | Type | When to use |
 |------|------------|
@@ -86,26 +52,16 @@ alwaysApply: false    # true = applies regardless of context
 | `@mention` in chat | Manual activation — only when explicitly invoked |
 
 Prefer **auto-attached** rules via `globs` over `alwaysApply: true` — saves context window.
-<!-- cs: Preferuj auto-attached pravidla přes globs před alwaysApply: true — šetří context window. -->
 
 ### Security Boundaries (2026 agentic engineering)
 
-<!-- cs: Bezpečnostní hranice (2026 agentic engineering) -->
-
 - Every workflow rules file **must** contain a guard against autonomous destructive actions.
-  <!-- cs: Každý soubor pravidel pro workflow musí obsahovat zábranu autonomních destruktivních akcí. -->
 - Mandatory in workflow rules:
-  <!-- cs: Povinné ve workflow rules: -->
   - No `git commit/push` without explicit user consent.
-    <!-- cs: Žádný git commit/push bez explicitního souhlasu uživatele. -->
   - No deletion of config files without confirmation.
-    <!-- cs: Žádné mazání konfiguračních souborů bez potvrzení. -->
   - No pipeline/DB operations without approval.
-    <!-- cs: Žádné spouštění pipeline/DB operací bez schválení. -->
 
 ### File Naming
-
-<!-- cs: Pojmenování souborů — číslo udává prioritu načítání -->
 
 ```
 00-communication-language.mdc   # source of truth for language — always first
@@ -119,8 +75,6 @@ Prefer **auto-attached** rules via `globs` over `alwaysApply: true` — saves co
 
 ## SKILL.md Structure
 
-<!-- cs: Struktura SKILL.md -->
-
 ```markdown
 ---
 name: skill-name              # max 64 chars, kebab-case
@@ -129,14 +83,11 @@ description: >-
   Use when: <trigger phrase>. # explicitly state when to use this skill.
 ---
 
-# Skill Title (English)
-<!-- <lang-code>: Název dovednosti v <communication-language> -->
+# Skill Title
 
-## Prerequisites (English)
-<!-- <lang-code>: Předpoklady v <communication-language> -->
+## Prerequisites
 
-## Steps (English)
-<!-- <lang-code>: Kroky v <communication-language> -->
+## Steps
 
 ## Additional resources
 - [reference.md](reference.md)
@@ -144,30 +95,16 @@ description: >-
 
 ### Rules for Skills
 
-<!-- cs: Pravidla pro skills -->
-
 - `description` is critical: the agent finds a skill only if the description contains keywords from the request.
-  <!-- cs: description je kritická: agent skill najde pouze pokud popis obsahuje klíčová slova z požadavku. -->
 - `SKILL.md` max **500 lines**; move the rest to `reference.md` or `examples.md`.
-  <!-- cs: SKILL.md max 500 řádků; zbytek do reference.md nebo examples.md. -->
 - One skill = one workflow. Prefer multiple focused skills over one "mega-skill".
-  <!-- cs: Jeden skill = jeden workflow. Raději více zaměřených skills než jeden mega-skill. -->
 - If the skill calls commands, provide **exact commands** with expected output.
-  <!-- cs: Pokud skill volá příkazy, uveď přesné příkazy s očekávaným výstupem. -->
 
 ## Pre-save Checklist
 
-<!-- cs: Checklist před uložením rules nebo skills -->
-
 - [ ] `.mdc` file is in `.cursor/rules/` with correct frontmatter
-  <!-- cs: Soubor .mdc je v .cursor/rules/ s korektním frontmatter -->
 - [ ] `globs` or `alwaysApply` is set deliberately
-  <!-- cs: globs nebo alwaysApply je záměrně nastaven -->
 - [ ] Length: under **150 lines** for `alwaysApply: true`; under **250 lines** for `globs` rules; under **500 lines** for skills
-  <!-- cs: Délka: pod 150 řádků pro alwaysApply: true; pod 250 řádků pro globs rules; pod 500 řádků pro skills -->
 - [ ] Contains concrete examples (❌ / ✅) or commands
-  <!-- cs: Obsahuje konkrétní příklady (❌ / ✅) nebo příkazy -->
-- [ ] `<communication-language>` comments synchronized with English text
-  <!-- cs: Komentáře v <communication-language> synchronizovány s anglickým textem -->
+- [ ] English only — no translation comments in rules or skills
 - [ ] No vague instructions — only concrete, actionable rules
-  <!-- cs: Žádné vágní instrukce — jen konkrétní, akční pravidla -->

@@ -8,22 +8,15 @@ description: >-
 ---
 
 # Skill: APM Epic Review and Closure (Phase ER)
-<!-- cs: Skill: APM Uzavření Epiky (Fáze ER) -->
 
 ## Prerequisites
-<!-- cs: Předpoklady -->
 
 - All Tasks of the current Epic are completed, **Reviewer-approved** (`review.md` =
   APPROVE), and Human-approved [Phase R, FT.7].
 - All `task-NNN/report.md` and `task-NNN/review.md` files exist.
 - You switch roles: **Coder** writes Epic Report → **Planner** leads Roadmap review.
 
-<!-- cs: Všechny tasky epiky jsou dokončeny, schváleny Reviewerem (review.md = APPROVE)
-     i člověkem. Všechny task-NNN/report.md a review.md existují.
-     Coder píše Epic Report, pak Planner vede roadmap review. -->
-
 ## Part A — Epic Report (Coder) [FER.1]
-<!-- cs: Část A — Epic Report (Coder) [FER.1] -->
 
 ### Step A1 — Read all Task Reports
 
@@ -79,10 +72,8 @@ Poznatky z implementace relevantní pro plánování dalších Epik.
 ```
 
 ## Part B — Roadmap Review (Planner + Human) [FER.2]
-<!-- cs: Část B — Review Roadmapy (Planner + Human) [FER.2] -->
 
 ### Step B1 — Planner reads Epic Report and current Roadmap
-<!-- cs: Krok B1 — Planner přečte Epic Report a aktuální Roadmapu -->
 
 Read:
 - `epic-NNN/report.md` (just written)
@@ -90,7 +81,6 @@ Read:
 - `doc/project-progress/spec.md` (project goals — unchanged reference)
 
 ### Step B2 — Planner assesses Roadmap validity
-<!-- cs: Krok B2 — Planner vyhodnotí relevanci Roadmapy -->
 
 Ask: given what we learned in this Epic, are the upcoming Epics still correct?
 - Were assumptions in the spec invalidated?
@@ -101,12 +91,8 @@ Ask: given what we learned in this Epic, are the upcoming Epics still correct?
 is captured as an ADR in `doc/architecture/decisions/` and is consistent with `spec.md`.
 If implementation invalidated part of the spec, propose a spec update to the Human (the
 spec is the single source of truth and must not silently rot).
-<!-- cs: ADR + sladění specu: ověř, že architektonická rozhodnutí z epiky jsou zachycena
-     jako ADR a jsou v souladu se spec.md. Pokud implementace zneplatní část specu,
-     navrhni Humanovi jeho aktualizaci (spec je single source of truth, nesmí tiše zastarat). -->
 
 ### Step B3 — Present assessment to Human
-<!-- cs: Krok B3 — Prezentovat hodnocení člověku -->
 
 Present one of three conclusions:
 
@@ -121,13 +107,11 @@ Reason: T030 revealed that the current auth interface won't scale to E020 requir
 **C) Major revision** — Significant scope or architecture change; discuss with Human before writing.
 
 ### Step B4 — Update roadmap.md if approved
-<!-- cs: Krok B4 — Aktualizovat roadmap.md pokud schváleno -->
 
 If Human approves changes: update `roadmap.md` front matter `updated_at` and content.
 Inserting between E010 and E020: use `E015-name`.
 
 ## Human Review Checklist [FT.7 for Epic]
-<!-- cs: Checklist revize pro člověka [FT.7 pro Epiku] -->
 
 Human should verify before approving Epic closure:
 - [ ] All Task `dod.md` files are fully ✅?
@@ -138,7 +122,6 @@ Human should verify before approving Epic closure:
 - [ ] No regressions in full test suite?
 
 ## Output Checklist
-<!-- cs: Výstupní checklist -->
 
 - [ ] `epic-NNN/report.md` — all required sections, in `<communication-language>` [FER.1]
 - [ ] Roadmap reviewed with Human [FER.2]

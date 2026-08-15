@@ -2,27 +2,19 @@
 name: qdrant-dev
 description: >-
   Qdrant vector database development workflow in Docker. Use when working with
-  Qdrant collections, point upsert, vector search, payload indexing, or debugging
+  Qdrant collections, point upsert, query_points / Query API, payload indexing, or debugging
   Qdrant-related issues. Covers: starting the container, inspecting collections,
   running Python scripts against Qdrant, and backup/restore.
 ---
 
 # Qdrant Dev Workflow (Docker)
 
-<!-- cs: Vývojový workflow pro Qdrant přes Docker -->
-
 ## Prerequisites
-
-<!-- cs: Předpoklady -->
 
 - `docker compose up qdrant` running (port 6333 REST, 6334 gRPC).
 - Python environment with `qdrant-client[grpc]` installed.
 
-<!-- cs: Docker compose s Qdrant běží; Python prostředí s qdrant-client[grpc]. -->
-
 ## 1. Start / Stop Qdrant
-
-<!-- cs: Spuštění / zastavení Qdrant -->
 
 ```bash
 # start (detached)
@@ -36,7 +28,6 @@ docker compose stop qdrant
 ```
 
 **Health check:**
-<!-- cs: Kontrola dostupnosti: -->
 
 ```bash
 curl -s http://localhost:6333/healthz
@@ -46,8 +37,6 @@ curl -s http://localhost:6333/collections | python3 -m json.tool
 ```
 
 ## 2. Inspect Collections
-
-<!-- cs: Prohlížení kolekcí -->
 
 ```bash
 # List all collections
@@ -61,8 +50,6 @@ curl -s http://localhost:6333/collections/documents/points/count | python3 -m js
 ```
 
 ## 3. Run Python Scripts Against Qdrant
-
-<!-- cs: Spuštění Python skriptů vůči Qdrant -->
 
 ```bash
 # Run indexing / migration script from host (Qdrant reachable at localhost:6333)
@@ -84,8 +71,6 @@ print(client.get_collections())
 
 ## 4. Collection Management
 
-<!-- cs: Správa kolekcí -->
-
 ```bash
 # Delete a collection (destructive — data loss)
 curl -X DELETE http://localhost:6333/collections/documents
@@ -102,22 +87,18 @@ client = AsyncQdrantClient(":memory:")
 
 ## 5. Search Test (ad-hoc)
 
-<!-- cs: Testovací dotaz -->
-
 ```bash
 # Nearest neighbour search via REST — replace vectors with real floats
-curl -X POST http://localhost:6333/collections/documents/points/search \
+curl -X POST http://localhost:6333/collections/documents/points/query \
   -H 'Content-Type: application/json' \
   -d '{
-    "vector": [0.1, 0.2, ...],
+    "query": [0.1, 0.2, 0.3],
     "limit": 5,
     "with_payload": true
   }' | python3 -m json.tool
 ```
 
 ## 6. Backup and Restore
-
-<!-- cs: Záloha a obnova -->
 
 ```bash
 # Create snapshot (stored inside the container volume)
@@ -139,8 +120,6 @@ curl -X POST "http://localhost:6333/collections/documents/snapshots/recover" \
 ```
 
 ## 7. Cleanup
-
-<!-- cs: Cleanup -->
 
 ```bash
 # Remove container + volume (destroys all vector data)

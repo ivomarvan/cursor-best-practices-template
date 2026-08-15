@@ -7,18 +7,11 @@ alwaysApply: true
 
 # General Programming Rules
 
-<!-- cs: Obecná pravidla programování platná napříč všemi jazyky a projekty -->
-
 ## Language and Communication
 
-<!-- cs: Jazyk a komunikace -->
-
 - **Code and comments**: always **English** — identifiers, docstrings, inline comments, commit messages.
-  <!-- cs: Kód a komentáře: vždy anglicky — identifikátory, docstringy, komentáře, commit messages. -->
-- **Chat with the user**: always in **`<communication-language>`** (see `communication-language.mdc`), unless the user writes otherwise.
-  <!-- cs: Chat s uživatelem: vždy v <communication-language> (viz communication-language.mdc), pokud uživatel nepíše jinak. -->
+- **Chat with the user**: always in **`<communication-language>`** (see `00-communication-language.mdc`), unless the user writes otherwise.
 - Comments document **intent and reason** (why), not a trivial description of what the code does (what).
-  <!-- cs: Komentáře dokumentují záměr a důvod (proč), ne triviální popis toho co kód dělá (co). -->
 
 ```python
 # ❌ Describes what, not why
@@ -30,20 +23,11 @@ retry_count += 1  # Back-off limit reached; caller handles RetryableError
 
 ## OOP and Design
 
-<!-- cs: OOP a návrh -->
-
-- **Encapsulation over inheritance** — prefer composition and delegation over class hierarchy. Use inheritance only for a true is-a relationship, never to share implementation.
-  <!-- cs: Zapouzdření před dědičností — preferuj kompozici a delegaci. Dědičnost jen pro skutečný vztah „je" (is-a). -->
+- **Encapsulation over inheritance** — composition and delegation over class hierarchy. Inheritance only for a true is-a relationship.
 - **One class = one file = one mapped concept** from the domain or a standalone architectural unit.
-  <!-- cs: Jedna třída = jeden soubor = jeden mapovaný koncept ze světa domény nebo samostatný architektonický celek. -->
-- **File structure** follows language conventions; larger functionalities form directories with subdirectories.
-  <!-- cs: Struktura souborů odpovídá konvencím jazyka; větší funkcionality tvoří adresáře s podadresáři. -->
-- **Immutability as default** — prefer immutable data structures; mutation is an explicit exception.
-  <!-- cs: Immutabilita jako výchozí stav — preferuj neměnné datové struktury; mutace je explicitní výjimka. -->
-- **Interface-first design** — define the public interface (contract, interface, protocol) before the implementation.
-  <!-- cs: Interface-first design — definuj veřejné rozhraní dříve než implementaci. -->
-- **Design patterns** — when a pattern is used, state its name in a comment and maintain that naming during refactoring.
-  <!-- cs: Návrhové vzory — pokud je vzor použit, uveď jeho jméno v komentáři a udržuj pojmenování při refaktoringu. -->
+- **Immutability as default** — mutation is an explicit exception.
+- **Interface-first design** — define the public contract before the implementation.
+- **Design patterns** — when a pattern is used, name it in a comment and keep that name during refactoring.
 
 ```python
 # Pattern: Repository (GoF Data Access Object variant)
@@ -51,66 +35,29 @@ class DocumentRepository:
     ...
 ```
 
-## SOLID Principles
+## SOLID
 
-<!-- cs: SOLID principy -->
-
-| Principle | Abbr. | Rule |
-|-----------|-------|------|
-| Single Responsibility | **SRP** | A class/module has one reason to change |
-| Open/Closed | **OCP** | Extend by adding, not by modifying existing code |
-| Liskov Substitution | **LSP** | A subclass is fully substitutable for its superclass |
-| Interface Segregation | **ISP** | Prefer many small interfaces over one large one |
-| Dependency Inversion | **DIP** | Depend on abstractions, not on concrete classes |
-
-<!-- cs: Porušení SOLID je přípustné jen vědomě a s komentářem zdůvodňujícím výjimku. -->
-Violating SOLID is acceptable only deliberately and with a comment justifying the exception.
+Honor SRP, OCP, LSP, ISP, DIP. Violate them only deliberately, with a comment justifying the exception.
 
 ## Clean Code
 
-<!-- cs: Čistý kód -->
-
 - Function/method length: ideally under **30 lines**; if more, refactor.
-  <!-- cs: Délka funkce/metody: ideálně pod 30 řádků; pokud více, refaktoruj. -->
 - Prefer **explicit** over implicit — no hidden global state.
-  <!-- cs: Preferuj explicitní před implicitním — žádný skrytý globální stav. -->
 - No hardcoded paths, ports, credentials, or magic numbers — use constants or configuration.
-  <!-- cs: Žádné hardcodované cesty, porty, credentials nebo magická čísla — použij konstanty nebo konfiguraci. -->
 - No `TODO`/`FIXME` in commits — either fix it or create an issue.
-  <!-- cs: Žádný TODO/FIXME v commitech — buď oprav, nebo vytvoř issue. -->
 - Prefer **editing existing files** over creating new ones.
-  <!-- cs: Preferuj editaci existujících souborů před vytvářením nových. -->
 
 ## Documentation (Doxygen level)
 
-<!-- cs: Dokumentace (Doxygen úroveň) -->
+Every public module, class, and function has a docstring: **what** (1 sentence), parameters, return value, exceptions.
+Concrete syntax is specified by the language-specific rule.
 
-Every public module, class, and function has a docstring containing:
-<!-- cs: Každý veřejný modul, třída a funkce má docstring obsahující: -->
-
-- **What** the function does (1 sentence)
-  <!-- cs: Co funkce dělá (1 věta) -->
-- **Parameters** — name, type, purpose of each
-  <!-- cs: Parametry — název, typ, účel každého -->
-- **Return value** — type and semantics
-  <!-- cs: Návratová hodnota — typ a sémantika -->
-- **Exceptions/errors** — when and what error occurs
-  <!-- cs: Výjimky/chyby — kdy a jaká chyba nastane -->
-
-Concrete syntax (Doxygen `@param`, Google-style `Args:`, JSDoc `@param`) is specified by the language-specific rule.
-<!-- cs: Konkrétní syntaxi specifikuje jazykové pravidlo. -->
-
-- `README.md` in every directory with source code — purpose, contents, how to run.
-  <!-- cs: README.md v každém adresáři se zdrojovým kódem — účel, obsah, jak spustit. -->
-- `README.md` is updated **simultaneously** with code changes, not as an afterthought.
-  <!-- cs: README.md se aktualizuje současně s kódem, ne jako afterthought. -->
+- `README.md` on **public** modules/components (purpose, contents, how to run) — not every directory.
+- Update `README.md` **simultaneously** with code changes.
 
 ## Error Handling
 
-<!-- cs: Zpracování chyb -->
-
 - Never swallow an exception silently — log with context, then re-raise or recover:
-  <!-- cs: Nikdy nespolkni výjimku tiše — loguj s kontextem, pak re-raise nebo recovery. -->
 
 ```python
 # ❌
@@ -124,72 +71,37 @@ except httpx.TimeoutException as exc:
 ```
 
 - Fail fast: validate inputs and preconditions as early as possible.
-  <!-- cs: Fail fast: ověř vstupy/předpoklady co nejdříve. -->
 - Use specific exceptions, not generic `Exception`.
-  <!-- cs: Používej specifické výjimky, ne generické Exception. -->
 
 ## Logging and Observability
 
-<!-- cs: Logging a observabilita -->
-
-- Never `print()` for diagnostics — use the language's standard logging library.
-  <!-- cs: Nikdy print() pro diagnostiku — standardní logovací knihovna jazyka. -->
-- Levels: `DEBUG` for detail, `INFO` for milestones, `WARNING` for recoverable issues, `ERROR`/`CRITICAL` for failures.
-  <!-- cs: Úrovně: DEBUG pro detail, INFO pro milníky, WARNING pro zvládnutelné, ERROR/CRITICAL pro selhání. -->
-- Logs are **structured** (key=value): `url=%s status=%d` — easy to parse and query.
-  <!-- cs: Logy jsou strukturované (klíč=hodnota): url=%s status=%d — snadno parsovatelné. -->
-- Beyond logging: metrics (counters, histograms), trace IDs for distributed systems.
-  <!-- cs: Vedle logování: metriky (countery, histogramy), trace ID pro distribuované systémy. -->
-- `print()` is acceptable only in CLI entry-points for user-facing output.
-  <!-- cs: print() přijatelný pouze v CLI entry-pointech pro uživatelský výstup. -->
+- Never `print()` for diagnostics — use the language's standard logging library (`print()` only in CLI entry-points).
+- Levels: `DEBUG` detail, `INFO` milestones, `WARNING` recoverable, `ERROR`/`CRITICAL` failures.
+- Logs are **structured** (key=value). For services: JSON logs + OpenTelemetry traces/metrics where the stack supports it.
 
 ## Testability as a Design Constraint
 
-<!-- cs: Testovatelnost jako design constraint -->
-
 A module that cannot be easily unit-tested likely has a design problem.
-<!-- cs: Modul, který nejde jednoduše unit-testovat, má pravděpodobně špatný design. -->
-Warning signs: many constructor dependencies, hidden global state, direct I/O calls.
-<!-- cs: Signály špatného designu: mnoho závislostí v konstruktoru, skrytý globální stav, přímé volání I/O. -->
+See `09-testing.mdc` for the testing contract.
 
 - Every new function/module gets tests — at minimum happy path + 1 edge case.
-  <!-- cs: Každá nová funkce/modul dostane testy — minimálně happy path + 1 edge case. -->
-- Tests are **deterministic** — no dependencies on time or network without mocking.
-  <!-- cs: Testy jsou deterministické — žádné závislosti na čase nebo síti bez mocku. -->
+- Tests are **deterministic** — no time or network without mocking.
 - Test name: `test_<what>_<condition>_<expected result>`.
-  <!-- cs: Název testu: test_<co>_<podmínka>_<očekávaný výsledek>. -->
 
 ## Security (by Default)
 
-<!-- cs: Bezpečnost (Security by Default) -->
-
-- Secrets (API keys, passwords, tokens) never in code or git — always `.env` + `.gitignore`.
-  <!-- cs: Secrets nikdy v kódu nebo v gitu — vždy .env + .gitignore. -->
-- Principle of least privilege — each component has access only to what it needs.
-  <!-- cs: Princip nejnižších oprávnění — každá komponenta má přístup jen k tomu co potřebuje. -->
-- Sanitize inputs at system boundaries (API, CLI, files); never trust external data without validation.
-  <!-- cs: Sanitizuj vstupy na hranicích systému; nikdy nevěř externím datům bez validace. -->
-- No sensitive data in logs (tokens, passwords, PII).
-  <!-- cs: Žádná citlivá data v logách (tokeny, hesla, PII). -->
+- Secrets never in code or git — always `.env` + `.gitignore`.
+- Least privilege; sanitize inputs at system boundaries; no secrets/PII in logs.
 
 ## Workflow
 
-<!-- cs: Workflow -->
-
 - **No git commits** without an explicit instruction from the user.
-  <!-- cs: Žádné git commity bez explicitního pokynu uživatele. -->
 - For large changes (>3 files, >100 lines): **propose a plan first**, then implement.
-  <!-- cs: Při velkém zásahu (>3 soubory, >100 řádků): nejdříve navrhni plán, pak implementuj. -->
-- Autonomous destructive operations (data deletion, DB migration, deployment) — always wait for approval.
-  <!-- cs: Autonomní destruktivní operace (smazání dat, DB migrace, deployment) — vždy čekej na souhlas. -->
+- Autonomous destructive operations (data deletion, DB migration, deployment) — wait for approval.
+- **Verification before completion**: run the relevant tests and linters and report commands + exit codes before claiming the work is done.
 
 ## Dependencies
 
-<!-- cs: Závislosti -->
-
-- Before adding a new library, verify it exists and is actively maintained.
-  <!-- cs: Před přidáním nové knihovny ověř, že existuje a je aktivně udržována. -->
-- Pin dependency versions in package management files.
-  <!-- cs: Pinuj verze závislostí v souborech správy balíčků. -->
-- Justify every new dependency with a comment in the dependency file.
-  <!-- cs: Každou novou závislost zdůvodni komentářem v souboru závislostí. -->
+- Before adding a library, verify it exists and is actively maintained.
+- Pin versions in the lockfile / package manifest; justify each new dependency with a comment.
+- Audit when adding or bumping (`uv pip audit`, `npm audit`, or Trivy for images).

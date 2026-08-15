@@ -1,106 +1,74 @@
 ---
 description: >-
   Docker usage policy — when Docker is mandatory, when it is exempt, and how to
-  decide for new technologies. Always apply when starting or evaluating a project.
-alwaysApply: true
+  decide for new technologies. Use when starting a project, adding a service,
+  or deciding whether to containerize.
+alwaysApply: false
 ---
 
 # Docker Usage Policy
 
-<!-- cs: Pravidla pro použití Dockeru v projektech — kdy povinný, kdy výjimka -->
-
 ## Default Rule: Docker is Mandatory
 
-<!-- cs: Výchozí pravidlo: Docker je povinný -->
-
 Every project with runtime dependencies or more than one service **must** be containerized.
-<!-- cs: Každý projekt s runtime závislostmi nebo více než jednou službou musí být kontejnerizován. -->
 
 When Docker is used, the project **must** contain a `README.docker.md` file documenting:
-<!-- cs: Pokud je Docker použit, projekt musí obsahovat README.docker.md dokumentující: -->
 
 - how to start the environment (`docker compose up`)
-  <!-- cs: jak spustit prostředí -->
 - what services are included and on which ports
-  <!-- cs: jaké služby jsou dostupné a na jakých portech -->
 - common maintenance tasks (migrations, shell access, cleanup)
-  <!-- cs: běžné údržbové úkoly (migrace, přístup do shellu, cleanup) -->
 
 ## Docker Exclude List
 
-<!-- cs: Seznam výjimek z povinného použití Dockeru -->
-
 The following project types are **exempt** from the Docker requirement:
-
-<!-- cs: Následující typy projektů jsou osvobozeny od povinného použití Dockeru: -->
 
 | Project type | Reason |
 |--------------|--------|
 | **Embedded firmware** (ESP32, ESP-IDF, bare-metal) | USB flashing access is complex in containers; toolchain overhead (~2 GB); native environment preferred |
 | **Desktop GUI applications** (Qt, GTK, Electron) | X11/Wayland forwarding is fragile; native OS integration required |
-| **Simple utility scripts** (single file, ≤1 dependency) | Docker overhead exceeds the benefit; use a venv or conda environment |
+| **Simple utility scripts** (single file, ≤1 dependency) | Docker overhead exceeds the benefit; use **uv** (`uvx` / `uv run`) or a venv |
 | **Documentation-only repositories** | No runtime environment needed |
-
-<!-- cs: Firmware: přístup k USB pro flashing je v kontejneru složitý; toolchain ~2 GB.
-     GUI: X11/Wayland forwarding je nestabilní; vyžaduje nativní OS integraci.
-     Utility skripty: Docker overhead převyšuje užitek; postačuje venv/conda.
-     Dokumentace: nevyžaduje runtime prostředí. -->
 
 ## Infrastructure vs. Application Containerization
 
-<!-- cs: Kontejnerizace infrastruktury vs. aplikace -->
-
 Even for exempt project types, **infrastructure services** (databases, queues, vector stores)
 **must** be run via Docker Compose.
-<!-- cs: I u osvobozených projektů musí být infrastrukturní služby (DB, fronty, vector stores) spouštěny přes Docker Compose. -->
 
 ```yaml
 # ✅ Minimal compose — infrastructure only, application runs natively
 services:
   db:
-    image: postgres:16.2-alpine
+    image: postgres:17.5-alpine
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.4-alpine
 ```
 
 Use `profiles` to make the application container opt-in when native environment suffices:
-<!-- cs: Použij profiles, aby kontejner aplikace byl volitelný, pokud nativní prostředí postačuje: -->
 
 ```yaml
 services:
   api:
     profiles: ["full"]    # opt-in: docker compose --profile full up
   db:
-    image: postgres:16.2-alpine   # always available
+    image: postgres:17.5-alpine   # always available
 ```
 
 ## Adding a New Technology
 
-<!-- cs: Přidání nové technologie -->
-
 When introducing a new technology, framework, or runtime dependency to the project,
 **carefully evaluate** one of these two paths before writing any code:
-<!-- cs: Při přidání nové technologie nebo runtime závislosti pečlivě zvaž jednu ze dvou cest: -->
 
 1. **Containerize it** — add the service to `docker-compose.yml` with a pinned image version.
-   <!-- cs: Kontejnerizuj — přidej službu do docker-compose.yml s pinovanou verzí image. -->
 2. **Exempt it** — add the technology type to the Docker Exclude List in this rule
    (`03-docker-policy.mdc`) with a written justification.
-   <!-- cs: Přidej výjimku — doplň typ technologie do Docker Exclude List v tomto pravidle (03-docker-policy.mdc) s písemným zdůvodněním. -->
 
 **Default is containerization.** Exemption requires an explicit reason.
-<!-- cs: Výchozí volba je kontejnerizace. Výjimka vyžaduje explicitní zdůvodnění. -->
 
 ## Disk Space — Avoiding Waste
 
-<!-- cs: Místo na disku — jak nezabírat zbytečně -->
-
 - Use **multi-stage builds** — production image contains no dev dependencies (see `04-docker-standards.mdc`).
-  <!-- cs: Používej multi-stage builds — produkční image neobsahuje dev závislosti. -->
-- Use **BuildKit** (`DOCKER_BUILDKIT=1`) — layer cache is shared across builds.
-  <!-- cs: Používej BuildKit — cache vrstev je sdílena napříč buildy. -->
+- **BuildKit** is the Docker default (v23+) — do not set `DOCKER_BUILDKIT=1` unless on an old daemon.
 - Add periodic cleanup to `README.docker.md`:
-  <!-- cs: Přidej pravidelný cleanup do README.docker.md: -->
 
 ```bash
 docker system prune -f    # remove unused images, containers, networks
