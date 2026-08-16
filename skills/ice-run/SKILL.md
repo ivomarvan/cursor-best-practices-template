@@ -36,10 +36,16 @@ specification.
 ```bash
 cat doc/intent/MAP.md
 $TOOL owner <path/you/expect/to/change>
+$TOOL realization status --node <iNNNN>
 ```
 
 Name the affected node ids. If no node fits, that is a finding: either a node is missing
 (go to Step 4) or the work is outside the project's intent — ask the Human.
+
+When the Human asks "what should we do next?" rather than for a specific change, start
+from `$TOOL realization worklist` instead. It lists every node that is unproven, stale,
+broken or waiting for acceptance, ancestors first. Take a node marked `ready`; a node
+marked `blocked_by iNNNN` waits, because fixing the ancestor may change what it needs.
 
 ## Step 3 — Classify complexity
 
@@ -85,6 +91,15 @@ Write the raw output to `grader.md`. Failures go back to the Coder — at most t
 rounds, then escalate. A scope violation raises the run to `medium` and wakes the
 Adversary regardless of the original level.
 
+Once `grader.md` is green, record the realization claim — you, never the Coder:
+
+```bash
+$TOOL realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator
+```
+
+The tool refuses a node with an open question or with an unreachable enforcer. Such a
+refusal is a finding about the run, not an obstacle to route around.
+
 ## Step 8 — Independent review
 
 At `medium` and `high`, start the **Adversary** (skill `ice-review`) with a model that
@@ -97,16 +112,31 @@ Write `status.md`: final state, models used, loop counts, Human gate. Promote an
 cross-node decision into an ADR under `doc/architecture/decisions/`. Record a skipped
 Human review with its reason. Commit only if the Human asks.
 
+Check whether the node still owes anything:
+
+```bash
+$TOOL realization status --node <iNNNN>
+```
+
+If acceptance is `pending`, the run closes as `awaiting-acceptance` and you tell the Human
+what to look at. **Never** run `realization accept` or `realization affirm` yourself —
+both are human judgements and the tool refuses an agent role in `--by`.
+
+If an intent change in Step 4 turned other nodes `stale`, say so: either they belong in
+follow-up runs, or the Human affirms them with a reason.
+
 ## Output checklist
 
 - [ ] Run directory with `request.md` and either `run.md` (low) or the full set
 - [ ] Affected node ids recorded in the front matter (`intent_ids`)
 - [ ] `intent validate` and `intent scope` green, logged in `grader.md`
 - [ ] Every gate required by the complexity level actually ran
+- [ ] Realization claimed for the affected node, or the reason it could not be
 - [ ] `status.md` written; skipped Human review has a recorded reason
 
 ## Additional resources
 
 - [../../rules/07-ice-workflow.mdc](../../rules/07-ice-workflow.mdc)
 - [../../rules/07-run-artifacts.mdc](../../rules/07-run-artifacts.mdc)
+- [../../rules/07-realization.mdc](../../rules/07-realization.mdc)
 - [../../rules/00-model-policy.mdc](../../rules/00-model-policy.mdc)

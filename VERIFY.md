@@ -12,14 +12,19 @@ Run from the repository root, with any Python 3.11+ interpreter. No dependencies
 | # | Command | Expected | Proves |
 |---|---------|----------|--------|
 | 1 | `python3 tools/intent/cli.py validate` | exit 0 | the intent tree satisfies V1–V10 |
-| 2 | `python3 -m unittest discover -s tools/intent/tests -t tools` | exit 0 | the tooling behaves as the contracts of `i0004` claim |
-| 3 | `python3 tools/checks/template_checks.py --root .` | exit 0 | contracts of `i0001`, `i0002`, `i0003` |
-| 4 | `python3 tools/checks/hook_checks.py --root .` | exit 0 | contracts of `i0005` |
+| 2 | `python3 tools/intent/cli.py realization check` | exit 0 | the realization layer satisfies R1–R7 |
+| 3 | `python3 -m unittest discover -s tools/intent/tests -t tools` | exit 0 | the tooling behaves as the contracts of `i0004` claim |
+| 4 | `python3 tools/checks/template_checks.py --root .` | exit 0 | contracts of `i0001`, `i0002`, `i0003` |
+| 5 | `python3 tools/checks/hook_checks.py --root .` | exit 0 | contracts of `i0005` |
 
-All four in one line:
+Command 2 checks that the realization layer is **consistent**, never that the project is
+finished. An unfinished project is the normal state; an inconsistent layer is a bug.
+
+All five in one line:
 
 ```bash
 python3 tools/intent/cli.py validate \
+  && python3 tools/intent/cli.py realization check \
   && python3 -m unittest discover -s tools/intent/tests -t tools \
   && python3 tools/checks/template_checks.py --root . \
   && python3 tools/checks/hook_checks.py --root .

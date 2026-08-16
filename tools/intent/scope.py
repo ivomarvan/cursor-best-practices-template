@@ -12,9 +12,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from intent.miniyaml import YamlError, parse, split_front_matter
-from intent.model import Tree
+from intent.model import INTENT_DIRNAME, REALIZATION_FILENAME, Tree
 
 PLAN_FILENAMES = ("plan.md", "run.md")
+
+#: Writing the realization layer is the recorded result of a run, not a change of intent.
+#: Without this carve-out every run would trip its own scope guard the moment it finished.
+ALWAYS_ALLOWED = (f"{INTENT_DIRNAME}/{REALIZATION_FILENAME}",)
 
 
 @dataclass
@@ -80,19 +84,28 @@ def _matches(path: str, patterns: list[str]) -> bool:
     return False
 
 
-def check_scope(
-    tree: Tree, run_dir: Path, base: str | None = None, node_ids: list[str] | None = None
-) -> tuple[list[str], Declaration]:
-    """Return the files that were changed without being declared."""
-    declaration = load_declaration(run_dir)
+def allowed_paths(
+    tree: Tree, run_dir: Path, declaration: Declaration, node_ids: list[str] | None = None
+) -> list[str]:
+    """Every path this run may touch: declared, incidental, its own directory, and the
+    realization layer, whose update is the recorded result of the run itself."""
     allowed = declaration.allowed()
-    run_relative = str(run_dir.relative_to(tree.root_dir))
-    allowed.append(run_relative)
+    allowed.append(str(run_dir.relative_to(tree.root_dir)))
+    allowed.extend(ALWAYS_ALLOWED)
     for node_id in node_ids or []:
         node = tree.nodes.get(node_id)
         if node:
             allowed.extend(node.code_paths)
             allowed.extend(node.test_paths)
+    return allowed
+
+
+def check_scope(
+    tree: Tree, run_dir: Path, base: str | None = None, node_ids: list[str] | None = None
+) -> tuple[list[str], Declaration]:
+    """Return the files that were changed without being declared."""
+    declaration = load_declaration(run_dir)
+    allowed = allowed_paths(tree, run_dir, declaration, node_ids)
     violations = [
         path for path in changed_files(tree.root_dir, base) if not _matches(path, allowed)
     ]

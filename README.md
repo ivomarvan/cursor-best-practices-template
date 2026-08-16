@@ -20,6 +20,7 @@ unchanged.
 | Source of truth | the last approved plan | `doc/intent/` — a maintained tree of meaning |
 | Unit of work | Epic → Task | one **run** |
 | Verification | reviewer reads the report | machine gates first, reviewer second |
+| "What is left?" | the remaining tasks in the epic plan | computed: `intent realization worklist` |
 | Tooling | none (prose only) | `tools/intent` + `tools/checks`, no dependencies |
 
 Version 1 stays available: see [Pinning a version](#pinning-a-version).
@@ -41,6 +42,9 @@ flowchart LR
   it. A contract without an enforcer is a wish, and the tooling counts those.
 - **Evidence** — a machine, not a model, decides whether the work is done. The commands
   live in `VERIFY.md`; the log lives with the run.
+
+A fourth question follows from the three: **is it true yet?** That one is answered by the
+[realization layer](#what-is-left-to-do--the-realization-layer).
 
 ---
 
@@ -90,7 +94,11 @@ Grader's entire mandate: it runs these and nothing else.
 | 1 | `docker compose run --rm app pytest` | exit 0 | behaviour |
 | 2 | `docker compose run --rm app ruff check .` | exit 0 | style |
 | 3 | `python3 .cursor/tools/intent/cli.py validate` | exit 0 | the intent tree |
+| 4 | `python3 .cursor/tools/intent/cli.py realization check` | exit 0 | the realization layer |
 ```
+
+Command 4 checks that the realization layer is *consistent*, not that the project is
+finished — an unfinished project is the normal state.
 
 ### 6. Start the intent tree
 
@@ -103,6 +111,14 @@ Fill in `## Meaning`, `## Non-goals` and at least one contract, then promote the
 else in the tree hangs off it.
 
 Then simply ask the agent for a change. The `ice-run` skill takes over from there.
+
+### 7. Leave the realization layer empty
+
+Nothing to do — that is the point. `doc/intent/_realization.yaml` is written the first
+time something is claimed, and until then every node is honestly `not_claimed`. A missing
+`doc/intent/_policy.yaml` means the default profiles; write the file only when you want
+to change them. Ask `intent realization worklist` at any time to see what the project
+still owes its own tree.
 
 ---
 
@@ -121,7 +137,8 @@ flowchart TD
     PLAN --> CODE["Coder implements<br/>inside the slice"]
     CODE --> GRADE["Grader runs <code>VERIFY.md</code><br/>+ validate + scope guard"]
     GRADE -- red --> CODE
-    GRADE -- green --> ADV{"medium or high?"}
+    GRADE -- green --> CLAIM["Coordinator records the claim<br/><code>realization claim</code>"]
+    CLAIM --> ADV{"medium or high?"}
     ADV -- yes --> REV["Adversary reviews the diff<br/>APPROVE / REQUEST CHANGES"]
     ADV -- no --> CLOSE
     REV -- "REQUEST CHANGES" --> CODE
@@ -149,6 +166,119 @@ not grade, and the Adversary uses a different model than the Coder.
 
 ---
 
+## What is left to do — the realization layer
+
+The tree says what the system **means**. It does not say whether the project already
+**fulfils** it. Without that, "what should we do next?" has no source of truth: runs are
+audit and may not be read as a backlog, and an empty `code_paths` is a guess, not a fact.
+
+The realization layer answers it, and lives beside the tree rather than inside it.
+
+### One rule: assertions are stored, state is computed
+
+Stored, in `doc/intent/_realization.yaml`: that somebody claimed a node realized, with
+evidence, **against fingerprints of the wording it was claimed against** — plus the human
+verdict, if any.
+
+```yaml
+schema_version: 1
+nodes:
+  i0042:
+    claim:
+      evidence: doc/runs/20260816-1040-user-email-a7
+      by: Coordinator
+      contracts: sha256:9f3a1b7c2d4e5f60
+      meaning: sha256:11cd7e33aa20b415
+```
+
+Computed, never written: whether the claim still holds, why it stopped holding, what is
+blocked, and what to work on next.
+
+Two fingerprints per node. **contracts** covers the `contracts` list; **meaning** covers
+`## Refines`, `## Meaning`, `## Contracts`, `## Non-goals`, `parent` and `uses`. Renaming
+a node, moving its `code_paths` or reordering its contracts changes neither — those are
+not changes of what the node commits to.
+
+This is why realization state is *not* in the node front matter: one typo fixed high in
+the tree would otherwise rewrite every node file below it, and the short readable diff
+that makes reviewing an intent change cheap would drown in machine bookkeeping. It also
+means an inconsistent state — a realized child under an ancestor whose meaning moved —
+cannot be stored at all, so no rule has to forbid it.
+
+```mermaid
+stateDiagram-v2
+    [*] --> not_claimed: node created
+    not_claimed --> realized: claim + evidence
+    realized --> stale: the wording moved
+    realized --> broken: the enforcer vanished
+    realized --> rejected: the Human said no
+    stale --> realized: new evidence — or affirm
+    broken --> realized: enforcer restored
+    rejected --> realized: the Human accepted after a fix
+```
+
+### Invalidation follows wording, never state
+
+| From | To | Trigger |
+|------|----|---------|
+| a node | its whole subtree | its `contracts` **or** `meaning` fingerprint changed |
+| a node | its direct `uses` consumers, **one hop** | its `contracts` fingerprint changed |
+| a node | anything, via `talks_to` | never |
+
+A node that is merely unproven propagates nothing, and an unclaimed ancestor does not
+block its children. The alternative sounds stricter but inverts adoption: after bootstrap
+nothing is claimed anywhere, so the first node you would have to prove is the root — the
+least provable node in any tree. Project-wide compliance still requires that ancestor, so
+nothing is actually lost.
+
+### The worklist is the assignment
+
+```bash
+$ python3 .cursor/tools/intent/cli.py realization worklist
+i0004  stale [own contracts changed]                    ready
+i0007  stale [ancestor i0004 changed contracts]         blocked_by i0004
+i0011  not_claimed                                      ready
+i0002  broken [enforcer missing: c3]                    ready
+i0003  realized, acceptance pending                     ready
+```
+
+The most general instruction a project can be given becomes: *bring every current node to
+`realized`, and to `approved` where the policy asks for it.* Ancestors come first; a node
+marked `blocked_by` waits, because fixing the ancestor may change what it needs.
+
+`broken` deserves a note. A refactor that renames a test away is the most common way debt
+appears, and it leaves the intent untouched — so no amount of watching the tree would
+catch it. It is derived from the same check the validator uses for `enforced_by`.
+
+### Who may write what
+
+| Action | Who | Refused for |
+|--------|-----|-------------|
+| `claim` | Coordinator, after the Grader is green | the **Coder** — nobody grades their own work |
+| `affirm` — keep a claim after a harmless edit | Human only | every agent role |
+| `accept` / `reject` | Human only | every agent role |
+
+These are recorded, not cryptographic, guarantees: whatever lands in `by` shows up in the
+diff, which is exactly where the Adversary and you are already looking.
+
+`affirm` is the answer to the deliberate bluntness of fingerprints. When a text change did
+not really change the promise, one command — with a reason, optionally `--subtree` —
+re-points the existing claims at the new wording without re-running anything. Deciding
+that is a judgement, which is why only a human may make it.
+
+### Policy
+
+`doc/intent/_policy.yaml` holds two dials. `acceptance_profile` (`none`, `standard`,
+`leaf`, `strict`) decides how often you must sign off; the default asks only where a
+contract has no machine enforcer. `evidence_profile` (`standard`, `relaxed`) decides what
+a claim must point at; `relaxed` exists for adopting a project that has tests but no run
+history. Changing this file is a hard trigger for complexity `high`, like `VERIFY.md`.
+
+The layer starts empty, so every node is `not_claimed` — which is the truth. Nothing is
+assumed done just because it exists.
+
+---
+
 ## Tooling
 
 Pure Python 3.11+, no dependencies, no install step.
@@ -168,6 +298,13 @@ python3 tools/intent/cli.py <command>           # inside this repo
 | `scope --run <dir>` | working diff versus the outputs the plan declared |
 | `coverage` | contracts with no machine enforcer; code owned by no node |
 | `owner <path>` | which node governs this file |
+| `realization worklist` | what the project still owes the tree, ancestors first |
+| `realization status [--node iNNNN]` | derived state and the reason it went stale |
+| `realization summary` | how much of the intent is realized |
+| `realization claim iNNNN --evidence <run> --by <role>` | record fulfilment; never the Coder |
+| `realization affirm iNNNN [--subtree] --by <you> --reason "…"` | keep a claim after a harmless edit |
+| `realization accept iNNNN --by <you> [--reject]` | your verdict on a claim |
+| `realization check` | the layer is internally consistent (R1–R7) |
 
 The tool reads `doc/intent/` in the **project root** and ignores `.cursor/` completely —
 the harness carries its own tree, and two registries would make every short id ambiguous.
@@ -188,6 +325,12 @@ cursor-best-practices-template/
 │   └── checks/     # contracts this repository declares about itself
 ├── doc/
 │   ├── intent/     # this repository's own intent tree (the pilot)
+│   │   ├── nodes/            # one node = one chapter of meaning
+│   │   ├── _registry.yaml    # the id issuer
+│   │   ├── _realization.yaml # claims about what is already fulfilled
+│   │   ├── _policy.yaml      # when a human signs off, what counts as evidence
+│   │   ├── MAP.md            # generated routing map — never edited by hand
+│   │   └── INDEX.json        # generated machine index
 │   └── guides/     # how-to guides
 ├── AGENT_MODELS.md # default model catalog for the five roles
 ├── VERIFY.md       # what proves this repository is in a valid state
@@ -218,6 +361,7 @@ harness, every contract there points at a real check, and `VERIFY.md` runs them.
 | `06-project-structure.mdc` | Universal directory layout, `doc/`, ADRs | on request |
 | `07-ice-workflow.mdc` | **ICE loop, roles, complexity, gates, escalation** | always |
 | `07-intent-tree.mdc` | **Node schema, edges, axioms A1–A6, rules V1–V10** | `doc/intent/**` |
+| `07-realization.mdc` | **Realization layer, fingerprints, worklist, R1–R7** | `doc/intent/**` |
 | `07-run-artifacts.mdc` | **Run directory, DoR, DoD, report structure** | `doc/runs/**` |
 | `08-agent-security.mdc` | Untrusted content, prompt injection, lethal trifecta | always |
 | `09-testing.mdc` | Testing contract (unit / integration / E2E) | `**/tests/**` |
@@ -279,17 +423,18 @@ flowchart TB
         B0 --> B1["slice — <i>computed</i>"]
         B1 --> B2["plan + declared outputs"]
         B2 --> B3["Coder implements"]
-        B3 --> B4["Grader — <i>machine</i>"]
+        B3 -->         B4["Grader — <i>machine</i>"]
         B4 --> B5["Adversary reads the diff"]
         B5 --> B6["Human"]
-        B6 -. "next run reads the same tree" .-> B0
+        B6 --> B7["<b>Realization claim</b><br/><i>this node is now fulfilled</i>"]
+        B7 -. "worklist says what is still owed" .-> B0
     end
 ```
 
 The structural difference is the loop at the bottom. In version 1 the specification was
 written once and aged; after a few epics nobody could say what still held. In version 2
-the tree is the artifact that survives, and every run both reads it and is checked
-against it.
+the tree is the artifact that survives, every run both reads it and is checked against
+it, and what the project still owes the tree is computed rather than remembered.
 
 ### Point by point
 
@@ -305,7 +450,8 @@ against it.
 | **Loop limits** | reviewer loop, max 3 | every loop bounded at 3, then escalation to the Human |
 | **New tests** | "write tests" | failing-test evidence required: the test must fail on unchanged code |
 | **Audit trail** | epic and task reports | run directory + `Intent:` / `Run:` commit trailers |
-| **Tooling** | none | `validate`, `map`, `new`, `move`, `slice`, `scope`, `coverage`, `owner` |
+| **Remaining work** | whatever the epic plan still lists, and it ages with the plan | derived from claims against fingerprints; a changed sentence reopens exactly what it affects |
+| **Tooling** | none | `validate`, `map`, `new`, `move`, `slice`, `scope`, `coverage`, `owner`, `realization` |
 
 ### What is gone
 
@@ -357,13 +503,21 @@ with a real `enforced_by`. Stop when `intent coverage` shows no production code 
 any node; you do not need the whole tree on day one.
 
 **Step 5 — write `VERIFY.md`** with the commands you already run, plus
-`python3 .cursor/tools/intent/cli.py validate`.
+`python3 .cursor/tools/intent/cli.py validate` and
+`python3 .cursor/tools/intent/cli.py realization check`.
 
 **Step 6 — run one small change through `ice-run`.** Use something you understand
 completely. The point is to find out whether the tree helps or whether it has bloated,
 while the stakes are low.
 
-**Step 7 — remove the archive** once nobody has needed it for a few weeks.
+**Step 7 — pay down the realization debt at your own pace.** Every node starts
+`not_claimed`, and `intent realization worklist` is now your backlog. Two honest ways to
+empty it: put a node through a normal run, or — if the project already has the tests but
+no run history — set `evidence_profile: relaxed` in `doc/intent/_policy.yaml` and claim
+against `VERIFY.md`. There is no third way, and no heuristic will mark anything done for
+you.
+
+**Step 8 — remove the archive** once nobody has needed it for a few weeks.
 
 Migrate one project at a time. Two methodologies in one repository are worse than either
 one alone, because an agent picks whichever lands in its context window first.
@@ -461,6 +615,7 @@ cd .cursor
 git checkout master && git pull
 # edit, then verify before committing:
 python3 tools/intent/cli.py validate \
+  && python3 tools/intent/cli.py realization check \
   && python3 -m unittest discover -s tools/intent/tests -t tools \
   && python3 tools/checks/template_checks.py --root . \
   && python3 tools/checks/hook_checks.py --root .

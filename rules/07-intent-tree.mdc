@@ -62,6 +62,11 @@ tags or block scalars — the validator rejects them instead of guessing.
 
 There is no `updated_at`: git holds timestamps.
 
+There is also **no realization state** — whether the project fulfils this node, who
+approved it, why a proof went stale. That lives in `doc/intent/_realization.yaml` beside
+the tree (see `07-realization.mdc`). Keeping it out is what stops one edit high in the
+tree from rewriting every node file below it.
+
 ## Contracts
 
 A contract is a statement that must hold **plus** the thing that enforces it.

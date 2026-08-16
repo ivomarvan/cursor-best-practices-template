@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from intent import realization
 from intent.model import Tree
 
 ADR_DIRNAME = "doc/architecture/decisions"
@@ -20,6 +21,7 @@ class Slice:
     adrs: list[str] = field(default_factory=list)
     code: list[str] = field(default_factory=list)
     tests: list[str] = field(default_factory=list)
+    realization: str = ""
 
 
 def _node_file(tree: Tree, node_id: str) -> str | None:
@@ -85,6 +87,11 @@ def build_slice(tree: Tree, node_id: str, for_implementation: bool) -> Slice:
     if for_implementation:
         result.code = _expand(tree.root_dir, node.code_paths)
         result.tests = _expand(tree.root_dir, node.test_paths)
+
+    # The Coder needs to know what moved since the node was last proven, not just what
+    # the node means; without it the reason for the run has to be retold in prose.
+    state = realization.compute_states(tree).get(node_id)
+    result.realization = state.summary() if state else "not applicable (node is not current)"
     return result
 
 
@@ -96,6 +103,7 @@ def render_slice(tree: Tree, result: Slice) -> str:
         "",
         f"- path: `{path}`",
         f"- depth: {tree.depth_of(result.node)}",
+        f"- realization: {result.realization}",
         "",
         "## Intent nodes (read as truth)",
         "",

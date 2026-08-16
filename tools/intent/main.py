@@ -9,12 +9,13 @@ import sys
 from pathlib import Path
 
 from intent import coverage as coverage_module
-from intent import generate, scope, slicing, validate
+from intent import generate, realization, scope, slicing, validate
 from intent.miniyaml import dump, parse
 from intent.model import (
     INTENT_DIRNAME,
     NODES_DIRNAME,
     REGISTRY_FILENAME,
+    Tree,
     TreeError,
     find_root,
     load_tree,
@@ -213,6 +214,142 @@ def cmd_owner(args: argparse.Namespace) -> int:
     return 0
 
 
+def _realization_context(
+    args: argparse.Namespace,
+) -> tuple[Tree, realization.Layer, realization.Policy]:
+    tree = load_tree(_resolve_root(args))
+    return tree, realization.load_layer(tree.intent_dir), realization.load_policy(tree.intent_dir)
+
+
+def cmd_realization_status(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    states = realization.compute_states(tree, layer, policy)
+    if args.node:
+        if args.node not in states:
+            raise TreeError(f"{args.node} is not a current node")
+        states = {args.node: states[args.node]}
+    if args.json:
+        payload = {node_id: vars(state) for node_id, state in states.items()}
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+    else:
+        print(realization.render_states(tree, states), end="")
+    return 0
+
+
+def cmd_realization_worklist(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    states = realization.compute_states(tree, layer, policy)
+    if args.json:
+        items = [vars(state) for state in realization.build_worklist(tree, states)]
+        print(json.dumps(items, indent=2, ensure_ascii=False))
+    else:
+        print(realization.render_worklist(tree, states), end="")
+    return 0
+
+
+def cmd_realization_summary(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    states = realization.compute_states(tree, layer, policy)
+    if args.json:
+        print(json.dumps(realization.summarise(states), indent=2))
+    else:
+        print(realization.render_summary(states), end="")
+    return 0
+
+
+def cmd_realization_claim(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    state = realization.claim(tree, layer, policy, args.node, args.evidence, args.by)
+    realization.save_layer(layer)
+    print(f"{args.node} claimed against {args.evidence} — now {state.summary()}")
+    return 0
+
+
+def cmd_realization_affirm(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    touched = realization.affirm(tree, layer, policy, args.node, args.by, args.reason, args.subtree)
+    realization.save_layer(layer)
+    print(f"affirmed {len(touched)} claim(s): {', '.join(touched)}")
+    print("The evidence was not re-run; only its wording baseline moved.")
+    return 0
+
+
+def cmd_realization_accept(args: argparse.Namespace) -> int:
+    tree, layer, _ = _realization_context(args)
+    decision = "rejected" if args.reject else "approved"
+    state = realization.decide(tree, layer, args.node, decision, args.by, args.note)
+    realization.save_layer(layer)
+    print(f"{args.node} {decision} by {args.by} — now {state.summary()}")
+    return 0
+
+
+def cmd_realization_check(args: argparse.Namespace) -> int:
+    tree, layer, policy = _realization_context(args)
+    problems = realization.check_layer(tree, layer, policy)
+    for problem in problems:
+        print(f"ERROR {problem}")
+    if problems:
+        print(f"\n{len(problems)} realization layer violation(s)")
+        return 1
+    print(f"realization layer consistent ({len(layer.entries)} entry/entries)")
+    return 0
+
+
+def cmd_realization_prune(args: argparse.Namespace) -> int:
+    tree, layer, _ = _realization_context(args)
+    removed = realization.prune(tree, layer)
+    if not removed:
+        print("nothing to prune")
+        return 0
+    realization.save_layer(layer)
+    print(f"removed {len(removed)} entry/entries: {', '.join(removed)}")
+    return 0
+
+
+def _add_realization_commands(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser("realization", help="claims about fulfilling the intent")
+    inner = parser.add_subparsers(dest="realization_command", required=True)
+
+    status = inner.add_parser("status", help="derived state of every current node")
+    status.add_argument("--node")
+    status.add_argument("--json", action="store_true")
+    status.set_defaults(func=cmd_realization_status)
+
+    worklist = inner.add_parser("worklist", help="what still needs work, ancestors first")
+    worklist.add_argument("--json", action="store_true")
+    worklist.set_defaults(func=cmd_realization_worklist)
+
+    summary = inner.add_parser("summary", help="how much of the intent is realized")
+    summary.add_argument("--json", action="store_true")
+    summary.set_defaults(func=cmd_realization_summary)
+
+    claim = inner.add_parser("claim", help="record that a node's contracts hold")
+    claim.add_argument("node")
+    claim.add_argument("--evidence", required=True, help="run directory or VERIFY.md")
+    claim.add_argument("--by", required=True, help="who claims it; never the Coder")
+    claim.set_defaults(func=cmd_realization_claim)
+
+    affirm = inner.add_parser("affirm", help="keep a claim after a harmless text change")
+    affirm.add_argument("node")
+    affirm.add_argument("--by", required=True, help="a human; agent roles are refused")
+    affirm.add_argument("--reason", required=True)
+    affirm.add_argument("--subtree", action="store_true", help="affirm descendants as well")
+    affirm.set_defaults(func=cmd_realization_affirm)
+
+    accept = inner.add_parser("accept", help="human verdict on a claim")
+    accept.add_argument("node")
+    accept.add_argument("--by", required=True)
+    accept.add_argument("--note")
+    accept.add_argument("--reject", action="store_true", help="reject instead of approve")
+    accept.set_defaults(func=cmd_realization_accept)
+
+    check = inner.add_parser("check", help="internal consistency of the layer (R1-R7)")
+    check.set_defaults(func=cmd_realization_check)
+
+    prune = inner.add_parser("prune", help="drop entries for nodes that are no longer current")
+    prune.set_defaults(func=cmd_realization_prune)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="intent",
@@ -261,6 +398,8 @@ def build_parser() -> argparse.ArgumentParser:
     owner_parser = sub.add_parser("owner", help="which node governs a path")
     owner_parser.add_argument("path")
     owner_parser.set_defaults(func=cmd_owner)
+
+    _add_realization_commands(sub)
 
     return parser
 

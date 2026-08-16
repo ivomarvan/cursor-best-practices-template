@@ -44,7 +44,7 @@ intent_ids: ["i0042"]
 role: Coder
 model: <the slug actually used>
 complexity: medium
-status: in-progress        # in-progress | done | escalated | abandoned
+status: in-progress        # in-progress | done | escalated | abandoned | awaiting-acceptance
 ---
 ```
 
@@ -57,7 +57,8 @@ incidental: ["uv.lock", "doc/intent/MAP.md"]
 ```
 
 Incidental files are named **in advance**, so they cannot be added once the guard
-complains.
+complains. `doc/intent/_realization.yaml` is the one exception: it is always allowed,
+because writing it is the recorded result of the run rather than part of its change.
 
 ## Definition of Ready — the plan is not accepted without it
 
@@ -78,6 +79,10 @@ Each item is a checkable artifact or command. Two items are mandatory:
 
 - [ ] Failing-test evidence: the new test fails on unchanged code (log in `grader.md`).
 - [ ] `VERIFY.md` passes, including `intent validate` and `intent scope`.
+
+The Coder does not tick realization: after the Grader is green, the **Coordinator** runs
+`intent realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator`. A claim
+written by the Coder is refused by the tool.
 
 ## Report structure
 
@@ -110,6 +115,7 @@ keep file paths, symbols and commands as they are.
 | `in-progress` | running | kept |
 | `done` | approved | ready to merge or commit |
 | `escalated` | rounds exhausted or blocking finding | frozen, waiting for the Human |
+| `awaiting-acceptance` | work finished, policy asks the Human to accept the node | kept until accepted |
 | `abandoned` | the Human cancelled it | branch deleted, artifacts kept as audit |
 
 ## Closing a run

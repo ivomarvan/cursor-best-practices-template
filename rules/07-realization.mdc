@@ -1,0 +1,148 @@
+---
+description: >-
+  Realization layer of the intent tree: which nodes the project actually fulfils, how
+  staleness is computed from fingerprints, who may claim, affirm or accept, and how the
+  worklist becomes the assignment. Use when asking what is left to do, when closing a run,
+  or when touching doc/intent/_realization.yaml or _policy.yaml.
+globs: doc/intent/**
+---
+
+# Realization — the debt against meaning
+
+The tree says what the system **means**. The realization layer says whether the project
+**fulfils** it. Two layers, never mixed: writing code does not change intent, and
+rewriting a Meaning section does not change realization — it **invalidates** it.
+
+## The one rule everything follows
+
+**Assertions are stored. State is computed.**
+
+Stored: someone claimed a node realized, with evidence, against fingerprints of the
+wording it was claimed against — plus the human verdict, if any. Nothing else.
+
+Computed: whether the claim still holds, why it stopped holding, what is blocked, and
+what to work on next.
+
+Consequence worth knowing: an inconsistent combination (a realized child under an
+ancestor whose meaning moved) **cannot be stored**, so no rule has to forbid it.
+
+## Fingerprints
+
+| Fingerprint | Covers |
+|---|---|
+| `contracts` | the `contracts` list: id, text, `enforced_by`, reason — sorted by id |
+| `meaning` | sections `## Refines`, `## Meaning`, `## Contracts`, `## Non-goals`, plus `parent` and `uses` |
+
+Excluded on purpose: `slug`, `title`, `status`, `code_paths`, `test_paths`, `talks_to`,
+open questions and YAML formatting. Renaming a node or moving its files is not a change
+of what it commits to. Reordering contracts changes nothing either.
+
+A typo fix *does* invalidate. That is the price of a gate that is arithmetic instead of a
+language model, and `affirm` is the one-command answer to it.
+
+## Derived states
+
+| State | Meaning |
+|---|---|
+| `not_claimed` | nobody has ever asserted this node is fulfilled |
+| `realized` | a claim exists, both fingerprints still match, every enforcer is reachable |
+| `stale` | the wording moved since the claim — own, an ancestor's, or a `uses` target's contracts |
+| `broken` | a contract points at an enforcer that no longer exists (renamed or deleted test) |
+| `rejected` | the Human looked at the claim and said no |
+
+Priority when several apply: `stale`, then `broken`, then `rejected`. Every reason is
+printed, so nothing is lost to the priority.
+
+Acceptance is a second, independent axis: `not_required`, `pending`, `approved`,
+`rejected`. Approval is tied to the fingerprints it was given against — when the wording
+moves, approval decays back to `pending`. Old approval never covers new text.
+
+## Propagation — wording, never state
+
+| From | To | Trigger |
+|---|---|---|
+| a node | its whole subtree | its `contracts` **or** `meaning` fingerprint changed |
+| a node | its direct `uses` consumers, **one hop** | its `contracts` fingerprint changed |
+| a node | anything, via `talks_to` | never |
+
+A node that is merely unproven propagates **nothing**. An unclaimed ancestor does not
+block its children — otherwise adoption would have to start at the root, the least
+provable node in any tree, and one edit low in the stack would redden everything above it.
+Project-wide compliance still requires that ancestor, so no guarantee is lost.
+
+A `uses` edge is a dependency on a *definition*. If the target's prose improves, the
+consumer's proof stands; if its commitment changes, it does not.
+
+## Who may write what
+
+| Action | Who | Refused for |
+|---|---|---|
+| `claim` | Coordinator, after the Grader is green | the **Coder** — nobody grades their own work |
+| `affirm` | Human only | every agent role |
+| `accept` / `reject` | Human only | every agent role |
+
+`claim` refuses a node with an open question, and refuses a node whose contracts point at
+a missing enforcer. These are recorded, not cryptographic, guarantees: anything written
+in `by` is visible in the diff, which is exactly where the Adversary and the Human look.
+
+## Commands
+
+```bash
+$TOOL realization status [--node iNNNN] [--json]   # derived state and reasons
+$TOOL realization worklist [--json]                # what needs work, ancestors first
+$TOOL realization summary                          # how much of the intent is realized
+$TOOL realization claim iNNNN --evidence doc/runs/<run> --by Coordinator
+$TOOL realization affirm iNNNN [--subtree] --by <human> --reason "..."
+$TOOL realization accept iNNNN --by <human> [--note "..."] [--reject]
+$TOOL realization check                            # R1-R7 over the layer; part of VERIFY
+$TOOL realization prune                            # drop entries for nodes that left
+```
+
+`worklist` is the most general assignment there is: *bring every current node to
+`realized`, and to `approved` where policy asks for it.* A node marked `blocked_by iNNNN`
+waits for that ancestor — fixing the ancestor may change what the child needs.
+
+## Policy
+
+`doc/intent/_policy.yaml` — two profiles, both read-only for agents.
+
+| `acceptance_profile` | Human sign-off required for |
+|---|---|
+| `none` | nothing |
+| `standard` (default) | nodes with a contract `enforced_by: review` |
+| `leaf` | plus every node owning `code_paths` |
+| `strict` | every node |
+
+| `evidence_profile` | a claim requires |
+|---|---|
+| `standard` (default) | a run directory containing `grader.md` |
+| `relaxed` | reachable enforcers only; `evidence` may be `VERIFY.md` |
+
+Changing this file is a hard trigger for complexity `high`, like `VERIFY.md`.
+
+## How it fits the run
+
+- **Slice** — `intent slice` prints the node's state and the reason it went stale. That
+  is what the Coder needs: not only what the node means, but what moved.
+- **Grader** — unchanged. After `VERIFY.md` is green, the Coordinator writes the claim.
+- **Scope guard** — `doc/intent/_realization.yaml` is always an allowed output and is
+  **not** an intent change. It does not raise complexity and does not wake the Adversary.
+- **Generated views** — `MAP.md` and `INDEX.json` deliberately carry no realization
+  state. They are guarded for staleness, and a fast-moving column would make that guard
+  fail on every claim.
+- **`realization check`** verifies the layer is *consistent*, never that the project is
+  *finished*. An unfinished project is the normal state; an inconsistent layer is a bug.
+
+## Bootstrap
+
+The layer starts as an empty file. Every node is `not_claimed`, which is the truth. No
+heuristic marks anything done. A Human may then work through known-good parts — either
+by running them through a normal run, or, in `relaxed`, by claiming against `VERIFY.md`.
+
+## Never
+
+- Never put realization state into a node's front matter — that is what this layer exists
+  to prevent, and it would rewrite whole subtrees on every claim.
+- Never let a language model decide whether something went stale. The gate is arithmetic
+  over fingerprints.
+- Never claim on behalf of the Human, and never sign a human decision with a role name.

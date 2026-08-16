@@ -18,6 +18,8 @@ INTENT_DIRNAME = "doc/intent"
 NODES_DIRNAME = "nodes"
 RETIRED_DIRNAME = "_retired"
 REGISTRY_FILENAME = "_registry.yaml"
+REALIZATION_FILENAME = "_realization.yaml"
+POLICY_FILENAME = "_policy.yaml"
 MAP_FILENAME = "MAP.md"
 INDEX_FILENAME = "INDEX.json"
 

@@ -6,6 +6,7 @@ this module is deterministic and dependency-free.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,7 @@ from intent.model import (
     NODE_ID_PATTERN,
     RETIRED_DIRNAME,
     STATUS_VALUES,
-    Node,
+    Contract,
     Tree,
 )
 
@@ -125,6 +126,36 @@ def _check_edges(tree: Tree, out: _Collector) -> None:
             visit(node_id, [])
 
 
+def enforcer_problem(tree: Tree, contract: Contract) -> str | None:
+    """Describe why a contract's enforcer cannot be found, or ``None`` when it is there.
+
+    ``review`` and ``cmd:`` enforcers always count as present: whether they hold cannot
+    be decided by looking at the file system. The realization layer reuses this function,
+    so "the test was renamed away" is one fact with one implementation.
+    """
+    enforcer = contract.enforced_by
+    if not enforcer:
+        return "no enforced_by"
+    if enforcer == "review":
+        return None
+    if enforcer.startswith("cmd:"):
+        return None if enforcer[4:].strip() else "empty command"
+    file_part, _, symbol = enforcer.partition("::")
+    target = tree.root_dir / file_part
+    if not target.exists():
+        return f"missing file {file_part}"
+    if symbol:
+        content = target.read_text(encoding="utf-8", errors="replace")
+        # Whole-symbol match: a substring search would accept 'test_x' inside a renamed
+        # 'test_x_v2', and a rename is the most common way an enforcer quietly disappears.
+        # A deliberate compromise, not a guarantee: a text search cannot tell a definition
+        # from a mention, so the symbol left behind in a comment still counts as present.
+        # Telling them apart needs a parser per language; this tool has no dependencies.
+        if not re.search(rf"(?<![\w.]){re.escape(symbol)}\b", content):
+            return f"'{symbol}' is absent from {file_part}"
+    return None
+
+
 def _check_contracts(tree: Tree, out: _Collector) -> None:
     for node in tree.nodes.values():
         if node.code_paths and not node.contracts:
@@ -157,29 +188,9 @@ def _check_contracts(tree: Tree, out: _Collector) -> None:
                         f"contract {contract.id} is not machine-enforced (review exception)",
                     )
                 continue
-            if enforcer.startswith("cmd:"):
-                if not enforcer[4:].strip():
-                    out.error("V5", node.id, f"contract {contract.id} has an empty command")
-                continue
-            _check_test_reference(tree, node, contract.id, enforcer, out)
-
-
-def _check_test_reference(
-    tree: Tree, node: Node, contract_id: str, enforcer: str, out: _Collector
-) -> None:
-    file_part, _, symbol = enforcer.partition("::")
-    target = tree.root_dir / file_part
-    if not target.exists():
-        out.error("V5", node.id, f"contract {contract_id} points at missing file {file_part}")
-        return
-    if symbol:
-        content = target.read_text(encoding="utf-8", errors="replace")
-        if symbol not in content:
-            out.error(
-                "V5",
-                node.id,
-                f"contract {contract_id} points at '{symbol}' which is absent from {file_part}",
-            )
+            problem = enforcer_problem(tree, contract)
+            if problem:
+                out.error("V5", node.id, f"contract {contract.id} {problem}")
 
 
 def _check_code_paths(tree: Tree, out: _Collector) -> None:

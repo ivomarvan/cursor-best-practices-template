@@ -94,6 +94,18 @@ $TOOL validate     # V1-V10 must pass
 $TOOL coverage     # no new contract without an enforcer
 ```
 
+## Step 6b — Name the blast radius
+
+An intent change moves wording, and wording is what invalidates proofs. After promoting,
+run `$TOOL realization worklist` and record in `change.md` which nodes went `stale` and
+why. Three honest outcomes, no fourth:
+
+- the node genuinely needs re-proving → a follow-up run;
+- the edit was prose only → the **Human** runs `realization affirm [--subtree]` with a
+  reason. You may propose it; you may not do it;
+- the list is longer than expected → that is a signal the change was broader than it
+  looked, and belongs in the Critic's hands.
+
 ## Step 7 — Critic and Human
 
 The Coordinator starts the **Critic** against axioms A1–A6 (`07-intent-tree.mdc`). The
@@ -111,9 +123,11 @@ and `$TOOL validate` once more. Only now may implementation start.
 - [ ] Every new or changed contract names an enforcer
 - [ ] `change.md` lists ids, contracts, edges and enforcing tests
 - [ ] `intent validate` exits 0 and generated files are current
+- [ ] Nodes turned `stale` by the change are listed in `change.md`
 - [ ] Critic verdict recorded; Human gate honoured where required
 
 ## Additional resources
 
 - [../../rules/07-intent-tree.mdc](../../rules/07-intent-tree.mdc)
 - [../../rules/07-ice-workflow.mdc](../../rules/07-ice-workflow.mdc)
+- [../../rules/07-realization.mdc](../../rules/07-realization.mdc)

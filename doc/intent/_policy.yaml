@@ -1,0 +1,16 @@
+# Realization policy: when a human must sign off, and what counts as evidence.
+# Changing this file is a hard trigger for complexity 'high' — it is the definition of
+# sufficient proof, in the same class as VERIFY.md. Only the Human may change it.
+#
+# acceptance_profile:
+#   none      acceptance is possible but never required
+#   standard  required where a contract has enforced_by: review
+#   leaf      standard, plus every node that owns code_paths
+#   strict    required for every node
+#
+# evidence_profile:
+#   standard  a claim must point at a run directory containing grader.md
+#   relaxed   enforcers must exist; evidence may be VERIFY.md (adopting an old project)
+schema_version: 1
+acceptance_profile: standard
+evidence_profile: standard

@@ -161,6 +161,66 @@
           "text": "Path and depth exist only in generated views, never in a node file",
           "enforced_by": "tools/intent/tests/test_tools.py::test_index_holds_derived_path_and_depth",
           "reason": null
+        },
+        {
+          "id": "c8",
+          "text": "A change of a node's meaning invalidates the claim that it was realized",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_changing_the_meaning_makes_a_claim_stale",
+          "reason": null
+        },
+        {
+          "id": "c9",
+          "text": "An unproven ancestor never blocks a proven child",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_unproven_ancestor_does_not_block_a_child",
+          "reason": null
+        },
+        {
+          "id": "c10",
+          "text": "Invalidation across a uses edge stops after one hop",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_uses_propagation_stops_after_one_hop",
+          "reason": null
+        },
+        {
+          "id": "c11",
+          "text": "A contract whose enforcer disappeared reaches the worklist instead of staying realized",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_a_broken_node_appears_in_the_worklist",
+          "reason": null
+        },
+        {
+          "id": "c12",
+          "text": "A realization claim signed by the Coder is refused",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_coder_may_not_claim_its_own_work",
+          "reason": null
+        },
+        {
+          "id": "c13",
+          "text": "A human acceptance signed with an agent role is refused",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_an_agent_may_not_accept",
+          "reason": null
+        },
+        {
+          "id": "c14",
+          "text": "The scope guard always allows the realization layer, so a run cannot trip its own gate",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_scope_guard_always_allows_the_realization_layer",
+          "reason": null
+        },
+        {
+          "id": "c15",
+          "text": "A change of contracts on a uses target opens its consumer",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_uses_target_contract_change_opens_the_consumer",
+          "reason": null
+        },
+        {
+          "id": "c16",
+          "text": "A change of meaning on a uses target never reaches its consumer",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_uses_target_meaning_change_leaves_the_consumer_alone",
+          "reason": null
+        },
+        {
+          "id": "c17",
+          "text": "An enforcer renamed to a longer symbol counts as missing, not as still present",
+          "enforced_by": "tools/intent/tests/test_realization.py::test_a_renamed_enforcer_symbol_makes_a_node_broken",
+          "reason": null
         }
       ],
       "open_questions": [],

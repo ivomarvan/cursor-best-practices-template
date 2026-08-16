@@ -26,7 +26,7 @@ Tool prefix (`TOOL`): `python3 .cursor/tools/intent/cli.py` in a project,
 3. The diff: `git diff <base>` or `git diff --staged`.
 4. **Only then** `report.md`. Reading the report first anchors you to the author's story.
 
-## Step 2 — The seven checks
+## Step 2 — The eight checks
 
 | # | Question | How to check |
 |---|----------|--------------|
@@ -37,6 +37,7 @@ Tool prefix (`TOOL`): `python3 .cursor/tools/intent/cli.py` in a project,
 | 5 | Did the Coder touch `current` intent? | no `doc/intent/nodes/` in the diff unless the run was an intent change |
 | 6 | Are the contracts still enforced? | `$TOOL validate` and `$TOOL coverage` |
 | 7 | Is a cross-node decision missing its ADR? | boundary or interface changes need `doc/architecture/decisions/` |
+| 8 | Is the realization claim honest? | `$TOOL realization check`; `by` is not the Coder, `evidence` points at this run's `grader.md` |
 
 ## Step 3 — Attack the tests specifically
 
@@ -69,8 +70,9 @@ APPROVE | REQUEST CHANGES
 ```
 
 Severity: **blocker** = a contract is unenforced, a Definition of Done claim is false,
-scope escaped, or a test proves nothing. **Major** = correct but fragile. **Minor** =
-style and naming, never a reason to block.
+scope escaped, a test proves nothing, or a realization claim was signed by the author or
+by an agent standing in for the Human. **Major** = correct but fragile. **Minor** = style
+and naming, never a reason to block.
 
 At most three rounds with the Coder. After the third, escalate to the Human with a plain
 statement of what is still wrong.
@@ -85,3 +87,4 @@ statement of what is still wrong.
 
 - [../../rules/07-run-artifacts.mdc](../../rules/07-run-artifacts.mdc)
 - [../../rules/07-ice-workflow.mdc](../../rules/07-ice-workflow.mdc)
+- [../../rules/07-realization.mdc](../../rules/07-realization.mdc)

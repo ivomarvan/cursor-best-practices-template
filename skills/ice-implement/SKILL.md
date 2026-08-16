@@ -27,6 +27,11 @@ The slice holds the ancestor chain, semantic dependencies, the code and tests th
 owns, and the contracts in force. Anything outside it is not your context. If you need a
 file to compile, you may open it — but you may not use it to reinterpret the intent.
 
+The slice header also carries `realization:` — the node's state and, when it is `stale`,
+what moved: its own contracts, its own meaning, an ancestor, or a `uses` target. Read it
+before the plan. It tells you whether you are proving something for the first time or
+re-proving it because the meaning shifted underneath.
+
 Record in `report.md` which files you actually read.
 
 ## Step 2 — Stop conditions (check before writing code)
@@ -84,6 +89,7 @@ exists to prevent.
 
 - [ ] Diff stays inside `outputs` + `incidental`
 - [ ] No `current` intent node modified
+- [ ] No realization claim written — that is the Coordinator's, after the Grader
 - [ ] Failing-test evidence captured for every new test
 - [ ] All `VERIFY.md` commands pass locally
 - [ ] `report.md` written; every ticked Definition of Done item has an artifact

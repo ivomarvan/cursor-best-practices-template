@@ -1,0 +1,8 @@
+schema_version: 1
+nodes:
+  i0004:
+    claim:
+      evidence: doc/runs/20260816-1302-realization-layer-91
+      by: Coordinator
+      contracts: sha256:f8a0bc126302ed3e
+      meaning: sha256:275dcb29c2894a89
