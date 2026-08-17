@@ -17,6 +17,23 @@ Katalog je rozhodnutí Humana. Starší verze zůstává v gitu.
 Do katalogu jdou jen slugy, které Coordinator umí předat subagentovi v tomto
 prostředí. Jinak by řádek v YAML byl přání, ne spustitelná politika.
 
+## Poznámka (2026-08-17)
+
+`cursor-grok-4.6-high` není mezi slugy, které Coordinator v tomto prostředí umí
+předat při startu subagenta. Dostupné Grok slugy jsou `cursor-grok-4.5-high` a
+`cursor-grok-4.6-medium`. To nic neříká o kvalitě modelu. Podle
+`rules/00-model-policy.mdc` katalog nevládne roli, kterou hraje rodičovské okno —
+volba Humana v tom okně je jeho vlastní rozhodnutí, bez ohledu na nabídku UI.
+
+Katalog proto v pásmu `high` používá `cursor-grok-4.5-high` a v pásmech `low` a
+`medium` `cursor-grok-4.6-medium`, podle zásady, že pásmo pojmenovává požadované
+úsilí.
+
+Doporučení `cursor-grok-4.6-high` v tabulce Role × pásmo níže (řádky Coder
+`medium`/`high`, Planner `low`/`medium`, Critic `high`, Coordinator `medium`) a
+věta „Grok 4.5 … do katalogu nepatří“ v sekci „Proč Grok 4.6 nahradil Sonnet 5"
+jsou touto poznámkou překonané.
+
 ## Ekonomické jádro ICE
 
 Silný model na přemýšlení (Planner, Critic, Adversary), levnější na psaní
@@ -76,6 +93,9 @@ poměr proti Sonnet 5. Až poběží další obnova katalogu, brát cenu **po** 
 Opus 5 má SWE-Pro **79,2 %** proti ~65 % u Grok / Luna / Sol. To je jediná
 velká mezera v plánování, která ospravedlní 2,5–4× cenu — a jen na málo
 tokenech.
+
+Řádky Coder `medium`/`high`, Planner `low`/`medium`, Critic `high` a Coordinator
+`medium` v tabulce níže překonává `## Poznámka (2026-08-17)` výše.
 
 | Role × pásmo | Slug | Proč |
 |--------------|------|------|

@@ -29,15 +29,15 @@ roles:
     lock: false
     pinned: null
     low: composer-2.5
-    medium: cursor-grok-4.6-high
+    medium: cursor-grok-4.6-medium
     high: claude-opus-5-thinking-high
 
   Planner:
     intent: decomposition, intent deltas, slices
     lock: false
     pinned: null
-    low: cursor-grok-4.6-high
-    medium: cursor-grok-4.6-high
+    low: cursor-grok-4.6-medium
+    medium: cursor-grok-4.6-medium
     high: claude-opus-5-thinking-high
 
   Critic:
@@ -46,15 +46,15 @@ roles:
     pinned: null
     low: claude-sonnet-5-thinking-high
     medium: claude-sonnet-5-thinking-high
-    high: cursor-grok-4.6-high
+    high: cursor-grok-4.5-high
 
   Coder:
     intent: implementation and tests; cheaper model unless complexity is high
     lock: false
     pinned: null
     low: composer-2.5
-    medium: cursor-grok-4.6-high
-    high: cursor-grok-4.6-high
+    medium: cursor-grok-4.6-medium
+    high: cursor-grok-4.5-high
 
   Adversary:
     intent: independent review of the diff and the Definition of Done
@@ -76,7 +76,7 @@ Constraint check (Planner ≠ Critic, Coder ≠ Adversary in every band):
 |------|---------|--------|-------|-----------|
 | `low` | Grok 4.6 | Sonnet 5 (gate unused) | Composer 2.5 | Sonnet 5 (gate unused) |
 | `medium` | Grok 4.6 | Sonnet 5 | Grok 4.6 | Sonnet 5 |
-| `high` | Opus 5 | Grok 4.6 | Grok 4.6 | Opus 5 |
+| `high` | Opus 5 | Grok 4.5 | Grok 4.5 | Opus 5 |
 
 `low` Critic and Adversary rows are fallbacks: `low` runs do not run those gates
 (see `rules/07-ice-workflow.mdc`). A scope-guard failure raises the run to `medium`

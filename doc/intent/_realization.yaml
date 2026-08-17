@@ -1,5 +1,11 @@
 schema_version: 1
 nodes:
+  i0002:
+    claim:
+      evidence: doc/runs/20260817-1743-methodology-debt-ea
+      by: Coordinator
+      contracts: sha256:2648ddcd4140bb67
+      meaning: sha256:3ee66725682c8d64
   i0004:
     claim:
       evidence: doc/runs/20260817-1703-views-hygiene-dc

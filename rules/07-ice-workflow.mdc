@@ -52,6 +52,14 @@ python3 tools/intent/cli.py <command>           # inside the template repo itsel
 The Coder never starts the Adversary. The Adversary always uses a different model than
 the Coder. Loops are bounded: after 3 rounds, escalate to the Human.
 
+A gate reopened by a later gate in the same run continues its own round count instead of
+starting again. The Coordinator may not authorise that round; it is an escalation to the
+Human, who grants it or sends the finding to a follow-up run.
+
+One run may change intent and implement it only when the Critic accepted the intent delta
+before the Coder started. A Critic arriving afterwards reviews a decision already spent,
+which is a stamp, not a gate.
+
 ## Complexity
 
 | Level | Definition |
