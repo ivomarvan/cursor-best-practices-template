@@ -24,8 +24,8 @@ contracts:
     text: "A contract pointing at a missing test is an error, not a warning"
     enforced_by: "tools/intent/tests/test_validate.py::test_contract_pointing_at_missing_test_is_rejected"
   - id: c6
-    text: "A slice carries ancestors and semantic dependencies but never siblings"
-    enforced_by: "tools/intent/tests/test_tools.py::test_slice_contains_ancestors_and_uses_but_not_siblings"
+    text: "A slice carries exactly these intent nodes: the node, its ancestors, its `uses` targets and the far end of every `talks_to` edge — kinship alone adds none"
+    enforced_by: "tools/intent/tests/test_tools.py::test_slice_carries_exactly_ancestors_uses_and_talks_to_ends"
   - id: c7
     text: "The generated index carries a path and a depth derived from the parent chain"
     enforced_by: "tools/intent/tests/test_tools.py::test_index_holds_derived_path_and_depth"
@@ -103,6 +103,14 @@ assertions are stored; staleness is computed from fingerprints, so an inconsiste
 cannot be written down. Invalidation follows a change of **wording**, never a state —
 otherwise an unproven root would forbid proving anything beneath it, and one edit to a
 widely used node would redden the whole tree.
+
+`c6` describes a computation, not a family relation. Slice membership is a set built from
+the ancestor chain and from declared edges, and `talks_to` counts in both directions,
+because an operational partner is context whichever end declared the edge. Nothing in
+that computation looks at kinship, so "kinship alone adds none" is the exhaustive half of
+one set rather than a second claim: a single set comparison proves both halves, which is
+the first branch of the rule below and not the exception `c14` needs. Descendants are
+outside the set as well — carrying them would be a change of intent, not a refactor.
 
 A contract may claim only what its `enforced_by` proves. What decides is not the shape of
 the sentence but the reach of the test: where a sentence has two halves, one and the same

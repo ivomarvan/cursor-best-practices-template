@@ -17,6 +17,7 @@ from intent.model import (
     RETIRED_DIRNAME,
     STATUS_VALUES,
     Contract,
+    Node,
     Tree,
 )
 
@@ -49,7 +50,17 @@ class _Collector:
         self.findings.append(Finding("warning", code, node, message))
 
 
+def _report_unknown_fields(node: Node, out: _Collector) -> None:
+    if node.unknown_fields:
+        out.warn("V1", node.id, f"unknown fields: {', '.join(node.unknown_fields)}")
+
+
 def _check_identity(tree: Tree, out: _Collector) -> None:
+    # A retired file is still a node file, so derived data written into it is the same
+    # mistake. Only this one report reaches it: the rest of V1 fires on exactly what
+    # makes a node retired.
+    for node in tree.retired.values():
+        _report_unknown_fields(node, out)
     for node in tree.nodes.values():
         if not NODE_ID_PATTERN.match(node.id):
             out.error("V1", node.id, "id must match 'i' followed by at least four digits")
@@ -67,8 +78,7 @@ def _check_identity(tree: Tree, out: _Collector) -> None:
             expected = f"{node.id}-{node.slug}.md"
             if node.source.name != expected:
                 out.error("V1", node.id, f"file should be named {expected}")
-        if node.unknown_fields:
-            out.warn("V1", node.id, f"unknown fields: {', '.join(node.unknown_fields)}")
+        _report_unknown_fields(node, out)
         serial = int(node.id[1:]) if node.id[1:].isdigit() else -1
         if serial >= tree.registry.next_serial:
             out.error("V1", node.id, "id is at or beyond registry next_serial")

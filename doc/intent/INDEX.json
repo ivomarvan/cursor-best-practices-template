@@ -152,8 +152,8 @@
         },
         {
           "id": "c6",
-          "text": "A slice carries ancestors and semantic dependencies but never siblings",
-          "enforced_by": "tools/intent/tests/test_tools.py::test_slice_contains_ancestors_and_uses_but_not_siblings",
+          "text": "A slice carries exactly these intent nodes: the node, its ancestors, its `uses` targets and the far end of every `talks_to` edge — kinship alone adds none",
+          "enforced_by": "tools/intent/tests/test_tools.py::test_slice_carries_exactly_ancestors_uses_and_talks_to_ends",
           "reason": null
         },
         {

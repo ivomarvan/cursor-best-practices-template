@@ -169,15 +169,35 @@ class DerivedFieldTest(ValidateTestCase):
     def test_derived_fields_in_a_node_file_are_reported(self):
         root = self.builder.add("system")
         engine = self.builder.add("engine", parent=root, path="nonsense/place", depth=99)
+        # The contract says path or depth — each alone is already the mistake.
+        path_only = self.builder.add("path-only", parent=root, path="nonsense/place")
+        depth_only = self.builder.add("depth-only", parent=root, depth=99)
         clean = self.builder.add("clean", parent=root)
+        # A retired file is a node file too, and its derived fields are the same mistake.
+        gone = self.builder.add("gone", parent=root, retired=True, path="nonsense/place", depth=99)
         tree = self.builder.finish()
 
-        def names_path_and_depth(finding):
-            return finding.code == "V1" and "path" in finding.message and "depth" in finding.message
-
-        flagged = {finding.node for finding in validate(tree) if names_path_and_depth(finding)}
-        self.assertIn(engine, flagged)
-        self.assertNotIn(clean, flagged)
+        findings = list(validate(tree))
+        flagged_path = {
+            finding.node
+            for finding in findings
+            if finding.code == "V1" and "path" in finding.message
+        }
+        flagged_depth = {
+            finding.node
+            for finding in findings
+            if finding.code == "V1" and "depth" in finding.message
+        }
+        self.assertIn(engine, flagged_path)
+        self.assertIn(engine, flagged_depth)
+        self.assertIn(path_only, flagged_path)
+        self.assertNotIn(path_only, flagged_depth)
+        self.assertIn(depth_only, flagged_depth)
+        self.assertNotIn(depth_only, flagged_path)
+        self.assertNotIn(clean, flagged_path)
+        self.assertNotIn(clean, flagged_depth)
+        self.assertIn(gone, flagged_path)
+        self.assertIn(gone, flagged_depth)
 
 
 class LifecycleTest(ValidateTestCase):

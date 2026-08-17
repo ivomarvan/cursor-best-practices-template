@@ -8,7 +8,7 @@ nodes:
       meaning: sha256:3ee66725682c8d64
   i0004:
     claim:
-      evidence: doc/runs/20260817-1703-views-hygiene-dc
+      evidence: doc/runs/20260817-1853-slice-and-derived-truth-66
       by: Coordinator
-      contracts: sha256:f3ab52a3d1afca0d
-      meaning: sha256:877d5957b6f3db19
+      contracts: sha256:bb51d5b726c6811a
+      meaning: sha256:b0c4c5b7019ad8ea

@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from intent.miniyaml import dump
-from intent.model import INTENT_DIRNAME, Tree, load_tree
+from intent.model import INTENT_DIRNAME, RETIRED_DIRNAME, Tree, load_tree
 
 DEFAULT_BODY = """# {title}
 
@@ -38,15 +38,24 @@ class TreeBuilder:
     def cleanup(self) -> None:
         self._tmp.cleanup()
 
-    def add(self, slug: str, *, parent: str | None = None, body: str | None = None, **fields):
+    def add(
+        self,
+        slug: str,
+        *,
+        parent: str | None = None,
+        body: str | None = None,
+        retired: bool = False,
+        **fields,
+    ):
         node_id = f"i{self._serial:04d}"
         self._serial += 1
+        default_status = "retired" if retired else "current"
         front: dict[str, object] = {
             "id": node_id,
             "parent": parent,
             "slug": slug,
             "title": fields.pop("title", slug.replace("-", " ")),
-            "status": fields.pop("status", "current"),
+            "status": fields.pop("status", default_status),
             "uses": fields.pop("uses", []),
             "talks_to": fields.pop("talks_to", []),
             "superseded_by": fields.pop("superseded_by", None),
@@ -58,9 +67,14 @@ class TreeBuilder:
         front.update(fields)
         template = ROOT_BODY if parent is None else DEFAULT_BODY
         text = body if body is not None else template.format(title=front["title"])
-        target = self.intent_dir / "nodes" / f"{node_id}-{slug}.md"
+        directory = self.intent_dir / (RETIRED_DIRNAME if retired else "nodes")
+        directory.mkdir(parents=True, exist_ok=True)
+        target = directory / f"{node_id}-{slug}.md"
         target.write_text(f"---\n{dump(front)}---\n\n{text}", encoding="utf-8")
-        self._issued[node_id] = {"slug": slug}
+        entry: dict[str, object] = {"slug": slug}
+        if retired:
+            entry["retired"] = True
+        self._issued[node_id] = entry
         return node_id
 
     def write_file(self, relative: str, content: str) -> Path:

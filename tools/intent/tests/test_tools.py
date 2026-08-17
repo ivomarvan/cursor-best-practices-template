@@ -17,19 +17,40 @@ class ToolTestCase(unittest.TestCase):
 
 
 class SliceTest(ToolTestCase):
-    def test_slice_contains_ancestors_and_uses_but_not_siblings(self):
+    def test_slice_carries_exactly_ancestors_uses_and_talks_to_ends(self):
+        # Three-level ancestor chain and one-hop edges only: a uses-of-uses node and
+        # two-hop talks_to partners (outgoing and incoming) stay outside.
         root = self.builder.add("system")
-        shared = self.builder.add("shared", parent=root)
-        sibling = self.builder.add("sibling", parent=root)
-        target = self.builder.add("target", parent=root, uses=[shared])
+        mid = self.builder.add("mid", parent=root)
+        deeper_shared = self.builder.add("deeper-shared", parent=root)
+        shared = self.builder.add("shared", parent=root, uses=[deeper_shared])
+        further_listener = self.builder.add("further-listener", parent=root)
+        listener = self.builder.add("listener", parent=root, talks_to=[further_listener])
+        target = self.builder.add("target", parent=mid, uses=[shared], talks_to=[listener])
+        caller = self.builder.add("caller", parent=root, talks_to=[target])
+        far_caller = self.builder.add("far-caller", parent=root, talks_to=[caller])
+        sibling = self.builder.add("sibling", parent=mid)
+        consumer = self.builder.add("consumer", parent=root, uses=[target])
+        child = self.builder.add("child", parent=target)
         tree = self.builder.finish()
 
-        result = build_slice(tree, target, for_implementation=False)
-        self.assertIn(root, result.ancestors)
-        self.assertIn(shared, result.uses)
-        joined = " ".join(result.files)
-        self.assertIn(shared, joined)
-        self.assertNotIn(sibling, joined)
+        expected = {root, mid, target, shared, listener, caller}
+        outside = {
+            deeper_shared,
+            further_listener,
+            far_caller,
+            sibling,
+            consumer,
+            child,
+        }
+
+        for for_implementation in (False, True):
+            with self.subTest(for_implementation=for_implementation):
+                result = build_slice(tree, target, for_implementation=for_implementation)
+                carried = {path.split("/")[-1].split("-")[0] for path in result.files}
+                self.assertEqual(carried, expected)
+                # Implied by the equality above; kept so a leak names the relation that leaked.
+                self.assertEqual(carried & outside, set())
 
     def test_slice_includes_incoming_talks_to(self):
         root = self.builder.add("system")
@@ -133,7 +154,12 @@ class GeneratedViewTest(ToolTestCase):
     def test_index_holds_derived_path_and_depth(self):
         root = self.builder.add("system")
         child = self.builder.add("engine", parent=root)
-        grandchild = self.builder.add("schema", parent=child)
+        grandchild = self.builder.add(
+            "schema",
+            parent=child,
+            code_paths=["src/schema/"],
+            contracts=[{"id": "c1", "text": "x", "enforced_by": "cmd: true"}],
+        )
         tree = self.builder.finish()
 
         index = build_index(tree)
@@ -141,6 +167,10 @@ class GeneratedViewTest(ToolTestCase):
         self.assertEqual(index["nodes"][grandchild]["depth"], 2)
         self.assertEqual(index["nodes"][root]["children"], [child])
         self.assertEqual(json.loads(json.dumps(index))["schema_version"], 1)
+        # The index derives depth twice: once per node entry, once per reverse row.
+        row = next((item for item in index["reverse_code_map"] if item["node"] == grandchild), None)
+        self.assertIsNotNone(row, f"no reverse row for node {grandchild}")
+        self.assertEqual(str(row["depth"]), "2")
 
     def test_a_path_in_a_node_file_does_not_reach_a_generated_view(self):
         root = self.builder.add("system")
