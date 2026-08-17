@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Docs
+doc/new_ideas/tmp_user_file.not_for_agents.tmp.txt
