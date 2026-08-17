@@ -129,21 +129,55 @@ class ContractTest(ValidateTestCase):
 
 
 class CodePathTest(ValidateTestCase):
-    def test_parent_and_child_may_overlap(self):
+    def test_the_ancestor_chain_may_overlap(self):
         root = self.builder.add("system")
         contract = [{"id": "c1", "text": "x", "enforced_by": "cmd: true"}]
         parent = self.builder.add("db", parent=root, code_paths=["src/db/"], contracts=contract)
-        self.builder.add("models", parent=parent, code_paths=["src/db/models/"], contracts=contract)
+        child = self.builder.add(
+            "models", parent=parent, code_paths=["src/db/models/"], contracts=contract
+        )
+        self.builder.add(
+            "user", parent=child, code_paths=["src/db/models/user/"], contracts=contract
+        )
         tree = self.builder.finish()
         self.assertNotIn("V6", self.codes(tree))
 
-    def test_siblings_may_not_overlap(self):
+    def test_overlap_outside_the_ancestor_chain_is_rejected(self):
         root = self.builder.add("system")
         contract = [{"id": "c1", "text": "x", "enforced_by": "cmd: true"}]
-        self.builder.add("a", parent=root, code_paths=["src/db/"], contracts=contract)
-        self.builder.add("b", parent=root, code_paths=["src/db/models/"], contracts=contract)
+        # Siblings: two different nodes, same parent — neither is the other's ancestor.
+        sibling_a = self.builder.add("a", parent=root, code_paths=["src/db/"], contracts=contract)
+        sibling_b = self.builder.add(
+            "b", parent=root, code_paths=["src/db/models/"], contracts=contract
+        )
+        # Cousins: two different nodes, children of two different parents.
+        aunt = self.builder.add("aunt", parent=root, contracts=contract)
+        uncle = self.builder.add("uncle", parent=root, contracts=contract)
+        cousin_a = self.builder.add(
+            "cousin-a", parent=aunt, code_paths=["src/api/"], contracts=contract
+        )
+        cousin_b = self.builder.add(
+            "cousin-b", parent=uncle, code_paths=["src/api/v1/"], contracts=contract
+        )
         tree = self.builder.finish()
-        self.assertIn("V6", self.codes(tree))
+        flagged = {finding.node for finding in validate(tree) if finding.code == "V6"}
+        self.assertTrue({sibling_a, sibling_b} & flagged)
+        self.assertTrue({cousin_a, cousin_b} & flagged)
+
+
+class DerivedFieldTest(ValidateTestCase):
+    def test_derived_fields_in_a_node_file_are_reported(self):
+        root = self.builder.add("system")
+        engine = self.builder.add("engine", parent=root, path="nonsense/place", depth=99)
+        clean = self.builder.add("clean", parent=root)
+        tree = self.builder.finish()
+
+        def names_path_and_depth(finding):
+            return finding.code == "V1" and "path" in finding.message and "depth" in finding.message
+
+        flagged = {finding.node for finding in validate(tree) if names_path_and_depth(finding)}
+        self.assertIn(engine, flagged)
+        self.assertNotIn(clean, flagged)
 
 
 class LifecycleTest(ValidateTestCase):

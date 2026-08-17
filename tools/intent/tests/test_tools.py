@@ -142,6 +142,32 @@ class GeneratedViewTest(ToolTestCase):
         self.assertEqual(index["nodes"][root]["children"], [child])
         self.assertEqual(json.loads(json.dumps(index))["schema_version"], 1)
 
+    def test_a_path_in_a_node_file_does_not_reach_a_generated_view(self):
+        root = self.builder.add("system")
+        child = self.builder.add("engine", parent=root, path="nonsense/place", depth=99)
+        tree = self.builder.finish()
+        expected_path = f"{root}/{child}"
+
+        # Index before map: a one-sided regression must name which view broke.
+        index = build_index(tree)
+        self.assertEqual(index["nodes"][child]["path"], expected_path)
+        self.assertEqual(index["nodes"][child]["depth"], 1)
+
+        # Map: the node's row carries the derived path; the written path is absent from MAP.md.
+        text = render_map(tree)
+        row = next(
+            (
+                line
+                for line in text.splitlines()
+                if line.startswith("|") and f"`{child}`" in line.split("|")[1]
+            ),
+            None,
+        )
+        self.assertIsNotNone(row, f"no table row for node {child}")
+        self.assertIn(f"`{expected_path}`", row)
+        self.assertNotIn("nonsense/place", row)
+        self.assertNotIn("nonsense/place", text)
+
     def test_map_contains_every_node_and_a_diagram(self):
         root = self.builder.add("system")
         child = self.builder.add("engine", parent=root)

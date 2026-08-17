@@ -2,7 +2,7 @@ schema_version: 1
 nodes:
   i0004:
     claim:
-      evidence: doc/runs/20260816-1302-realization-layer-91
+      evidence: doc/runs/20260817-1703-views-hygiene-dc
       by: Coordinator
-      contracts: sha256:f8a0bc126302ed3e
-      meaning: sha256:275dcb29c2894a89
+      contracts: sha256:f3ab52a3d1afca0d
+      meaning: sha256:877d5957b6f3db19

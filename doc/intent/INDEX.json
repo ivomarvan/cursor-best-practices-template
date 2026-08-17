@@ -140,8 +140,8 @@
         },
         {
           "id": "c4",
-          "text": "code_paths may overlap only along the ancestor chain, never between siblings",
-          "enforced_by": "tools/intent/tests/test_validate.py::test_siblings_may_not_overlap",
+          "text": "code_paths of two different nodes may not overlap unless one is an ancestor of the other",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_overlap_outside_the_ancestor_chain_is_rejected",
           "reason": null
         },
         {
@@ -158,7 +158,7 @@
         },
         {
           "id": "c7",
-          "text": "Path and depth exist only in generated views, never in a node file",
+          "text": "The generated index carries a path and a depth derived from the parent chain",
           "enforced_by": "tools/intent/tests/test_tools.py::test_index_holds_derived_path_and_depth",
           "reason": null
         },
@@ -220,6 +220,24 @@
           "id": "c17",
           "text": "An enforcer renamed to a longer symbol counts as missing, not as still present",
           "enforced_by": "tools/intent/tests/test_realization.py::test_a_renamed_enforcer_symbol_makes_a_node_broken",
+          "reason": null
+        },
+        {
+          "id": "c18",
+          "text": "code_paths of a node and any of its ancestors may overlap",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_the_ancestor_chain_may_overlap",
+          "reason": null
+        },
+        {
+          "id": "c19",
+          "text": "A path or depth written into a node file is reported as an unknown field",
+          "enforced_by": "tools/intent/tests/test_validate.py::test_derived_fields_in_a_node_file_are_reported",
+          "reason": null
+        },
+        {
+          "id": "c20",
+          "text": "A path written into a node file never becomes the node's path in a generated view",
+          "enforced_by": "tools/intent/tests/test_tools.py::test_a_path_in_a_node_file_does_not_reach_a_generated_view",
           "reason": null
         }
       ],

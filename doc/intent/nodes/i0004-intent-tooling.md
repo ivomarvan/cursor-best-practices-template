@@ -18,8 +18,8 @@ contracts:
     text: "A structurally correct tree produces no validator errors"
     enforced_by: "tools/intent/tests/test_validate.py::test_minimal_valid_tree_has_no_errors"
   - id: c4
-    text: "code_paths may overlap only along the ancestor chain, never between siblings"
-    enforced_by: "tools/intent/tests/test_validate.py::test_siblings_may_not_overlap"
+    text: "code_paths of two different nodes may not overlap unless one is an ancestor of the other"
+    enforced_by: "tools/intent/tests/test_validate.py::test_overlap_outside_the_ancestor_chain_is_rejected"
   - id: c5
     text: "A contract pointing at a missing test is an error, not a warning"
     enforced_by: "tools/intent/tests/test_validate.py::test_contract_pointing_at_missing_test_is_rejected"
@@ -27,7 +27,7 @@ contracts:
     text: "A slice carries ancestors and semantic dependencies but never siblings"
     enforced_by: "tools/intent/tests/test_tools.py::test_slice_contains_ancestors_and_uses_but_not_siblings"
   - id: c7
-    text: "Path and depth exist only in generated views, never in a node file"
+    text: "The generated index carries a path and a depth derived from the parent chain"
     enforced_by: "tools/intent/tests/test_tools.py::test_index_holds_derived_path_and_depth"
   - id: c8
     text: "A change of a node's meaning invalidates the claim that it was realized"
@@ -59,6 +59,15 @@ contracts:
   - id: c17
     text: "An enforcer renamed to a longer symbol counts as missing, not as still present"
     enforced_by: "tools/intent/tests/test_realization.py::test_a_renamed_enforcer_symbol_makes_a_node_broken"
+  - id: c18
+    text: "code_paths of a node and any of its ancestors may overlap"
+    enforced_by: "tools/intent/tests/test_validate.py::test_the_ancestor_chain_may_overlap"
+  - id: c19
+    text: "A path or depth written into a node file is reported as an unknown field"
+    enforced_by: "tools/intent/tests/test_validate.py::test_derived_fields_in_a_node_file_are_reported"
+  - id: c20
+    text: "A path written into a node file never becomes the node's path in a generated view"
+    enforced_by: "tools/intent/tests/test_tools.py::test_a_path_in_a_node_file_does_not_reach_a_generated_view"
 code_paths: ["tools/"]
 test_paths: ["tools/intent/tests/"]
 open_questions: []
@@ -84,10 +93,10 @@ matter exists for the same reason.
 
 ## Contracts
 The contracts describe behaviour a future change could plausibly break, not the shape of
-the code. Two of them encode decisions that cost real thought: overlapping `code_paths`
-are legal along the ancestor chain but not between siblings, and derived data such as
-path and depth is generated rather than stored, so inserting a level of abstraction does
-not rewrite an entire subtree.
+the code. Two decisions in there cost real thought and take five contracts between them:
+overlapping `code_paths` are legal along the ancestor chain and nowhere else, and derived
+data such as path and depth is generated rather than stored, so inserting a level of
+abstraction does not rewrite an entire subtree.
 
 The realization contracts (`c8`–`c17`) guard the same principle one layer up. Only
 assertions are stored; staleness is computed from fingerprints, so an inconsistent state
@@ -95,10 +104,12 @@ cannot be written down. Invalidation follows a change of **wording**, never a st
 otherwise an unproven root would forbid proving anything beneath it, and one edit to a
 widely used node would redden the whole tree.
 
-Each contract states exactly one thing, and exactly the thing its `enforced_by` proves.
-A sentence joined by a semicolon or by "but never" carries a second claim that the named
-test does not reach, which is how an unenforced promise gets in wearing the clothes of an
-enforced one.
+A contract may claim only what its `enforced_by` proves. What decides is not the shape of
+the sentence but the reach of the test: where a sentence has two halves, one and the same
+test must prove both, or the halves belong to two contracts. A half that follows directly
+from the other, using only the terms the contract itself names, is not a second claim and
+is not split. `c14` is that case and the tightest one here: "cannot trip its own gate"
+follows from "always allows", because the gate in question is the run's own write.
 
 ## Non-goals
 - Not a test runner: which commands prove a project correct is listed in its `VERIFY.md`.
