@@ -545,7 +545,8 @@ def claim(
         raise TreeError("claim requires --by")
     if by.strip().lower() == "coder":
         raise TreeError(
-            "the Coder may not claim its own work; the Coordinator claims after the Grader"
+            "the Coder may not claim its own work; "
+            "the Coordinator claims once every gate the level requires has passed"
         )
     if node.open_questions:
         raise TreeError(

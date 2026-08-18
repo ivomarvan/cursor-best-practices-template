@@ -42,7 +42,7 @@ python3 tools/intent/cli.py <command>           # inside the template repo itsel
 
 | Role | May | May not |
 |------|-----|---------|
-| **Coordinator** (parent chat) | start other roles, pick models, count loops, allocate ids, claim realization after a green Grader | write production code; grade its own output |
+| **Coordinator** (parent chat) | start other roles, pick models, count loops, allocate ids, claim realization once every gate the level requires has passed | write production code; grade its own output |
 | **Planner** | intent deltas, run plan, slice, test spec | write production code; approve its own plan |
 | **Critic** | verdict `ACCEPT` / `REVISE` on plans and intent changes | rewrite the plan; write code |
 | **Coder** | production code, tests, report | change `current` nodes; start its own review; claim its own work realized |

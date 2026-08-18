@@ -6,6 +6,12 @@ nodes:
       by: Coordinator
       contracts: sha256:2648ddcd4140bb67
       meaning: sha256:3ee66725682c8d64
+  i0003:
+    claim:
+      evidence: doc/runs/20260817-2334-review-craft-and-claim-order-e2
+      by: Coordinator
+      contracts: sha256:a92653e006646cda
+      meaning: sha256:03eddcb5c7864430
   i0004:
     claim:
       evidence: doc/runs/20260817-1853-slice-and-derived-truth-66

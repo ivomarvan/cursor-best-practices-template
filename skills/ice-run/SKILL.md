@@ -87,18 +87,17 @@ $TOOL scope --run doc/runs/<run> --node <iNNNN>
 # then every command listed in VERIFY.md
 ```
 
-Write the raw output to `grader.md`. Failures go back to the Coder — at most three
-rounds, then escalate. A scope violation raises the run to `medium` and wakes the
-Adversary regardless of the original level.
+Write the raw output to `grader.md` yourself, from the commands you just ran. The Coder's
+own measurements stay in `report.md` and `coder-evidence.md`; a `grader.md` written by the
+author of the code is not evidence.
 
-Once `grader.md` is green, record the realization claim — you, never the Coder:
+Failures go back to the Coder — at most three rounds, then escalate. A scope violation
+raises the run to `medium` and wakes the Adversary regardless of the original level.
 
-```bash
-$TOOL realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator
-```
-
-The tool refuses a node with an open question or with an unreachable enforcer. Such a
-refusal is a finding about the run, not an obstacle to route around.
+Record no realization claim here. A green gate proves that the commands passed, not that
+an enforcer reaches every place its sentence speaks about. At `medium` and `high` that
+judgement comes from Step 8; at `low`, where no Adversary runs, the gates are the whole
+requirement. Either way the claim belongs to Step 9.
 
 ## Step 8 — Independent review
 
@@ -106,7 +105,22 @@ At `medium` and `high`, start the **Adversary** (skill `ice-review`) with a mode
 differs from the Coder's. Give it the plan, the Definition of Done and the diff. It
 writes `review.md`. At most three rounds, then escalate.
 
-## Step 9 — Close
+## Step 9 — Claim, then close
+
+Now — and not before — record the realization claim, you and never the Coder:
+
+```bash
+$TOOL realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator
+```
+
+Claim once every gate the level requires has passed: at `low` that is the green Grader, at
+`medium` and `high` also an Adversary verdict of `APPROVE`. A run closing on
+`REQUEST CHANGES` or on an escalation claims nothing, and `status.md` says so. There is no
+`unclaim`: the fingerprints cover only the node's text, so a claim written against a diff
+that was later rejected never reddens by itself.
+
+The tool refuses a node with an open question or with an unreachable enforcer. Such a
+refusal is a finding about the run, not an obstacle to route around.
 
 Write `status.md`: final state, models used, loop counts, Human gate. Promote any
 cross-node decision into an ADR under `doc/architecture/decisions/`. Record a skipped
@@ -127,11 +141,11 @@ follow-up runs, or the Human affirms them with a reason.
 
 ## Output checklist
 
-- [ ] Run directory with `request.md` and either `run.md` (low) or the full set
+- [ ] Run directory with `request.md`, plus `run.md` and `grader.md` (low) or the full separate set
 - [ ] Affected node ids recorded in the front matter (`intent_ids`)
 - [ ] `intent validate` and `intent scope` green, logged in `grader.md`
 - [ ] Every gate required by the complexity level actually ran
-- [ ] Realization claimed for the affected node, or the reason it could not be
+- [ ] Realization claimed in Step 9, once every gate the level requires has passed — or why not
 - [ ] `status.md` written; skipped Human review has a recorded reason
 
 ## Additional resources

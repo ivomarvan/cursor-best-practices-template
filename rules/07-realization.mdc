@@ -77,13 +77,18 @@ consumer's proof stands; if its commitment changes, it does not.
 
 | Action | Who | Refused for |
 |---|---|---|
-| `claim` | Coordinator, after the Grader is green | the **Coder** — nobody grades their own work |
+| `claim` | Coordinator, once every gate the level requires has passed — at `low` the Grader, above it the Adversary too | the **Coder** — nobody grades their own work |
 | `affirm` | Human only | every agent role |
 | `accept` / `reject` | Human only | every agent role |
 
 `claim` refuses a node with an open question, and refuses a node whose contracts point at
 a missing enforcer. These are recorded, not cryptographic, guarantees: anything written
 in `by` is visible in the diff, which is exactly where the Adversary and the Human look.
+
+A claim written before the review is one that nobody can withdraw: the fingerprints cover
+the node's **text**, so repairing a blocker in a test never reddens it, and there is no
+`unclaim` command. Where a review runs, the claim waits for its verdict — `REQUEST CHANGES`
+leaves the node honestly unclaimed instead of claimed and contradicted.
 
 ## Commands
 
@@ -124,7 +129,9 @@ Changing this file is a hard trigger for complexity `high`, like `VERIFY.md`.
 
 - **Slice** — `intent slice` prints the node's state and the reason it went stale. That
   is what the Coder needs: not only what the node means, but what moved.
-- **Grader** — unchanged. After `VERIFY.md` is green, the Coordinator writes the claim.
+- **Grader** — unchanged, and above `low` not sufficient alone. It proves the commands ran
+  and passed, never that an enforcer reaches every place its sentence speaks about. That
+  judgement is what a review produces, so where one runs, the claim waits for it too.
 - **Scope guard** — `doc/intent/_realization.yaml` is always an allowed output and is
   **not** an intent change. It does not raise complexity and does not wake the Adversary.
 - **Generated views** — `MAP.md` and `INDEX.json` deliberately carry no realization

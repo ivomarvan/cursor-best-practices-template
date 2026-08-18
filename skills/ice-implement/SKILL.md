@@ -75,6 +75,12 @@ $TOOL scope --run doc/runs/<run> --node <iNNNN>
 These same commands will be re-run by the Grader. Numbers you write in the report are
 claims; the Grader's log is the record.
 
+Put your own measurements in `report.md` under Evidence, and any long raw output — test
+logs, mutation transcripts — in a file of your own in the run directory, named
+`coder-evidence.md`. **Never write `grader.md`, and never write a file whose name can be
+read as it.** `grader.md` belongs to the Coordinator, which writes it from commands it ran
+itself; a gate whose log the author of the code produced is not a gate.
+
 ## Step 6 — Report and Definition of Done
 
 Write `report.md` following the structure in `07-run-artifacts.mdc`: what was
@@ -89,7 +95,8 @@ exists to prevent.
 
 - [ ] Diff stays inside `outputs` + `incidental`
 - [ ] No `current` intent node modified
-- [ ] No realization claim written — that is the Coordinator's, after the Grader
+- [ ] No realization claim written — the Coordinator's, once every gate the level requires has passed
+- [ ] `grader.md` neither written nor edited; your evidence is `report.md` + `coder-evidence.md`
 - [ ] Failing-test evidence captured for every new test
 - [ ] All `VERIFY.md` commands pass locally
 - [ ] `report.md` written; every ticked Definition of Done item has an artifact

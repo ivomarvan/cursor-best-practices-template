@@ -17,7 +17,9 @@ specific path.
 
 ## How many files
 
-**`low`** — a single `run.md` with sections: request, plan, report, grader log, status.
+**`low`** — `run.md` (sections: request, plan, report, status) **and** a separate
+`grader.md` beside it. The gate log cannot live inside `run.md`: `grader.md` belongs to
+the Coordinator, which writes it from commands it ran itself; `run.md` is the Coder's.
 
 **`medium` and `high`** — separate files:
 
@@ -29,7 +31,8 @@ specific path.
 | `slice.md` | Coordinator | output of `intent slice` |
 | `critique.md` | Critic | `ACCEPT` / `REVISE` with reasons |
 | `report.md` | Coder | what was done, read, changed, decided |
-| `grader.md` | Grader | machine log of `VERIFY.md` |
+| `coder-evidence.md` | Coder | raw output the Coder measured; optional, never named `grader*` |
+| `grader.md` | Grader = the Coordinator itself | machine log of `VERIFY.md`, never the Coder's |
 | `review.md` | Adversary | `APPROVE` / `REQUEST CHANGES` |
 | `status.md` | Coordinator | final state, models, loop counts, Human gate |
 
@@ -77,12 +80,15 @@ because writing it is the recorded result of the run rather than part of its cha
 
 Each item is a checkable artifact or command. Two items are mandatory:
 
-- [ ] Failing-test evidence: the new test fails on unchanged code (log in `grader.md`).
+- [ ] Failing-test evidence: the new test fails on unchanged code (`report.md`, not `grader.md`).
 - [ ] `VERIFY.md` passes, including `intent validate` and `intent scope`.
 
-The Coder does not tick realization: after the Grader is green, the **Coordinator** runs
-`intent realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator`. A claim
-written by the Coder is refused by the tool.
+Realization is not ticked by the Coder, and above `low` not by a green Grader alone either.
+The **Coordinator** runs
+`intent realization claim <iNNNN> --evidence doc/runs/<run> --by Coordinator` while closing
+the run, once every gate the level requires has passed: at `low` the gates themselves, at
+`medium` and `high` also `APPROVE` in `review.md`. A claim written by the Coder is refused
+by the tool.
 
 ## Report structure
 

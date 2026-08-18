@@ -137,12 +137,12 @@ flowchart TD
     PLAN --> CODE["Coder implements<br/>inside the slice"]
     CODE --> GRADE["Grader runs <code>VERIFY.md</code><br/>+ validate + scope guard"]
     GRADE -- red --> CODE
-    GRADE -- green --> CLAIM["Coordinator records the claim<br/><code>realization claim</code>"]
-    CLAIM --> ADV{"medium or high?"}
+    GRADE -- green --> ADV{"medium or high?"}
     ADV -- yes --> REV["Adversary reviews the diff<br/>APPROVE / REQUEST CHANGES"]
-    ADV -- no --> CLOSE
+    ADV -- no --> CLAIM
     REV -- "REQUEST CHANGES" --> CODE
-    REV -- APPROVE --> CLOSE["Close the run<br/><code>status.md</code>, ADR, Human gate"]
+    REV -- APPROVE --> CLAIM["Coordinator records the claim<br/><code>realization claim</code>"]
+    CLAIM --> CLOSE["Close the run<br/><code>status.md</code>, ADR, Human gate"]
 ```
 
 Loops are bounded at three rounds; the fourth escalates to you. A scope violation raises
@@ -254,7 +254,7 @@ catch it. It is derived from the same check the validator uses for `enforced_by`
 
 | Action | Who | Refused for |
 |--------|-----|-------------|
-| `claim` | Coordinator, after the Grader is green | the **Coder** — nobody grades their own work |
+| `claim` | Coordinator, once every gate the level requires has passed — at `low` the Grader, above it the Adversary too | the **Coder** — nobody grades their own work |
 | `affirm` — keep a claim after a harmless edit | Human only | every agent role |
 | `accept` / `reject` | Human only | every agent role |
 
