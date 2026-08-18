@@ -56,6 +56,11 @@ A gate reopened by a later gate in the same run continues its own round count in
 starting again. The Coordinator may not authorise that round; it is an escalation to the
 Human, who grants it or sends the finding to a follow-up run.
 
+An `APPROVE` or `ACCEPT` is closed, including any follow-up the reviewer marked as
+non-blocking in it; a blocker means that verdict was never closed. Reopening a closed
+verdict for such a finding is the Human's call; the Coordinator records the finding as
+a known limit and closes, or asks.
+
 One run may change intent and implement it only when the Critic accepted the intent delta
 before the Coder started. A Critic arriving afterwards reviews a decision already spent,
 which is a stamp, not a gate.
