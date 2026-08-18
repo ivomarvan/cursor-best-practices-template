@@ -1,5 +1,11 @@
 schema_version: 1
 nodes:
+  i0001:
+    claim:
+      evidence: doc/runs/20260818-0853-harness-and-hooks-audit-86
+      by: Coordinator
+      contracts: sha256:c82df072688ddd7a
+      meaning: sha256:162e40a37f34e598
   i0002:
     claim:
       evidence: doc/runs/20260817-1743-methodology-debt-ea

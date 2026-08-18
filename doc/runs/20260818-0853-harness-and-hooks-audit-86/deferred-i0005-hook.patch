@@ -1,0 +1,604 @@
+diff --git a/hooks/README.md b/hooks/README.md
+index 04726d0..716acba 100644
+--- a/hooks/README.md
++++ b/hooks/README.md
+@@ -5,20 +5,29 @@ Cursor IDE hooks and shared git hooks for projects using this submodule.
+ ## Structure
+ 
+ ```
+-hooks/
+-├── hooks.json           → Cursor project hooks (place at project root or .cursor/)
+-├── session-start.sh     → sessionStart: activates the git commit-msg hook
+-├── git/
+-│   └── commit-msg       → strips Cursor auto-attribution from every commit message
+-└── README.md            → this file
++<repo>/
++├── hooks.json             → Cursor project hooks (lives at the repository root)
++└── hooks/
++    ├── session-start.sh   → sessionStart: activates the git commit-msg hook
++    ├── git/
++    │   └── commit-msg     → strips Cursor agent attribution trailers
++    └── README.md          → this file
+ ```
+ 
+ ## What it solves
+ 
+-Cursor IDE automatically appends `Co-authored-by: Cursor <cursoragent@cursor.com>`
+-to every commit message at the git level — bypassing agent instructions.
+-
+-The `commit-msg` git hook removes this trailer before git finalises the commit.
++Cursor IDE automatically appends attribution trailers such as
++`Co-authored-by: Cursor <cursoragent@cursor.com>` and `Made-with: Cursor` to commit
++messages at the git level — bypassing agent instructions.
++
++The `commit-msg` git hook removes those trailers from the **trailer block** (the last
++blank-line-separated paragraph): any `-by` / `-with` key whose unfolded value names the
++Cursor agent as a prefix — including folded continuation lines and forms git accepts with
++spaces around `:` — and any trailer-shaped key carrying `cursoragent@cursor.com`. Prose
++before the trailer block is left untouched, so an indented quote of an attribution string
++in the body stays. Human co-authors, `Intent:` / `Run:`, and Conventional Commit subjects
++are kept. The Cursor prefix is intentional: `CursorAgent` is stripped, and so is a
++human-looking `Reported-by: Cursor Smith` or `Reviewed-by: Cursory …`.
+ 
+ ## How it activates
+ 
+diff --git a/hooks/git/commit-msg b/hooks/git/commit-msg
+index 170669d..16f13fa 100755
+--- a/hooks/git/commit-msg
++++ b/hooks/git/commit-msg
+@@ -5,15 +5,104 @@
+ 
+ msg_file="$1"
+ 
+-# Strip Co-authored-by: Cursor trailer (injected by Cursor IDE automatically)
+-grep -v "Co-authored-by: Cursor" "$msg_file" \
+-    | grep -v "cursoragent@cursor.com" \
+-    > "$msg_file.tmp" \
+-    && mv "$msg_file.tmp" "$msg_file"
+-
+-# Remove trailing blank lines, keep final newline
+-awk 'NF{found=NR} {lines[NR]=$0} END{for(i=1;i<=found;i++) print lines[i]}' \
+-    "$msg_file" > "$msg_file.tmp" \
+-    && mv "$msg_file.tmp" "$msg_file"
++# Structure, not line-oriented grep: the trailer block is the last blank-line-separated
++# paragraph (or the whole message when it is only trailers). Prose before that block is
++# never touched — so an indented quote of an attribution string in the body stays.
++# Inside the trailer block, each trailer is a key line plus its indented continuation
++# lines; attribution trailers are dropped as a unit (folded forms included).
++#
++# Attribution: a -by/-with key whose unfolded value starts with "Cursor" (prefix —
++# CursorAgent, Cursory, Cursor Smith all go; that cost is intentional), or any trailer
++# whose lines carry cursoragent@cursor.com. Key grammar matches git interpret-trailers
++# (alnum/hyphen; optional spaces around ':'); '_' / '.' in keys still match the address
++# rule so the old unanchored address grep's removals stay removed.
++awk '
++function is_blank(s) { return s ~ /^[[:space:]]*$/ }
++function is_cont(s)  { return s ~ /^[ \t]+[^[:space:]]/ }
++function is_key(s)   { return s ~ /^[A-Za-z0-9-][A-Za-z0-9_.-]*[[:space:]]*:/ }
++
++function trim(s) {
++  gsub(/^[[:space:]]+/, "", s)
++  gsub(/[[:space:]]+$/, "", s)
++  return s
++}
++
++# Return 1 if lines[from..to] form an attribution trailer.
++function is_attribution(from, to,   first, colon, key, val, j, piece, lowkey, lowval) {
++  first = lines[from]
++  colon = index(first, ":")
++  if (colon == 0) return 0
++  key = trim(substr(first, 1, colon - 1))
++  val = trim(substr(first, colon + 1))
++  for (j = from + 1; j <= to; j++) {
++    piece = lines[j]
++    sub(/^[ \t]+/, "", piece)
++    if (val == "") val = piece
++    else val = val " " piece
++  }
++  for (j = from; j <= to; j++) {
++    if (tolower(lines[j]) ~ /cursoragent@cursor\.com/) return 1
++  }
++  lowkey = tolower(key)
++  lowval = tolower(val)
++  if (lowkey ~ /-(by|with)$/ && lowval ~ /^cursor/) return 1
++  return 0
++}
++
++{
++  sub(/\r$/, "")
++  lines[++n] = $0
++}
++
++END {
++  last_blank = 0
++  for (i = 1; i <= n; i++)
++    if (is_blank(lines[i])) last_blank = i
++
++  if (last_blank == 0) {
++    all_tr = 1
++    has_key = 0
++    for (i = 1; i <= n; i++) {
++      if (is_blank(lines[i])) continue
++      if (is_key(lines[i])) { has_key = 1; continue }
++      if (is_cont(lines[i])) continue
++      all_tr = 0
++      break
++    }
++    trailer_start = (all_tr && has_key) ? 1 : (n + 1)
++  } else {
++    trailer_start = last_blank + 1
++  }
++
++  for (i = 1; i < trailer_start; i++)
++    out[++o] = lines[i]
++
++  i = trailer_start
++  while (i <= n) {
++    if (is_blank(lines[i])) { i++; continue }
++    if (is_key(lines[i])) {
++      start = i
++      i++
++      while (i <= n && is_cont(lines[i])) i++
++      if (!is_attribution(start, i - 1)) {
++        for (j = start; j < i; j++) out[++o] = lines[j]
++      }
++      continue
++    }
++    # Orphan continuation or non-trailer line in the trailer zone: keep unless it
++    # alone still carries the agent address (residue of a half-stripped fold).
++    if (is_cont(lines[i]) && tolower(lines[i]) ~ /cursoragent@cursor\.com/) {
++      i++
++      continue
++    }
++    out[++o] = lines[i]
++    i++
++  }
++
++  while (o > 0 && is_blank(out[o])) o--
++  for (i = 1; i <= o; i++) print out[i]
++}
++' "$msg_file" > "$msg_file.tmp" || true
++mv "$msg_file.tmp" "$msg_file"
+ 
+ exit 0
+diff --git a/tools/checks/hook_checks.py b/tools/checks/hook_checks.py
+index c6f9006..d44d658 100644
+--- a/tools/checks/hook_checks.py
++++ b/tools/checks/hook_checks.py
+@@ -11,28 +11,287 @@ Usage:
+ from __future__ import annotations
+ 
+ import argparse
++import difflib
++import json
+ import os
++import re
+ import stat
+ import subprocess
+ import sys
+ import tempfile
++from dataclasses import dataclass
+ from pathlib import Path
+ 
+-SAMPLE_MESSAGE = """feat(db): enforce unique user_id
++REQUIRED_HOOKS = ("hooks/git/commit-msg", "hooks/session-start.sh")
+ 
+-Intent: i0042
+-Run: 20260815-1328-demo-a7
++# Shared subject + Intent/Run trailers used by most cases; measured expected outputs
++# come from the repaired commit-msg hook (byte-exact).
++_BASE = "feat(db): enforce unique user_id\n\nIntent: i0005\nRun: 20260818-0853-cursor-audit-86\n"
++_CLEAN = "feat(db): enforce unique user_id\n\nIntent: i0005\nRun: 20260818-0853-cursor-audit-86\n"
+ 
+-Co-authored-by: Cursor <cursoragent@cursor.com>
+ 
++@dataclass(frozen=True)
++class Case:
++    name: str
++    message: str
++    expected: str
+ 
+-"""
++
++CASES: tuple[Case, ...] = (
++    Case(
++        "cursor_trailer",
++        _BASE + "\nCo-authored-by: Cursor <cursoragent@cursor.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "cursor_agent_prefix",
++        _BASE + "\nCo-authored-by: CursorAgent <bot@example.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "cursor_hyphen_bot",
++        _BASE + "\nCo-authored-by: Cursor-bot <bot@example.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "cursor_xyz",
++        _BASE + "\nCo-authored-by: CursorXYZ\n",
++        _CLEAN,
++    ),
++    Case(
++        "capitalised_key",
++        _BASE + "\nCo-Authored-By: Cursor <bot@example.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "made_with",
++        _BASE + "\nMade-with: Cursor\n",
++        _CLEAN,
++    ),
++    Case(
++        "generated_with",
++        _BASE + "\nGenerated-with: Cursor 1.2\n",
++        _CLEAN,
++    ),
++    Case(
++        "signed_off_by_agent",
++        _BASE + "\nSigned-off-by: Cursor Agent <cursoragent@cursor.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "human_co_author",
++        _BASE + "\nCo-authored-by: Ivo Example <ivo@example.com>\n",
++        _CLEAN + "\nCo-authored-by: Ivo Example <ivo@example.com>\n",
++    ),
++    Case(
++        "body_quotes_the_address",
++        (
++            "feat(db): enforce unique user_id\n"
++            "\n"
++            "Never write Co-authored-by: Cursor <cursoragent@cursor.com> by hand.\n"
++            "\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++        ),
++        (
++            "feat(db): enforce unique user_id\n"
++            "\n"
++            "Never write Co-authored-by: Cursor <cursoragent@cursor.com> by hand.\n"
++            "\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++        ),
++    ),
++    Case(
++        "subject_names_cursor",
++        ("docs: Cursor attribution note\n\nIntent: i0005\nRun: 20260818-0853-cursor-audit-86\n"),
++        ("docs: Cursor attribution note\n\nIntent: i0005\nRun: 20260818-0853-cursor-audit-86\n"),
++    ),
++    Case(
++        "run_slug_contains_cursor",
++        _BASE,
++        _CLEAN,
++    ),
++    Case(
++        "trailing_blank_lines",
++        _BASE + "\n\n\n",
++        _CLEAN,
++    ),
++    Case(
++        "attribution_only",
++        "Co-authored-by: Cursor <cursoragent@cursor.com>\n",
++        "",
++    ),
++    # Address branch only: value does not start with Cursor, so the name branch misses it.
++    Case(
++        "address_only_trailer",
++        _BASE + "\nReported-by: someone <cursoragent@cursor.com>\n",
++        _CLEAN,
++    ),
++    # B2 — key forms git interpret-trailers accepts (or that the old unanchored address
++    # grep removed); name/address grammar must be wide enough for all of them.
++    Case(
++        "space_before_colon",
++        _BASE + "\nCo-authored-by : Cursor <cursoragent@cursor.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "digit_key_address",
++        _BASE + "\n2fa-note: cursoragent@cursor.com\n",
++        _CLEAN,
++    ),
++    Case(
++        "underscore_key_address",
++        _BASE + "\nCo_authored_by: Cursor <cursoragent@cursor.com>\n",
++        _CLEAN,
++    ),
++    Case(
++        "dot_key_address",
++        _BASE + "\nco.authored.by: cursoragent@cursor.com\n",
++        _CLEAN,
++    ),
++    # B3 — folded trailers (continuation lines belong to the preceding key).
++    Case(
++        "folded_space_continuation",
++        (
++            "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n"
++            "Co-authored-by:\n  Cursor <cursoragent@cursor.com>\n"
++        ),
++        "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n",
++    ),
++    Case(
++        "folded_tab_continuation",
++        (
++            "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n"
++            "Co-authored-by:\n\tCursor <cursoragent@cursor.com>\n"
++        ),
++        "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n",
++    ),
++    Case(
++        "folded_name_then_address",
++        (
++            "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n"
++            "Co-authored-by: Cursor\n  <cursoragent@cursor.com>\n"
++        ),
++        "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n",
++    ),
++    Case(
++        "folded_space_before_colon",
++        (
++            "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n"
++            "Co-authored-by :\n  Cursor <cursoragent@cursor.com>\n"
++        ),
++        "feat(x): subject\n\nReason: body.\n\nIntent: i0005\n",
++    ),
++    # Structural edges: subject only; mixed trailers; indented prose quote; CRLF.
++    Case(
++        "subject_only_no_trailer_block",
++        "feat(db): enforce unique user_id\n",
++        "feat(db): enforce unique user_id\n",
++    ),
++    Case(
++        "mixed_attribution_and_legitimate_trailers",
++        (
++            "feat(db): enforce unique user_id\n\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++            "Co-authored-by: Ivo Example <ivo@example.com>\n"
++            "Co-authored-by: Cursor <cursoragent@cursor.com>\n"
++        ),
++        (
++            "feat(db): enforce unique user_id\n\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++            "Co-authored-by: Ivo Example <ivo@example.com>\n"
++        ),
++    ),
++    Case(
++        "indented_prose_quotes_attribution",
++        (
++            "feat(db): enforce unique user_id\n\n"
++            "Note the form:\n"
++            "  Co-authored-by: Cursor <cursoragent@cursor.com>\n"
++            "in docs only.\n\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++        ),
++        (
++            "feat(db): enforce unique user_id\n\n"
++            "Note the form:\n"
++            "  Co-authored-by: Cursor <cursoragent@cursor.com>\n"
++            "in docs only.\n\n"
++            "Intent: i0005\n"
++            "Run: 20260818-0853-cursor-audit-86\n"
++        ),
++    ),
++    Case(
++        "crlf_line_endings",
++        (
++            "feat(db): enforce unique user_id\r\n\r\n"
++            "Intent: i0005\r\n"
++            "Run: 20260818-0853-cursor-audit-86\r\n"
++            "Co-authored-by: Cursor <cursoragent@cursor.com>\r\n"
++        ),
++        _CLEAN,
++    ),
++    Case(
++        "made_with_space_before_colon",
++        _BASE + "\nMade-with : Cursor\n",
++        _CLEAN,
++    ),
++)
++
++
++def declared_hooks(root: Path) -> list[Path]:
++    """Hooks named in hooks.json, paths relative to root after stripping ``.cursor/``."""
++    config = root / "hooks.json"
++    if not config.is_file():
++        return []
++    data = json.loads(config.read_text(encoding="utf-8"))
++    found: list[Path] = []
++    for entries in (data.get("hooks") or {}).values():
++        for entry in entries:
++            command = entry.get("command", "")
++            if not command:
++                continue
++            relative = re.sub(r"^\.cursor/", "", command)
++            found.append(root / relative)
++    return found
++
++
++def shipped_hooks(root: Path) -> list[Path]:
++    """Every non-documentation file under hooks/, plus anything declared in hooks.json."""
++    hooks_dir = root / "hooks"
++    discovered: list[Path] = []
++    if hooks_dir.is_dir():
++        discovered = [
++            path for path in hooks_dir.rglob("*") if path.is_file() and path.suffix != ".md"
++        ]
++    by_key = {path.resolve(): path for path in discovered}
++    for path in declared_hooks(root):
++        by_key.setdefault(path.resolve(), path)
++    return sorted(by_key.values(), key=lambda path: str(path))
+ 
+ 
+ def check_executable(root: Path) -> list[str]:
+     errors: list[str] = []
+-    for relative in ("hooks/git/commit-msg", "hooks/session-start.sh"):
+-        path = root / relative
++    if not (root / "hooks").is_dir():
++        return ["hooks/: missing"]
++
++    hooks = shipped_hooks(root)
++    by_relative: dict[str, Path] = {}
++    for path in hooks:
++        try:
++            relative = str(path.relative_to(root))
++        except ValueError:
++            relative = str(path)
++        by_relative[relative] = path
++
++    for required in REQUIRED_HOOKS:
++        if required not in by_relative:
++            errors.append(f"{required}: missing (required shipped hook)")
++
++    for relative, path in sorted(by_relative.items()):
+         if not path.exists():
+             errors.append(f"{relative}: missing")
+             continue
+@@ -41,32 +300,105 @@ def check_executable(root: Path) -> list[str]:
+     return errors
+ 
+ 
++def _diff_message(expected: str, actual: str) -> str:
++    diff = "".join(
++        difflib.unified_diff(
++            expected.splitlines(keepends=True),
++            actual.splitlines(keepends=True),
++            fromfile="expected",
++            tofile="actual",
++        )
++    )
++    if diff:
++        return diff
++    return f"expected={expected!r} actual={actual!r}"
++
++
+ def check_commit_msg_strips_attribution(root: Path) -> list[str]:
+     hook = root / "hooks/git/commit-msg"
+     if not hook.exists():
+         return ["hooks/git/commit-msg: missing"]
+-    with tempfile.TemporaryDirectory() as tmp:
+-        message_file = Path(tmp) / "COMMIT_EDITMSG"
+-        message_file.write_text(SAMPLE_MESSAGE, encoding="utf-8")
+-        result = subprocess.run(
+-            ["bash", str(hook), str(message_file)],
++
++    errors: list[str] = []
++    for case in CASES:
++        with tempfile.TemporaryDirectory() as tmp:
++            message_file = Path(tmp) / "COMMIT_EDITMSG"
++            message_file.write_text(case.message, encoding="utf-8")
++            result = subprocess.run(
++                ["bash", str(hook), str(message_file)],
++                capture_output=True,
++                text=True,
++                check=False,
++                env={**os.environ, "LC_ALL": "C"},
++            )
++            if result.returncode != 0:
++                errors.append(
++                    f"hooks/git/commit-msg: case '{case.name}': "
++                    f"exited {result.returncode}: {result.stderr.strip()}"
++                )
++                continue
++            cleaned = message_file.read_text(encoding="utf-8")
++            if cleaned != case.expected:
++                errors.append(
++                    f"hooks/git/commit-msg: case '{case.name}': output mismatch\n"
++                    f"{_diff_message(case.expected, cleaned)}"
++                )
++    return errors
++
++
++def check_committed_mode(root: Path) -> tuple[list[str], str]:
++    """Compare tracked shipped-hook modes in the git index against 100755."""
++    try:
++        toplevel = subprocess.run(
++            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+             capture_output=True,
+             text=True,
+             check=False,
+-            env={**os.environ, "LC_ALL": "C"},
+         )
+-        if result.returncode != 0:
+-            return [f"hooks/git/commit-msg: exited {result.returncode}: {result.stderr.strip()}"]
+-        cleaned = message_file.read_text(encoding="utf-8")
++    except FileNotFoundError:
++        return [], f"committed modes not verified: {root} is not the top of a git work tree"
++
++    if toplevel.returncode != 0:
++        return [], f"committed modes not verified: {root} is not the top of a git work tree"
++
++    resolved_top = Path(toplevel.stdout.strip()).resolve()
++    if resolved_top != root.resolve():
++        return [], f"committed modes not verified: {root} is not the top of a git work tree"
++
++    listed = subprocess.run(
++        ["git", "-C", str(root), "ls-files", "-s", "--", "hooks"],
++        capture_output=True,
++        text=True,
++        check=False,
++    )
++    if listed.returncode != 0:
++        return [f"git ls-files failed: {listed.stderr.strip()}"], "committed modes checked"
++
++    index: dict[str, str] = {}
++    for line in listed.stdout.splitlines():
++        # format: <mode> <object> <stage>\t<path>
++        if "\t" not in line:
++            continue
++        meta, path = line.split("\t", 1)
++        mode = meta.split()[0]
++        index[path] = mode
+ 
+     errors: list[str] = []
+-    if "Co-authored-by: Cursor" in cleaned or "cursoragent@cursor.com" in cleaned:
+-        errors.append("hooks/git/commit-msg: attribution survived the hook")
+-    if "Intent: i0042" not in cleaned or "feat(db): enforce unique user_id" not in cleaned:
+-        errors.append("hooks/git/commit-msg: the hook removed content it should keep")
+-    if cleaned.endswith("\n\n"):
+-        errors.append("hooks/git/commit-msg: trailing blank lines were not trimmed")
+-    return errors
++    notes: list[str] = []
++    for path in shipped_hooks(root):
++        if not path.exists():
++            continue
++        relative = str(path.relative_to(root))
++        if relative not in index:
++            notes.append(f"{relative} untracked")
++            continue
++        if index[relative] != "100755":
++            errors.append(f"{relative}: committed mode is {index[relative]}, expected 100755")
++
++    note = "committed modes checked"
++    if notes:
++        note = f"committed modes checked ({', '.join(notes)} untracked)"
++    return errors, note
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
+@@ -75,13 +407,17 @@ def main(argv: list[str] | None = None) -> int:
+     args = parser.parse_args(argv)
+     root = Path(args.root).resolve()
+ 
+-    errors = check_executable(root) + check_commit_msg_strips_attribution(root)
++    mode_errors, mode_note = check_committed_mode(root)
++    errors = check_executable(root) + check_commit_msg_strips_attribution(root) + mode_errors
+     for error in errors:
+         print(f"ERROR {error}")
+     if errors:
+         print(f"\n{len(errors)} hook contract violation(s)")
+         return 1
+-    print("hook contracts satisfied")
++
++    n = len([path for path in shipped_hooks(root) if path.exists()])
++    m = len(CASES)
++    print(f"hook contracts satisfied ({n} shipped hook(s), {m} message case(s); {mode_note})")
+     return 0
+ 
+ 

@@ -100,8 +100,12 @@ def check_skills(root: Path, findings: Findings) -> None:
             findings.fail(path, f"{total} lines exceeds the skill limit of {SKILL_LIMIT}")
 
 
-def strip_code_blocks(text: str) -> str:
-    """Drop fenced code blocks: links inside them are illustrations, not references."""
+def strip_code_blocks(text: str) -> tuple[str, bool]:
+    """Drop fenced code blocks; report when a fence was never closed.
+
+    An unterminated fence would silently drop the rest of the file from the link
+    check — worse than a broken link that is at least reported.
+    """
     kept: list[str] = []
     inside = False
     for line in text.splitlines():
@@ -110,14 +114,28 @@ def strip_code_blocks(text: str) -> str:
             continue
         if not inside:
             kept.append(line)
-    return "\n".join(kept)
+    return "\n".join(kept), inside
+
+
+def link_targets(root: Path) -> list[Path]:
+    """Every rule and every Markdown file under skills — including second-tier docs."""
+    return sorted(
+        {
+            *(root / "rules").rglob("*.mdc"),
+            *(root / "skills").rglob("*.md"),
+        }
+    )
 
 
 def check_links(root: Path, findings: Findings) -> None:
     """Relative links inside rules and skills point at files that exist."""
-    targets = [*(root / "rules").glob("*.mdc"), *(root / "skills").glob("*/SKILL.md")]
-    for path in sorted(targets):
-        prose = strip_code_blocks(path.read_text(encoding="utf-8"))
+    for path in link_targets(root):
+        prose, unterminated = strip_code_blocks(path.read_text(encoding="utf-8"))
+        if unterminated:
+            findings.fail(
+                path,
+                "unterminated code block: links after the last fence are unchecked",
+            )
         for link in LINK_PATTERN.findall(prose):
             target = link.split("#", 1)[0].strip()
             if not target or target.startswith(SKIP_LINK_PREFIXES):
@@ -137,6 +155,11 @@ def check_symlinks(root: Path, findings: Findings) -> None:
             findings.fail(link, "expected a symlink so Cursor discovers this directory")
         elif not link.resolve().is_dir():
             findings.fail(link, "symlink does not resolve to a directory")
+        elif link.resolve() != (root / name).resolve():
+            findings.fail(
+                link,
+                f"symlink resolves to {link.resolve()}, not to {(root / name).resolve()}",
+            )
 
 
 def main(argv: list[str] | None = None) -> int:

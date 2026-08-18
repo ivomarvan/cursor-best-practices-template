@@ -141,7 +141,7 @@ follow-up runs, or the Human affirms them with a reason.
 
 ## Output checklist
 
-- [ ] Run directory with `request.md`, plus `run.md` and `grader.md` (low) or the full separate set
+- [ ] Run directory with `request.md`, `grader.md`, `status.md` and either `run.md` (low) or the full set
 - [ ] Affected node ids recorded in the front matter (`intent_ids`)
 - [ ] `intent validate` and `intent scope` green, logged in `grader.md`
 - [ ] Every gate required by the complexity level actually ran

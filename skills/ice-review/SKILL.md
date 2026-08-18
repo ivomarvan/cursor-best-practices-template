@@ -46,6 +46,8 @@ Take them one sentence at a time:
 
 1. Name every place where the sentence could be true or false — every derivation site,
    every branch, both directions of an edge, each half of an "or".
+   Before mutating, confirm the sentence holds in that place as the code stands — by
+   observation, not by the suite.
 2. In each place, mutate the code so that the sentence becomes false, then run the suite.
    The test of a review is **"would this test fail if the sentence became false"**, not
    "does the suite pass" — the Grader already proved that the suite passes.

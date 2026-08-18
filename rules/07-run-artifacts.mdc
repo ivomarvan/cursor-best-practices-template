@@ -17,9 +17,11 @@ specific path.
 
 ## How many files
 
-**`low`** — `run.md` (sections: request, plan, report, status) **and** a separate
-`grader.md` beside it. The gate log cannot live inside `run.md`: `grader.md` belongs to
-the Coordinator, which writes it from commands it ran itself; `run.md` is the Coder's.
+**`low`** — `run.md` with sections plan and report, plus three files of its own:
+`request.md`, `grader.md` and `status.md`. The request is written in Step 1, before the
+level is known, so its form cannot depend on the level. The gate log cannot live inside
+`run.md` either: `grader.md` and `status.md` belong to the Coordinator, which writes them
+from commands it ran and decisions it made itself, while `run.md` carries the work.
 
 **`medium` and `high`** — separate files:
 

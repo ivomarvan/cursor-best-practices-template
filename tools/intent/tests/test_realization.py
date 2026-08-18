@@ -481,6 +481,25 @@ class ConsistencyTest(RealizationTestCase):
         problems = check_layer(tree, layer, self.policy)
         self.assertTrue(any(problem.startswith("R3") for problem in problems))
 
+    def test_a_hand_written_coder_claim_is_reported(self):
+        """R6 must fire when the YAML was edited by hand, not only via claim()."""
+        root = self.builder.add("system")
+        node = self.builder.add("app", parent=root, contracts=CONTRACT)
+        tree = self.builder.finish()
+        layer = self.layer_of(tree)
+        claim(tree, layer, self.policy, node, self.evidence(), "Coordinator")
+        save_layer(layer)
+
+        text = layer.source.read_text(encoding="utf-8")
+        layer.source.write_text(text.replace("by: Coordinator", "by: Coder", 1), encoding="utf-8")
+
+        reloaded = load_layer(tree.intent_dir)
+        self.assertEqual(reloaded.claim_of(node).by, "Coder")
+
+        problems = check_layer(tree, reloaded, self.policy)
+        self.assertTrue(problems)
+        self.assertTrue(any(problem.startswith("R6") and node in problem for problem in problems))
+
 
 class ScopeInteractionTest(RealizationTestCase):
     def test_scope_guard_always_allows_the_realization_layer(self):
