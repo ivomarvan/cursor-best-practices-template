@@ -46,6 +46,31 @@ flowchart LR
 A fourth question follows from the three: **is it true yet?** That one is answered by the
 [realization layer](#what-is-left-to-do--the-realization-layer).
 
+### The template runs on itself
+
+This repository is governed by the methodology it ships. Its own harness — rules, skills,
+hooks, tooling — is an intent tree of five nodes and 28 contracts, every one of them
+machine-enforced, and every node carries a realization claim backed by a run:
+
+```bash
+$ python3 tools/intent/cli.py realization summary
+5 current node(s), 5 realized (100%)
+```
+
+That number is worth reading precisely. It says the harness fulfils **its own** five
+sentences, not that a project using the harness is finished, and not that the sentences
+are the right ones. A tree can be complete and shallow.
+
+What the dogfooding is actually evidence for is that the gates bite. Building this out
+found real defects in work that had already passed its own author's tests: a contract
+whose test proved only half of what the sentence claimed; an enforcer that matched a
+renamed symbol as a substring and so silently stopped enforcing; a commit hook that let
+attribution through on an ordinary editor commit. Each was caught by a reviewer that was
+required to run mutations rather than read code, and each is recorded — with the
+measurement — under [`doc/runs/`](doc/runs/). The runs are the honest documentation of
+the method: they include the rounds that failed and the one decision that had to be
+reverted.
+
 ---
 
 ## Setup
