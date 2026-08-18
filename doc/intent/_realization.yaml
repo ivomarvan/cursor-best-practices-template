@@ -8,7 +8,7 @@ nodes:
       meaning: sha256:162e40a37f34e598
   i0002:
     claim:
-      evidence: doc/runs/20260818-1651-verdict-reopening-0d
+      evidence: doc/runs/20260818-1751-model-advisory-25
       by: Coordinator
       contracts: sha256:2648ddcd4140bb67
       meaning: sha256:3ee66725682c8d64

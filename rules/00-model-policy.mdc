@@ -79,14 +79,18 @@ Human decision and the Coordinator does not vary it.
 ## Cursor limitation
 
 Cursor does not switch the parent chat's model by itself. The Coordinator passes the slug
-when starting a subagent. Reminding the Human about the parent window's model is a
-courtesy for a role the catalog does not govern, not an instruction to apply a catalog
-value. Full automation without that reminder needs the Cursor SDK or Cloud Agents, with
-the same catalog.
+when starting a subagent. Full automation of the parent window needs the Cursor SDK or
+Cloud Agents, with the same catalog.
+
+When the Coordinator classifies the run's complexity — before any role starts — it tells
+the Human the classified level, the slug the catalog asks for that role at that level, and
+the slug the parent window is actually running on. After that moment the model choice is
+already spent.
 
 The model the Human selected in the UI is authoritative for the role the parent window is
-currently playing. This is not an exception to the catalog — the catalog does not apply to
-that role, and it is not reported as a deviation. Roles delegated to subagents take their
+currently playing. An authoritative choice is an informed one. This is not an exception to
+the catalog — the catalog does not apply to that role, and it is not reported as a
+deviation. The Human may continue unchanged. Roles delegated to subagents take their
 model from the catalog.
 
 On collision with a hard constraint the other role yields, never the Human's choice. It
