@@ -14,7 +14,7 @@ nodes:
       meaning: sha256:3ee66725682c8d64
   i0003:
     claim:
-      evidence: doc/runs/20260817-2334-review-craft-and-claim-order-e2
+      evidence: doc/runs/20260818-1402-adversary-measurement-budget-05
       by: Coordinator
       contracts: sha256:a92653e006646cda
       meaning: sha256:03eddcb5c7864430

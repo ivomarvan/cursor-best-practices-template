@@ -102,8 +102,10 @@ requirement. Either way the claim belongs to Step 9.
 ## Step 8 — Independent review
 
 At `medium` and `high`, start the **Adversary** (skill `ice-review`) with a model that
-differs from the Coder's. Give it the plan, the Definition of Done and the diff. It
-writes `review.md`. At most three rounds, then escalate.
+differs from the Coder's. Give it the plan, the Definition of Done, the diff, a
+measurement ceiling in units of work (counts, not minutes) and the priority order of
+what to measure. The Adversary cannot keep a budget you did not state. It writes
+`review.md`. At most three rounds, then escalate.
 
 ## Step 9 — Claim, then close
 

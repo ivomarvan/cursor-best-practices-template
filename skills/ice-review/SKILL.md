@@ -19,6 +19,11 @@ not, say so and stop.
 Tool prefix (`TOOL`): `python3 .cursor/tools/intent/cli.py` in a project,
 `python3 tools/intent/cli.py` inside the template repo.
 
+The Coordinator states a measurement ceiling in units of work and a priority order.
+Units are counts — places mutated, candidates checked, commands run — not minutes.
+Measure that order top-down and stop at the ceiling. A wall-clock cap is rejected: a
+review cut mid-flight leaves nobody knowing what it failed to cover.
+
 ## Step 1 — Read in the right order
 
 1. `plan.md` — what was promised, `outputs`, `incidental`, Definition of Done.
@@ -110,7 +115,13 @@ APPROVE | REQUEST CHANGES
 - <place> — <mutation> — closed | open
 ## What I verified myself
 - commands run and their exit codes
+## What I did not measure   <!-- mandatory -->
+- <work left> — ceiling | unreachable
 ```
+
+`APPROVE` over an unexhausted budget means you measured what was planned, not that
+nothing else exists. The list is required even when the ceiling was not reached: name
+what you could not reach, or that nothing in the ordered plan remains unmeasured.
 
 Severity: **blocker** = a contract is unenforced, a Definition of Done claim is false,
 scope escaped, a test proves nothing, a mutation left the suite green, or a realization
@@ -127,6 +138,7 @@ statement of what is still wrong.
 - Do not accept "tests pass" as evidence — check that they *can* fail.
 - Do not approve because the report is well written.
 - Do not conclude from reading. A sentence you never tried to falsify is unverified.
+- Do not bound the review by wall-clock. Stop on the measurement ceiling and name the rest.
 
 ## Additional resources
 
