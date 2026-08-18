@@ -5,15 +5,145 @@
 
 msg_file="$1"
 
-# Strip Co-authored-by: Cursor trailer (injected by Cursor IDE automatically)
-grep -v "Co-authored-by: Cursor" "$msg_file" \
-    | grep -v "cursoragent@cursor.com" \
-    > "$msg_file.tmp" \
-    && mv "$msg_file.tmp" "$msg_file"
+# Structure, not line-oriented grep: the trailer block is the last blank-line-separated
+# paragraph (or the whole message when it is only trailers). Prose before that block is
+# never touched — so an indented quote of an attribution string in the body stays.
+# Inside the trailer block, each trailer is a key line plus its indented continuation
+# lines; attribution trailers are dropped as a unit (folded forms included).
+#
+# Attribution: a -by/-with key whose unfolded value starts with "Cursor" (prefix —
+# CursorAgent, Cursory, Cursor Smith all go; that cost is intentional), or any trailer
+# whose lines carry cursoragent@cursor.com. Key grammar matches git interpret-trailers
+# (alnum/hyphen; optional spaces around ':'); '_' / '.' in keys still match the address
+# rule so the old unanchored address grep's removals stay removed.
+#
+# Price paid for "prose before the block is untouched": attribution written in the
+# subject or in body prose, ahead of the trailer block, survives — git itself never
+# parses it as a trailer there either, so the record git keeps is not misrepresented.
+# Price paid for dropping a trailer "as a unit": a legitimate trailer whose
+# continuation line alone carries the agent's address is discarded whole, key
+# included; there is no way to keep the key while only the address was attribution.
+#
+# core.commentChar decides which character introduces git's own template comments
+# (default "#"). "auto" lets git pick a character at commit time that does not occur
+# in the message; that choice cannot be reproduced here, so it falls back to "#".
+comment_char="$(git config --get core.commentChar 2>/dev/null)"
+case "$comment_char" in
+    "" | auto) comment_char="#" ;;
+esac
 
-# Remove trailing blank lines, keep final newline
-awk 'NF{found=NR} {lines[NR]=$0} END{for(i=1;i<=found;i++) print lines[i]}' \
-    "$msg_file" > "$msg_file.tmp" \
-    && mv "$msg_file.tmp" "$msg_file"
+awk -v comment_char="$comment_char" '
+function is_blank(s)   { return s ~ /^[[:space:]]*$/ }
+function is_cont(s)    { return s ~ /^[ \t]+[^[:space:]]/ }
+function is_key(s)     { return s ~ /^[A-Za-z0-9-][A-Za-z0-9_.-]*[[:space:]]*:/ }
+function is_comment(s) { return substr(s, 1, length(comment_char)) == comment_char }
+
+function trim(s) {
+  gsub(/^[[:space:]]+/, "", s)
+  gsub(/[[:space:]]+$/, "", s)
+  return s
+}
+
+# Return 1 if lines[from..to] form an attribution trailer.
+function is_attribution(from, to,   first, colon, key, val, j, piece, lowkey, lowval) {
+  first = lines[from]
+  colon = index(first, ":")
+  if (colon == 0) return 0
+  key = trim(substr(first, 1, colon - 1))
+  val = trim(substr(first, colon + 1))
+  for (j = from + 1; j <= to; j++) {
+    piece = lines[j]
+    sub(/^[ \t]+/, "", piece)
+    if (val == "") val = piece
+    else val = val " " piece
+  }
+  for (j = from; j <= to; j++) {
+    if (tolower(lines[j]) ~ /cursoragent@cursor\.com/) return 1
+  }
+  lowkey = tolower(key)
+  lowval = tolower(val)
+  if (lowkey ~ /-(by|with)$/ && lowval ~ /^cursor/) return 1
+  return 0
+}
+
+{
+  sub(/\r$/, "")
+  lines[++n] = $0
+}
+
+END {
+  # git applies its own cleanup (strip / whitespace / scissors) only after this hook
+  # has seen the file, so the trailer block must be located in the message git will
+  # actually keep, not in the raw editor buffer. Anticipate, in the order git removes
+  # them, what its cleanup would drop from the end of the file: a scissors marker and
+  # everything after it, a trailing comment block, and the blank runs bordering
+  # either — never a comment line in the middle of the body.
+
+  # Scissors ("git commit -v" / "--cleanup=scissors"): the diff after the marker is
+  # never part of the final message, so it must not be searched for a trailer block.
+  scissors = 0
+  for (i = 1; i <= n; i++) {
+    if (is_comment(lines[i]) && index(lines[i], ">8") > 0) { scissors = i; break }
+  }
+  if (scissors > 0) n = scissors - 1
+
+  # A trailing blank run left by "git commit -F <file>" or a "-m" message
+  # supplying its own trailing newlines.
+  while (n > 0 && is_blank(lines[n])) n--
+
+  # The comment block an editor session appends as help text, then the blank
+  # line that separated it from the real message.
+  while (n > 0 && is_comment(lines[n])) n--
+  while (n > 0 && is_blank(lines[n])) n--
+
+  last_blank = 0
+  for (i = 1; i <= n; i++)
+    if (is_blank(lines[i])) last_blank = i
+
+  if (last_blank == 0) {
+    all_tr = 1
+    has_key = 0
+    for (i = 1; i <= n; i++) {
+      if (is_blank(lines[i])) continue
+      if (is_key(lines[i])) { has_key = 1; continue }
+      if (is_cont(lines[i])) continue
+      all_tr = 0
+      break
+    }
+    trailer_start = (all_tr && has_key) ? 1 : (n + 1)
+  } else {
+    trailer_start = last_blank + 1
+  }
+
+  for (i = 1; i < trailer_start; i++)
+    out[++o] = lines[i]
+
+  i = trailer_start
+  while (i <= n) {
+    if (is_blank(lines[i])) { i++; continue }
+    if (is_key(lines[i])) {
+      start = i
+      i++
+      while (i <= n && is_cont(lines[i])) i++
+      if (!is_attribution(start, i - 1)) {
+        for (j = start; j < i; j++) out[++o] = lines[j]
+      }
+      continue
+    }
+    # Orphan continuation or non-trailer line in the trailer zone: keep unless it
+    # alone still carries the agent address (residue of a half-stripped fold).
+    if (is_cont(lines[i]) && tolower(lines[i]) ~ /cursoragent@cursor\.com/) {
+      i++
+      continue
+    }
+    out[++o] = lines[i]
+    i++
+  }
+
+  while (o > 0 && is_blank(out[o])) o--
+  for (i = 1; i <= o; i++) print out[i]
+}
+' "$msg_file" > "$msg_file.tmp" || true
+mv "$msg_file.tmp" "$msg_file"
 
 exit 0

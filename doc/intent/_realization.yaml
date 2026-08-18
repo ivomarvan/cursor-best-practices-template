@@ -24,3 +24,9 @@ nodes:
       by: Coordinator
       contracts: sha256:bb51d5b726c6811a
       meaning: sha256:b0c4c5b7019ad8ea
+  i0005:
+    claim:
+      evidence: doc/runs/20260818-1414-commit-msg-block-boundary-4f
+      by: Coordinator
+      contracts: sha256:da030cfc2782eb55
+      meaning: sha256:aef101e0878a5750
