@@ -1,27 +1,57 @@
 ---
 description: >-
-  Project-specific design rules lookup. If DESIGN_RULES.md exists at the
-  project root, its contents are binding design invariants for this project.
-  Always read DESIGN_RULES.md before starting any coding task.
+  Generic config-resolution mechanism (template default vs. project override) plus
+  binding project design invariants (DESIGN_RULES). Consulted by 00-model-policy.mdc
+  (AGENT_MODELS) and 00-communication-language.mdc (LANGUAGE) for their own config pairs.
 alwaysApply: true
 ---
 
-# Project-Specific Design Rules
+# Project Config Resolution & Design Rules
+<!-- cs: Rozlišení konfigurace projektu & pravidla návrhu -->
 
-<!-- cs: Projektově specifická pravidla návrhu -->
+## Config Resolution mechanism
+<!-- cs: Mechanismus rozlišení konfigurace -->
 
-## Binding Project Conventions
+Three settings are resolved this way: `DESIGN_RULES` (this rule), `AGENT_MODELS`
+(`00-model-policy.mdc`), `LANGUAGE` (`00-communication-language.mdc`).
+<!-- cs: Tímto způsobem se řeší tři nastavení: DESIGN_RULES (toto pravidlo), AGENT_MODELS
+     (00-model-policy.mdc), LANGUAGE (00-communication-language.mdc). -->
 
-<!-- cs: Závazné projektové konvence -->
+For a setting `<NAME>`:
+<!-- cs: Pro nastavení <NAME>: -->
 
-If `DESIGN_RULES.md` exists at the **project root**, its contents are
-**binding design invariants** that take precedence over general rules.
-<!-- cs: Pokud DESIGN_RULES.md existuje v kořeni projektu, jeho obsah jsou závazná
-     pravidla návrhu, která mají přednost před obecnými pravidly. -->
+1. **Template default**: `.cursor/apm_config/<NAME>.default.md` — always exists, ships
+   with the template.
+   <!-- cs: Výchozí hodnota šablony: .cursor/apm_config/<NAME>.default.md — vždy
+        existuje, součást šablony. -->
+2. **Project override**: `doc/apm_config/<NAME>.user.md` — created by
+   `scripts/install_into_project.py` (seeded from the default) or by hand; edited by the
+   Human.
+   <!-- cs: Projektový override: doc/apm_config/<NAME>.user.md — vytvoří
+        scripts/install_into_project.py (naseeduje z defaultu) nebo Human ručně; edituje
+        Human. -->
+3. **Resolution**: if `<NAME>.user.md` exists, it **fully replaces** the default for that
+   setting (whole file, never a per-field merge). Otherwise the default applies.
+   <!-- cs: Resolution: pokud <NAME>.user.md existuje, ZCELA nahrazuje default pro dané
+        nastavení (celý soubor, nikdy slučování po polích). Jinak platí default. -->
 
-**MANDATORY**: Read `DESIGN_RULES.md` **before starting any coding task** in a
-project where this file is present.
-<!-- cs: POVINNÉ: Přečti DESIGN_RULES.md před zahájením jakéhokoliv coding tasku v projektu,
-     kde tento soubor existuje. -->
+**Hard rule**: `.cursor/` in a consuming project is **100% generated** by
+`scripts/install_into_project.py` and is **never hand-edited** — a re-run wipes and
+rewrites it in full. Every override belongs in `doc/apm_config/*.user.md`.
+<!-- cs: Tvrdé pravidlo: .cursor/ ve spotřebitelském projektu je 100% generovaný pomocí
+     scripts/install_into_project.py a NIKDY se needituje ručně — opětovný běh ho celý
+     smaže a znovu napíše. Každý override patří do doc/apm_config/*.user.md. -->
 
-<!-- implementation note: symlink in project root → docs/architecture/*-design-rules.en.md; -->
+## Binding Project Conventions (DESIGN_RULES)
+<!-- cs: Závazné projektové konvence (DESIGN_RULES) -->
+
+The resolved `DESIGN_RULES` content (mechanism above) is **binding design invariants**
+that take precedence over general rules.
+<!-- cs: Vyřešený obsah DESIGN_RULES (mechanismus výše) jsou ZÁVAZNÁ pravidla návrhu,
+     která mají přednost před obecnými pravidly. -->
+
+**MANDATORY**: Read the resolved `DESIGN_RULES` **before starting any coding task**.
+<!-- cs: POVINNÉ: Přečti vyřešený DESIGN_RULES před zahájením jakéhokoliv coding tasku. -->
+
+Consider these rules if they affect your changes.
+<!-- cs: Zvaž tato pravidla, pokud ovlivňují tvé změny. -->

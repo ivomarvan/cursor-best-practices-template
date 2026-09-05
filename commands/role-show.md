@@ -1,8 +1,9 @@
 ---
 description: >-
-  Show the current APM role → model assignments from the Active Role Assignments table
-  in rules/00-model-policy.mdc. Use when: user says "/role-show", "jaké role/modely",
-  "which model for which role", or similar.
+  Show the current APM role → model assignments from the resolved AGENT_MODELS config
+  (doc/apm_config/AGENT_MODELS.user.md or .cursor/apm_config/AGENT_MODELS.default.md).
+  Use when: user says "/role-show", "jaké role/modely", "which model for which role", or
+  similar.
 ---
 
 # Command: role-show
@@ -20,8 +21,13 @@ Displays which model each APM role (Planner, Coder, Reviewer) is currently assig
 ### Step 1 — Read assignments
 <!-- cs: Krok 1 — Přečti přiřazení -->
 
-Read the *Active Role Assignments* table in `rules/00-model-policy.mdc`.
-<!-- cs: Přečti tabulku Active Role Assignments v rules/00-model-policy.mdc. -->
+Read the resolved *Active Role Assignments* table: `doc/apm_config/AGENT_MODELS.user.md`
+if it exists, otherwise `.cursor/apm_config/AGENT_MODELS.default.md` (see the Config
+Resolution mechanism in `rules/20-project-design-rules.mdc`).
+<!-- cs: Přečti vyřešenou tabulku Active Role Assignments: doc/apm_config/
+     AGENT_MODELS.user.md, pokud existuje, jinak .cursor/apm_config/
+     AGENT_MODELS.default.md (viz Config Resolution mechanismus v rules/20-project-
+     design-rules.mdc). -->
 
 ### Step 2 — Present
 <!-- cs: Krok 2 — Zobraz -->

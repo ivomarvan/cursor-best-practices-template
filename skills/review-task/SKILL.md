@@ -27,8 +27,9 @@ Reviewer — closes that gap before the Human spends attention. This is the
 <!-- cs: Předpoklady -->
 
 - You act as **Reviewer**, NOT the Coder. Use a strong-reasoning model assigned to the
-  **Reviewer role** in `rules/00-model-policy.mdc` (not the cheap Coder model). If the
-  Reviewer role is `unassigned`, ask the Human which model to use before reviewing.
+  **Reviewer role** in the resolved AGENT_MODELS config (see `rules/00-model-policy.mdc`,
+  not the cheap Coder model). If the Reviewer role is `unassigned`, ask the Human which
+  model to use before reviewing.
 - `task-NNN-name/spec.md`, `dod.md`, and `report.md` exist.
 - The Coder's implementation is committed or present as a working-tree diff.
 
