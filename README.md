@@ -206,10 +206,10 @@ Migrating an existing submodule-based project to this method:
 python3 scripts/migrate_submodule_to_copy.py ~/dev/my-project --lang cs
 ```
 
-This preserves any existing `DESIGN_RULES.md` / `doc/AGENT_MODELS.md` content by moving
-it into `doc/apm_config/*.user.md` before regenerating `.cursor/`. It prints (but does
-not run) the git commands needed to deregister the submodule — that step requires your
-explicit confirmation.
+This copies any existing `DESIGN_RULES.md` / `doc/AGENT_MODELS.md` content into
+`doc/apm_config/*.user.md` before regenerating `.cursor/`. It prints (but does not run)
+the `git rm` command for the now-redundant legacy files and the git commands needed to
+deregister the submodule — both are left for your explicit confirmation.
 
 > ⚠️ **Migration is a two-step process.** `git submodule deinit -f .cursor` (one of the
 > printed commands) empties `<target>/.cursor/` again, regardless of the plain-copy
@@ -217,6 +217,10 @@ explicit confirmation.
 > registered submodule until deinit runs. The printed command block therefore ends with
 > a final `install_into_project.py` re-run, which regenerates `.cursor/` one last time,
 > now safely outside of any submodule registration. Do not skip that last command.
+>
+> The legacy `DESIGN_RULES.md` / `doc/AGENT_MODELS.md` files are left in place after
+> migration (their content is only copied, never moved) — the script prints a `git rm`
+> command for them once their content has been confirmed in `doc/apm_config/*.user.md`.
 
 ---
 

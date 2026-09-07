@@ -4,8 +4,9 @@ method (install_into_project.py), preserving any existing project configuration.
 
 What it does automatically:
     1. Detects a `.cursor` git submodule entry in the target project.
-    2. Moves legacy config content (root DESIGN_RULES.md, doc/AGENT_MODELS.md) into
+    2. Copies legacy config content (root DESIGN_RULES.md, doc/AGENT_MODELS.md) into
        doc/apm_config/{DESIGN_RULES,AGENT_MODELS}.user.md, if not already migrated.
+       The legacy files themselves are left in place — see the note below.
     3. Detects a locally-modified (dirty) rules/00-communication-language.mdc inside
        the submodule and, if found, extracts its active language into
        doc/apm_config/LANGUAGE.user.md.
@@ -14,11 +15,15 @@ What it does automatically:
        what step 2/3 already wrote).
 
 What it does NOT do (prints the commands instead, for the Human to run explicitly):
+    - Removing the now-redundant legacy config files (root DESIGN_RULES.md,
+      doc/AGENT_MODELS.md) once their content has been copied into
+      doc/apm_config/*.user.md.
     - Deregistering the git submodule (`git submodule deinit`, `.gitmodules` edit,
       `git rm --cached .cursor`, `rm -rf .git/modules/.cursor`).
     - Staging/committing the new plain .cursor/ content.
-These are structural git operations and are intentionally left to an explicit Human
-decision — see rules/02-git.mdc.
+These are all destructive or structural git operations and are intentionally left to
+an explicit Human decision — see rules/02-git.mdc and
+rules/00-meta-rules-and-skills.mdc ("no deletion of config files without confirmation").
 
 Note: `git submodule deinit -f .cursor` empties .cursor/ regardless of what this script
 just wrote there. The printed command block therefore ends with a final
@@ -106,13 +111,17 @@ def main(argv: list[str] | None = None) -> int:
     apm_config_dir = target / "doc" / "apm_config"
     apm_config_dir.mkdir(parents=True, exist_ok=True)
 
-    if migrate_legacy_config_file(target / "DESIGN_RULES.md", apm_config_dir / "DESIGN_RULES.user.md"):
-        print(f"migrated {target / 'DESIGN_RULES.md'} -> {apm_config_dir / 'DESIGN_RULES.user.md'}")
+    legacy_files_to_remove: list[Path] = []
 
-    if migrate_legacy_config_file(
-        target / "doc" / "AGENT_MODELS.md", apm_config_dir / "AGENT_MODELS.user.md"
-    ):
-        print(f"migrated {target / 'doc' / 'AGENT_MODELS.md'} -> {apm_config_dir / 'AGENT_MODELS.user.md'}")
+    legacy_design_rules = target / "DESIGN_RULES.md"
+    if migrate_legacy_config_file(legacy_design_rules, apm_config_dir / "DESIGN_RULES.user.md"):
+        print(f"migrated {legacy_design_rules} -> {apm_config_dir / 'DESIGN_RULES.user.md'}")
+        legacy_files_to_remove.append(legacy_design_rules)
+
+    legacy_agent_models = target / "doc" / "AGENT_MODELS.md"
+    if migrate_legacy_config_file(legacy_agent_models, apm_config_dir / "AGENT_MODELS.user.md"):
+        print(f"migrated {legacy_agent_models} -> {apm_config_dir / 'AGENT_MODELS.user.md'}")
+        legacy_files_to_remove.append(legacy_agent_models)
 
     submodule_lang_file = target / ".cursor" / "rules" / "00-communication-language.mdc"
     new_language_file = apm_config_dir / "LANGUAGE.user.md"
@@ -135,6 +144,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"create {path}")
     for path in report.kept:
         print(f"keep   {path} (already exists, not overwritten)")
+
+    if legacy_files_to_remove:
+        print()
+        print(
+            "The following legacy config files were copied into doc/apm_config/*.user.md "
+            "above and are no longer read by the config resolution mechanism (see "
+            "rules/20-project-design-rules.mdc). They are now redundant — remove them "
+            "once you've confirmed the migrated content is correct:\n"
+        )
+        quoted_paths = " ".join(f'"{path}"' for path in legacy_files_to_remove)
+        print(f"  git rm {quoted_paths}\n")
 
     print()
     print(

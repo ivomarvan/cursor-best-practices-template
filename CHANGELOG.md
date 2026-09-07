@@ -26,8 +26,9 @@ All notable changes to `cursor-best-practices-template` are documented in this f
 - **`scripts/migrate_submodule_to_copy.py`**: Python 3, `argparse`-based CLI that
   migrates a submodule-based project to the copy-based method, preserving existing
   `DESIGN_RULES.md` / `doc/AGENT_MODELS.md` / locally-modified language settings by
-  moving them into `doc/apm_config/*.user.md` before regenerating `.cursor/`. Prints
-  (does not run) the git commands needed to deregister the submodule.
+  copying them into `doc/apm_config/*.user.md` before regenerating `.cursor/`. Prints
+  (does not run) a `git rm` recommendation for the now-redundant legacy files and the
+  git commands needed to deregister the submodule.
 - **`scripts/lib/`**: shared Python library backing both CLIs — `installer.py`
   (`TemplateInstaller` — copy/filter/seed logic), `migration.py` (submodule-to-copy
   helpers), and `strip_comments.py`, which removes `<!-- cs: ... -->` and `# cs: ...`
