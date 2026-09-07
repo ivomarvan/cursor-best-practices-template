@@ -1,0 +1,100 @@
+---
+description: >-
+  APM subagent orchestration — Planner/Coder/Reviewer protocol, band-based Human gate
+  policy, report tiers, and the Human Gate Briefing format. Apply when running Phase T/R
+  through subagents, or opening any Human gate (FT.7, FE.2, FER.2).
+globs: doc/project-progress/**/*.md
+alwaysApply: false
+---
+
+# APM Orchestration and Human Gates
+<!-- cs: APM orchestrace a lidské brány -->
+
+## Why band-based gates
+<!-- cs: Proč brána podle pásma -->
+
+A Human gate after **every** Task does not scale — it makes methodology overhead the
+Human's main job instead of the project. The fix is not "skip review", it is "match gate
+cost to actual risk", using the Task's band (`low`/`medium`/`high`, see `000-model-policy.mdc`
+/ `AGENT_MODELS` config) as the deterministic trigger.
+<!-- cs: Brána po každém tasku neškáluje — z metodiky se stane hlavní práce Humana místo
+     projektu. Řešení není "přeskočit revizi", ale "přizpůsobit cenu brány riziku", podle
+     pásma tasku jako deterministického spouštěče. -->
+
+## A — Planner ↔ subagent protocol
+<!-- cs: A — Protokol Planner ↔ subagent -->
+
+Human runs the chat with the **Planner**; Planner spawns Coder and Reviewer as subagents.
+
+- Give the Reviewer only `spec.md`, `dod.md`, and `git diff`. Mark `report.md` as a
+  **claim to verify**, never as evidence — the Coder's own wording (e.g. "tests pass")
+  must not leak into the Reviewer's prompt, or independence is lost even with a
+  fresh-context subagent.
+- **The parent window does not write code in Phase T** — except the `low`-band exception
+  in §D below. Otherwise the `model:` audit trail breaks and code ships unreviewed.
+- Read the verdict from `review.md`, never from your own summary of it.
+- Resolve ambiguity **before** dispatching a subagent — it cannot ask follow-ups, so a
+  vague Task Specification wastes an entire run.
+- If a Coder subagent hits a question it cannot answer from `spec.md`, it returns the
+  question to the **Planner**, not to the Human directly — the subagent did not open the
+  chat with the Human and has no way to ask it.
+<!-- cs: Reviewerovi jen spec/dod/diff; report.md je tvrzení k ověření. Rodičovské okno
+     ve fázi T nepíše kód (kromě výjimky §D). Verdikt čti z review.md. Nejasnost řeš před
+     zadáním subagentovi. Coder subagent se ptá Plannera, ne Humana. -->
+
+## B — Gate and report tier by band
+<!-- cs: B — Brána a úroveň reportu podle pásma -->
+
+| Band | Human gate (FT.7) | Report tier | Written by |
+|---|---|---|---|
+| `high` | Every Task | Full (6 sections, see `070-project-management.mdc`) | Coder |
+| `medium` | None per Task — surfaced in the Epic Report table (§C) | Short: *What was implemented*, *Inputs/outputs*, *Regression test results*, *DoD* | Coder |
+| `low` | None — Reviewer gate (tests/lint) + APPROVE is sufficient | Micro: 5 lines — what, files touched, gate result | Coder, or Planner directly (§D) |
+
+A Task is not done without a Reviewer verdict in every band — for `low`, that may be the
+deterministic gate alone if `AGENT_MODELS` intentionally leaves Reviewer `low` unassigned
+(see `000-model-policy.mdc`); otherwise an explicit `review.md` APPROVE is required.
+<!-- cs: Task není hotový bez verdiktu Reviewera v žádném pásmu — u low to smí být jen
+     deterministická brána, pokud AGENT_MODELS záměrně nechává Reviewer low nepřiřazeného;
+     jinak je potřeba explicitní APPROVE v review.md. Tabulka: high = brána po každém
+     tasku, medium/low = ne, jen v Epic Reportu. -->
+
+### Escalation raises the gate too
+<!-- cs: Eskalace zvedá i bránu -->
+
+Band escalation (second `REQUEST CHANGES`, see `000-model-policy.mdc`) raises the
+gate/report tier to match the **new** band, retroactively for that Task. A Task that
+escalated from `low` to `medium` no longer qualifies for a micro report — write the tier
+of the band it escalated to.
+<!-- cs: Eskalace pásma (druhé REQUEST CHANGES) zvedá i bránu/report na úroveň nového pásma,
+     zpětně pro daný task. -->
+
+## C — Human Gate Briefing
+<!-- cs: C — Briefing pro lidskou bránu -->
+
+Whenever the Planner actually opens a Human gate (`high`-band FT.7, FE.2 Epic Plan
+approval, FER.2 Roadmap review), lead with this briefing — do not hand over a raw report
+and wait:
+<!-- cs: Kdykoli Planner otevírá bránu pro Humana, začni tímto briefingem — nehazuj mu jen
+     surový report a nečekej. -->
+
+```markdown
+## Gate: <Task/Epic/Roadmap name>
+
+**Where we are:** 1–2 sentences — position in the Epic/project, what's done, what's next.
+**What changed:** 3–5 bullets, not the full report.
+**Decision needed:** a concrete question or A-vs-B choice — never "please approve".
+**If you do nothing:** the default behavior / consequence of inaction.
+```
+
+## D — Low-band exceptions
+<!-- cs: D — Výjimky pro pásmo low -->
+
+- **Parent-window implementation.** For a `low`-band Task, the Planner may implement it
+  directly in the parent window instead of spawning a Coder subagent. Trade-off: no
+  separate `model:` audit entry for that change — note it in `plan.md`'s Task row instead
+  of a standalone `report.md`.
+- **Task cap.** An Epic plans **6–8 Tasks**. If decomposition needs more, split into two
+  Epics — a wider Epic degrades planning quality more than it saves ceremony.
+<!-- cs: Planner smí low task napsat sám v rodičovském okně (poznámka v plan.md místo
+     report.md). Epika plánuje 6–8 tasků; víc = rozdělit na dvě epiky. -->

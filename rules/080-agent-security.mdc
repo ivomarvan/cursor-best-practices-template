@@ -8,9 +8,9 @@ alwaysApply: true
 # Agent Security — Untrusted Content
 <!-- cs: Bezpečnost agenta — nedůvěryhodný obsah -->
 
-<!-- Complements 01-general-programming.mdc (which secures code inputs). This rule
+<!-- Complements 010-general-programming.mdc (which secures code inputs). This rule
      secures the AGENT itself against content it reads while working. -->
-<!-- cs: Doplňuje 01-general-programming.mdc (zabezpečuje vstupy kódu).
+<!-- cs: Doplňuje 010-general-programming.mdc (zabezpečuje vstupy kódu).
      Toto pravidlo zabezpečuje samotného AGENTA proti obsahu, který čte při práci. -->
 
 ## Core principle

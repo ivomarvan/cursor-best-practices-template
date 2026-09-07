@@ -8,7 +8,7 @@ What it does automatically:
        doc/apm_config/{DESIGN_RULES,AGENT_MODELS}.user.md, if not already migrated.
        The legacy files themselves are left in place — see the note below.
     3. Detects a locally-modified (dirty) rules/00-communication-language.mdc inside
-       the submodule and, if found, extracts its active language into
+       the (pre-rename) submodule and, if found, extracts its active language into
        doc/apm_config/LANGUAGE.user.md.
     4. Runs the same logic as install_into_project.py to (re)generate .cursor/ and
        seed any remaining missing *.user.md files (idempotent — never overwrites
@@ -22,8 +22,8 @@ What it does NOT do (prints the commands instead, for the Human to run explicitl
       `git rm --cached .cursor`, `rm -rf .git/modules/.cursor`).
     - Staging/committing the new plain .cursor/ content.
 These are all destructive or structural git operations and are intentionally left to
-an explicit Human decision — see rules/02-git.mdc and
-rules/00-meta-rules-and-skills.mdc ("no deletion of config files without confirmation").
+an explicit Human decision — see rules/020-git.mdc and
+rules/000-meta-rules-and-skills.mdc ("no deletion of config files without confirmation").
 
 Note: `git submodule deinit -f .cursor` empties .cursor/ regardless of what this script
 just wrote there. The printed command block therefore ends with a final
@@ -123,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"migrated {legacy_agent_models} -> {apm_config_dir / 'AGENT_MODELS.user.md'}")
         legacy_files_to_remove.append(legacy_agent_models)
 
+    # Old, pre-rename filename: a submodule checkout predates the 000-*/010-*/... rename
+    # done alongside this script, so it still has the old flat 00-*/01-*/... names.
     submodule_lang_file = target / ".cursor" / "rules" / "00-communication-language.mdc"
     new_language_file = apm_config_dir / "LANGUAGE.user.md"
     if submodule_lang_file.is_file() and not new_language_file.exists():
@@ -150,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "The following legacy config files were copied into doc/apm_config/*.user.md "
             "above and are no longer read by the config resolution mechanism (see "
-            "rules/20-project-design-rules.mdc). They are now redundant — remove them "
+            "rules/200-project-design-rules.mdc). They are now redundant — remove them "
             "once you've confirmed the migrated content is correct:\n"
         )
         quoted_paths = " ".join(f'"{path}"' for path in legacy_files_to_remove)

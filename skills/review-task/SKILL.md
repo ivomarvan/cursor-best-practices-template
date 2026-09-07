@@ -26,14 +26,15 @@ Reviewer — closes that gap before the Human spends attention. This is the
 ## Prerequisites
 <!-- cs: Předpoklady -->
 
-- You act as **Reviewer**, NOT the Coder. Use a strong-reasoning model assigned to the
-  **Reviewer role** in the resolved AGENT_MODELS config (see `rules/00-model-policy.mdc`,
-  not the cheap Coder model). If the Reviewer role is `unassigned`, ask the Human which
-  model to use before reviewing.
+- You act as **Reviewer**, NOT the Coder. Use the model assigned to **Reviewer at this
+  Task's band** in the resolved AGENT_MODELS config (see `rules/000-model-policy.mdc`, not
+  the cheap Coder model). If that cell is `unassigned`, ask the Human which model to use
+  before reviewing; if it is intentionally `—` (`low` band, no LLM reviewer), the
+  deterministic gate alone is the review.
 - `task-NNN-name/spec.md`, `dod.md`, and `report.md` exist.
 - The Coder's implementation is committed or present as a working-tree diff.
 
-<!-- cs: Jsi Reviewer, ne Coder. Použij silný model — úroveň Planner z 00-model-policy.mdc.
+<!-- cs: Jsi Reviewer, ne Coder. Použij silný model — úroveň Planner z 000-model-policy.mdc.
      spec.md, dod.md a report.md existují. Implementace je v diffu. -->
 
 ## Trust boundary
@@ -103,7 +104,7 @@ Record real counts and exit code. Mismatch vs. `report.md` is a finding.
   no hardcoded secrets/paths, structured logging not `print`)?
   <!-- cs: Kvalitativní brány: lint, typy, docstringy, žádné TODO/FIXME, žádné secrets/cesty,
        strukturované logování místo print? -->
-- **Security:** untrusted input handled; no secret leakage (see `08-agent-security.mdc`).
+- **Security:** untrusted input handled; no secret leakage (see `080-agent-security.mdc`).
   <!-- cs: Bezpečnost: ošetřený nedůvěryhodný vstup; žádný únik secrets. -->
 - **Report integrity:** does `report.md § Odchylky od spec.md` disclose every deviation
   you found in the diff?
@@ -164,8 +165,12 @@ Verdict is **REQUEST CHANGES** if any blocker (or unresolved major) exists.
 ```
 round = 1
 REVIEW → verdict
-if APPROVE → hand to Human [FT.7]
+if APPROVE:
+    if band == high (or Task escalated, see below) → hand to Human [FT.7]
+    else (medium/low)                              → done; surfaced in Epic Report only
 if REQUEST CHANGES and round < 3:
+    round == 2 → escalate the Task's band one step (000-model-policy.mdc) and upgrade its
+                 report tier to match (090-apm-orchestration.mdc)
     Coder fixes findings → updates report.md → round += 1 → REVIEW again
 if REQUEST CHANGES and round == 3:
     STOP. Escalate to Human with the open findings — do not loop forever.
@@ -174,7 +179,10 @@ if REQUEST CHANGES and round == 3:
 The Reviewer reports findings; the **Coder** fixes them (re-invoke `execute-task`
 addressing `review.md`). The Reviewer never edits production code itself.
 <!-- cs: Reviewer hlásí nálezy; opravuje je Coder (znovu execute-task podle review.md).
-     Reviewer sám needituje produkční kód. Max 3 kola, pak eskalace na Humana. -->
+     Reviewer sám needituje produkční kód. APPROVE u high (nebo eskalovaného tasku) jde na
+     Human bránu; u medium/low je task hotový bez brány, uvidí ho Human až v Epic Reportu.
+     Druhé REQUEST CHANGES zvedá pásmo i úroveň reportu. Max 3 kola, pak eskalace na
+     Humana. -->
 
 ## Output Checklist
 <!-- cs: Výstupní checklist -->
@@ -187,7 +195,8 @@ addressing `review.md`). The Reviewer never edits production code itself.
 - [ ] Loop bounded to 3 rounds; escalate if exceeded [R6]
 
 ## Additional resources
-- [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
-- [../../../rules/00-model-policy.mdc](../../../rules/00-model-policy.mdc)
+- [../../../rules/070-project-management.mdc](../../../rules/070-project-management.mdc)
+- [../../../rules/090-apm-orchestration.mdc](../../../rules/090-apm-orchestration.mdc)
+- [../../../rules/000-model-policy.mdc](../../../rules/000-model-policy.mdc)
 - [../execute-task/SKILL.md](../execute-task/SKILL.md)
 - [../../../README.project_management.md](../../../README.project_management.md)

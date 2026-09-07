@@ -85,8 +85,8 @@ When introducing a new technology, framework, or runtime dependency to the proje
 1. **Containerize it** — add the service to `docker-compose.yml` with a pinned image version.
    <!-- cs: Kontejnerizuj — přidej službu do docker-compose.yml s pinovanou verzí image. -->
 2. **Exempt it** — add the technology type to the Docker Exclude List in this rule
-   (`03-docker-policy.mdc`) with a written justification.
-   <!-- cs: Přidej výjimku — doplň typ technologie do Docker Exclude List v tomto pravidle (03-docker-policy.mdc) s písemným zdůvodněním. -->
+   (`030-docker-policy.mdc`) with a written justification.
+   <!-- cs: Přidej výjimku — doplň typ technologie do Docker Exclude List v tomto pravidle (030-docker-policy.mdc) s písemným zdůvodněním. -->
 
 **Default is containerization.** Exemption requires an explicit reason.
 <!-- cs: Výchozí volba je kontejnerizace. Výjimka vyžaduje explicitní zdůvodnění. -->
@@ -95,7 +95,7 @@ When introducing a new technology, framework, or runtime dependency to the proje
 
 <!-- cs: Místo na disku — jak nezabírat zbytečně -->
 
-- Use **multi-stage builds** — production image contains no dev dependencies (see `04-docker-standards.mdc`).
+- Use **multi-stage builds** — production image contains no dev dependencies (see `040-docker-standards.mdc`).
   <!-- cs: Používej multi-stage builds — produkční image neobsahuje dev závislosti. -->
 - Use **BuildKit** (`DOCKER_BUILDKIT=1`) — layer cache is shared across builds.
   <!-- cs: Používej BuildKit — cache vrstev je sdílena napříč buildy. -->

@@ -15,7 +15,7 @@ Checks performed:
        deliberately); no leftover bilingual `cs:` comments (stripping should have
        removed them).
     2. Length limits — `alwaysApply: true` rules <= 150 lines, `globs` rules <= 250
-       lines, `skills/*/SKILL.md` <= 500 lines (see `rules/00-meta-rules-and-skills.mdc`
+       lines, `skills/*/SKILL.md` <= 500 lines (see `rules/000-meta-rules-and-skills.mdc`
        for the source of these limits).
 
 Exit code: 1 if any discrepancy was found, 0 if the layout is clean.
@@ -32,7 +32,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-#: Line limits per rule/skill category — see rules/00-meta-rules-and-skills.mdc.
+#: Line limits per rule/skill category — see rules/000-meta-rules-and-skills.mdc.
 ALWAYS_APPLY_LIMIT = 150
 GLOBS_LIMIT = 250
 SKILL_LIMIT = 500

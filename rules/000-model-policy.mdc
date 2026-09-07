@@ -2,7 +2,7 @@
 description: >-
   APM role → model policy. Roles (Planner, Coder, Reviewer) are capability intents, not
   fixed models. The concrete per-role assignment is resolved from AGENT_MODELS config —
-  see the Config Resolution mechanism in `20-project-design-rules.mdc`.
+  see the Config Resolution mechanism in `200-project-design-rules.mdc`.
 alwaysApply: true
 ---
 
@@ -41,11 +41,11 @@ cheaper model for typing (Coder).**
 <!-- cs: Konfigurace AGENT_MODELS (aktivní přiřazení rolí) -->
 
 The concrete model per role lives in **AGENT_MODELS config**, resolved per the Config
-Resolution mechanism in `20-project-design-rules.mdc`:
+Resolution mechanism in `200-project-design-rules.mdc`:
 `.cursor/apm_config/AGENT_MODELS.default.md` unless overridden in full by
 `doc/apm_config/AGENT_MODELS.user.md`.
 <!-- cs: Konkrétní model pro roli žije v konfiguraci AGENT_MODELS, řešené podle Config
-     Resolution mechanismu v 20-project-design-rules.mdc: .cursor/apm_config/
+     Resolution mechanismu v 200-project-design-rules.mdc: .cursor/apm_config/
      AGENT_MODELS.default.md, pokud není zcela přepsáno v doc/apm_config/
      AGENT_MODELS.user.md. -->
 
@@ -71,15 +71,62 @@ Never silently assume a model. Never invent model names outside the resolved tab
 <!-- cs: Nikdy tiše nepředpokládej model. Nikdy nevymýšlej názvy modelů mimo vyřešenou
      tabulku. -->
 
-## Complex Tasks
-<!-- cs: Složité tasky -->
+## Bands
+<!-- cs: Pásma -->
 
-Each role maps to one model. If a Task is unusually complex, the Planner flags it
-(`Complexity: high`) and recommends the Human assign a stronger model to the **Coder** role
-for that Task. The choice is the Human's.
-<!-- cs: Každá role = jeden model. U neobvykle složitého tasku to Planner označí
-     (Complexity: high) a doporučí Humanovi přiřadit Coderovi silnější model. Rozhoduje
-     Human. -->
+A Task's difficulty is not judged by feel — it is a **band**, decided upfront from
+deterministic triggers, independent of which model ends up running it. `AGENT_MODELS`
+config is keyed by role × band, not by role alone.
+<!-- cs: Obtížnost tasku se neodhaduje od oka — je to pásmo, určené dopředu podle
+     deterministických spouštěčů, nezávisle na tom, který model ho pak řeší. Konfigurace
+     AGENT_MODELS je klíčovaná rolí × pásmem, ne jen rolí. -->
+
+| Band | When |
+|---|---|
+| `low` | Mechanical: no new public interface, no new dependency, result fully checkable by a test or linter |
+| `medium` | Everything else: new module/endpoint, new dependency, tests that need design |
+| `high` | At least one hard trigger fires (see below) |
+
+Generic hard triggers for `high` — a project's `AGENT_MODELS.user.md` MAY add more
+(project-specific risk areas), never remove these:
+<!-- cs: Obecné tvrdé spouštěče pro high — AGENT_MODELS.user.md smí přidat další
+     (projektově specifická rizika), tyhle nikdy neubrat: -->
+- Database schema or migration change.
+- CI/build/deploy configuration, or anything under `.cursor/`.
+- A contract another Task or Epic depends on.
+- Deletion of files or data.
+- Handling of untrusted/external input (see `080-agent-security.mdc`).
+
+**Granularity:** Planner is banded **per Epic** (max over its Tasks — it plans once, for
+the whole Epic); Coder and Reviewer are banded **per Task**.
+<!-- cs: Granularita: Planner má pásmo za celou epiku (maximum přes tasky), Coder a Reviewer
+     za jednotlivý task. -->
+
+### Escalation (deterministic, not a judgment call)
+<!-- cs: Eskalace (deterministická, ne odhad) -->
+
+| Trigger | Action | Who |
+|---|---|---|
+| A Task gets a **second** `REQUEST CHANGES` | Raise its band one step; hand the same Task to a Coder of the new band | automatic |
+| A Task already at `high` gets a second `REQUEST CHANGES` | **Stop**, escalate to Human — the problem is the spec, not the model | automatic |
+| The Epic's first two Tasks each needed more than one review round | Raise the Epic's default band one step | automatic |
+| Any time | **Lower** a band | Human only |
+
+The 3-round review cap (`070-project-management.mdc`) applies independently and takes
+precedence. Review history is never deleted — a new round is appended, so an escalation
+stays visible. Gate and report tier for a Task follow its band — see
+`090-apm-orchestration.mdc`.
+<!-- cs: Strop 3 kol revize platí nezávisle a nadřazeně. Historie revizí se nemaže — nové
+     kolo se připisuje, eskalace zůstává viditelná. Brána a úroveň reportu se řídí pásmem
+     tasku — viz 090-apm-orchestration.mdc. -->
+
+A project MAY leave the **Reviewer** role unassigned for `low` in `AGENT_MODELS.user.md`,
+if its deterministic gate (tests/lint/types) already covers the correctness bar for
+low-risk changes — an LLM reviewer would add nothing there. State the reason in
+`AGENT_MODELS.user.md`; it is a project decision, not a default.
+<!-- cs: Projekt smí nechat Reviewera pro low nepřiřazeného, pokud deterministická brána
+     (testy/lint/typy) pokrývá nároky na nízkorizikové změny — LLM reviewer by tam nic
+     nepřidal. Zdůvodni to v AGENT_MODELS.user.md, je to projektové rozhodnutí, ne default. -->
 
 ## Audit trail
 <!-- cs: Auditní stopa -->

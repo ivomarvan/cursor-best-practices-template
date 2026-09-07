@@ -1,6 +1,6 @@
 """Core template-installation logic shared by the install and migrate CLI scripts.
 
-See `rules/20-project-design-rules.mdc` for the Config Resolution mechanism this module
+See `rules/200-project-design-rules.mdc` for the Config Resolution mechanism this module
 implements: template defaults live in `apm_config/<NAME>.default.md`, project overrides
 live in `doc/apm_config/<NAME>.user.md`.
 """
@@ -68,7 +68,7 @@ class TemplateInstaller:
     does not exist yet, so a Human's existing project configuration is never
     overwritten. `<target>/.cursor/` itself is always wiped and rewritten in full: it is
     treated as 100% generated content, never hand-edited (see
-    `rules/20-project-design-rules.mdc`).
+    `rules/200-project-design-rules.mdc`).
     """
 
     def __init__(self, template_root: Path) -> None:
@@ -202,7 +202,7 @@ class TemplateInstaller:
             "# Communication Language — Project Override\n\n"
             f"Seeded by `scripts/install_into_project.py --lang {lang_code}`. Edit this "
             "file by hand to change the language later — see "
-            "`rules/00-communication-language.mdc`.\n\n"
+            "`rules/000-communication-language.mdc`.\n\n"
             "## Active Setting\n\n"
             "| Parameter | Value |\n"
             "|-----|----|\n"

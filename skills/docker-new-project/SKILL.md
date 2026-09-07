@@ -14,8 +14,8 @@ description: >-
 
 <!-- cs: Předpoklady -->
 
-- Project type is not in the Docker Exclude List (see `03-docker-policy.mdc`).
-  <!-- cs: Typ projektu není v Docker Exclude List (viz 03-docker-policy.mdc). -->
+- Project type is not in the Docker Exclude List (see `030-docker-policy.mdc`).
+  <!-- cs: Typ projektu není v Docker Exclude List (viz 030-docker-policy.mdc). -->
 - You know the primary runtime (Python, Node.js, etc.) and the required infrastructure services (DB, cache, etc.).
   <!-- cs: Znáš primární runtime a potřebné infrastrukturní služby. -->
 
@@ -63,9 +63,9 @@ README*.md
 
 <!-- cs: 3. Vytvoř Dockerfile (multi-stage) -->
 
-Use the appropriate template from `04-docker-standards.mdc`.
+Use the appropriate template from `040-docker-standards.mdc`.
 Key requirements:
-<!-- cs: Použij odpovídající šablonu z 04-docker-standards.mdc. Klíčové požadavky: -->
+<!-- cs: Použij odpovídající šablonu z 040-docker-standards.mdc. Klíčové požadavky: -->
 
 - Three stages: `builder` → `dev` → `production`
   <!-- cs: Tři fáze: builder → dev → production -->
@@ -148,5 +148,5 @@ docker compose logs --tail=50  # check for startup errors
 
 ## Additional resources
 
-- [04-docker-standards.mdc](../../rules/04-docker-standards.mdc) — Dockerfile and compose technical standards
-- [03-docker-policy.mdc](../../rules/03-docker-policy.mdc) — when Docker is required and the exclude list
+- [040-docker-standards.mdc](../../rules/040-docker-standards.mdc) — Dockerfile and compose technical standards
+- [030-docker-policy.mdc](../../rules/030-docker-policy.mdc) — when Docker is required and the exclude list

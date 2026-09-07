@@ -13,13 +13,16 @@ description: >-
 ## Prerequisites
 <!-- cs: Předpoklady -->
 
-- All Tasks of the current Epic are completed, **Reviewer-approved** (`review.md` =
-  APPROVE), and Human-approved [Phase R, FT.7].
+- All Tasks of the current Epic are **Reviewer-approved** (`review.md` = APPROVE); `high`
+  and escalated Tasks are additionally Human-approved [Phase R, FT.7] — `medium`/`low`
+  Tasks are not gated per Task (see `090-apm-orchestration.mdc`) and appear here for the
+  first time.
 - All `task-NNN/report.md` and `task-NNN/review.md` files exist.
 - You switch roles: **Coder** writes Epic Report → **Planner** leads Roadmap review.
 
-<!-- cs: Všechny tasky epiky jsou dokončeny, schváleny Reviewerem (review.md = APPROVE)
-     i člověkem. Všechny task-NNN/report.md a review.md existují.
+<!-- cs: Všechny tasky epiky jsou schváleny Reviewerem; high a eskalované tasky navíc
+     člověkem. medium/low tasky nemají bránu po tasku a Human je vidí poprvé tady.
+     Všechny task-NNN/report.md a review.md existují.
      Coder píše Epic Report, pak Planner vede roadmap review. -->
 
 ## Part A — Epic Report (Coder) [FER.1]
@@ -47,7 +50,7 @@ updated_at: <YYYY-MM-DD>
 ---
 ```
 
-Report language: **`<communication-language>`** (from `00-communication-language.mdc`).
+Report language: **`<communication-language>`** (from `000-communication-language.mdc`).
 
 Required sections:
 ```markdown
@@ -57,10 +60,15 @@ Required sections:
 Co bylo v rámci epiky implementováno — 1 odstavec.
 
 ## Dokončené tasky
-| Task | Název | Výsledek |
-|------|-------|---------|
-| T010 | Create database schema | ✅ |
-| T020 | Configure Docker services | ✅ |
+| Task | Název | Pásmo | Human brána po tasku | Výsledek |
+|------|-------|-------|----------------------|---------|
+| T010 | Create database schema | low | ne | ✅ |
+| T020 | Configure Docker services | high | ano [FT.7] | ✅ |
+
+The "Human brána po tasku" column is what makes `medium`/`low` Tasks visible to Human for
+the first time here — they were never gated individually.
+<!-- cs: Sloupec "Human brána po tasku" je místo, kde Human poprvé uvidí medium/low tasky —
+     ty neměly bránu jednotlivě. -->
 
 ## Klíčová rozhodnutí a poznatky
 - Rozhodnutí učiněná v průběhu epiky, která ovlivňují další vývoj.
@@ -108,7 +116,11 @@ spec is the single source of truth and must not silently rot).
 ### Step B3 — Present assessment to Human
 <!-- cs: Krok B3 — Prezentovat hodnocení člověku -->
 
-Present one of three conclusions:
+Open with the **Human Gate Briefing** (`090-apm-orchestration.mdc`): where the project
+stands, what changed in this Epic, and the concrete decision needed — then state one of
+three conclusions as the "Decision needed":
+<!-- cs: Začni Human Gate Briefingem (090-apm-orchestration.mdc): kde je projekt, co se
+     v epice změnilo, a konkrétní rozhodnutí — pak jedno ze tří: -->
 
 **A) Roadmap unchanged** — "Epics E020–E050 remain valid. Proceed to E020."
 
@@ -146,5 +158,6 @@ Human should verify before approving Epic closure:
 - [ ] Human has confirmed readiness to proceed to next Epic
 
 ## Additional resources
-- [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
+- [../../../rules/070-project-management.mdc](../../../rules/070-project-management.mdc)
+- [../../../rules/090-apm-orchestration.mdc](../../../rules/090-apm-orchestration.mdc)
 - [README.project_management.md](../../../README.project_management.md)

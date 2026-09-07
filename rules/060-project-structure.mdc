@@ -125,7 +125,7 @@ doc/
 ├── api/                        # API docs (OpenAPI specs, request/response examples)
 ├── external/                   # External: downloaded specs, standards, vendor docs
 │                               # Files here are references only — not our work
-└── project-progress/           # APM artifacts — see 07-project-management.mdc
+└── project-progress/           # APM artifacts — see 070-project-management.mdc
                                 # brief, spec, roadmap, epic plans, task specs, reports
 ```
 

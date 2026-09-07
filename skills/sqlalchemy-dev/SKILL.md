@@ -16,10 +16,10 @@ description: >-
 
 - Docker Compose with PostgreSQL is running (see `postgresql-dev` skill).
 - `pyproject.toml` exists with Python 3.11+.
-- Rule `16-sqlalchemy.mdc` is in context.
+- Rule `160-sqlalchemy.mdc` is in context.
 
 <!-- cs: Docker Compose s PostgreSQL běží (viz skill postgresql-dev).
-     pyproject.toml existuje s Python 3.11+. Pravidlo 16-sqlalchemy.mdc je v kontextu. -->
+     pyproject.toml existuje s Python 3.11+. Pravidlo 160-sqlalchemy.mdc je v kontextu. -->
 
 ## Step 1 — Install dependencies
 
@@ -95,7 +95,7 @@ alembic init -t async alembic
 ```
 
 Edit `alembic/env.py` — replace the default content with the async pattern from
-rule `16-sqlalchemy.mdc` (section "Alembic — Autogenerate with Async Engine").
+rule `160-sqlalchemy.mdc` (section "Alembic — Autogenerate with Async Engine").
 
 Key points:
 - Set `target_metadata = Base.metadata`
@@ -176,7 +176,7 @@ async def upsert_chunks(session: AsyncSession, rows: list[dict]) -> None:
 | `DetachedInstanceError` | Accessing relationship after session close | eager-load before closing, or use `expire_on_commit=False` |
 
 ## Additional resources
-- [../../../rules/16-sqlalchemy.mdc](../../../rules/16-sqlalchemy.mdc)
-- [../../../rules/13-sql-postgresql.mdc](../../../rules/13-sql-postgresql.mdc)
+- [../../../rules/160-sqlalchemy.mdc](../../../rules/160-sqlalchemy.mdc)
+- [../../../rules/130-sql-postgresql.mdc](../../../rules/130-sql-postgresql.mdc)
 - [SQLAlchemy 2.x docs](https://docs.sqlalchemy.org/en/20/)
 - [Alembic docs](https://alembic.sqlalchemy.org/en/latest/)

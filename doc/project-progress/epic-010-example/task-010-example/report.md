@@ -11,7 +11,7 @@ updated_at: YYYY-MM-DD
 
 # Task Report: E010.T010 — <Task Name>
 
-<!-- Language: <communication-language> (from 00-communication-language.mdc) -->
+<!-- Language: <communication-language> (from 000-communication-language.mdc) -->
 
 ## Co bylo implementováno
 <!-- 2–5 sentences describing what was built. -->

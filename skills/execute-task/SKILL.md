@@ -37,13 +37,15 @@ Read `spec.md` completely. Pay special attention to:
 
 Follow all applicable project rules (language rules, docker policy, git conventions).
 - Write code per spec — no scope creep beyond what `spec.md` describes.
-- If you discover the spec is ambiguous or impossible: STOP and report to Human before continuing.
+- If you discover the spec is ambiguous or impossible: STOP and report to the **Planner**
+  before continuing — you are its subagent and have no channel to the Human directly
+  (see `090-apm-orchestration.mdc` § A).
 - Do not modify files listed in Context Bundle as "Do not modify".
 - **Architectural decision?** If you make a decision that affects structure, dependencies,
   interfaces, or other tasks, create/append an ADR in `doc/architecture/decisions/` and
-  reference it from `report.md` (ADR bridge, see `07-project-management.mdc`).
+  reference it from `report.md` (ADR bridge, see `070-project-management.mdc`).
   <!-- cs: Architektonické rozhodnutí? Vytvoř/doplň ADR v doc/architecture/decisions/
-       a odkaž na něj z report.md (ADR most, viz 07-project-management.mdc). -->
+       a odkaž na něj z report.md (ADR most, viz 070-project-management.mdc). -->
 
 ### Step 3 — Write and Run Tests [FT.3]
 <!-- cs: Krok 3 — Napsat a spustit testy [FT.3] -->
@@ -73,7 +75,8 @@ pytest tests/ -v --tb=short
 
 All previously passing tests must still pass. If regressions appear:
 - Fix them before proceeding — do not suppress or skip.
-- If fixing requires changing `spec.md` scope: STOP and notify Human.
+- If fixing requires changing `spec.md` scope: STOP and notify the **Planner** (see
+  `090-apm-orchestration.mdc` § A).
 
 ### Step 5 — Fill Definition of Done [FT.5]
 <!-- cs: Krok 5 — Vyplnit Definition of Done [FT.5] -->
@@ -97,7 +100,19 @@ Every criterion must be addressed. No silent skips.
 ### Step 6 — Write Task Report [FT.6]
 <!-- cs: Krok 6 — Napsat Task Report [FT.6] -->
 
-Create `task-NNN-name/report.md`:
+Report tier depends on the Task's **band** (`000-model-policy.mdc` / `AGENT_MODELS`
+config) — see the band table in `090-apm-orchestration.mdc`:
+- `high` → full report (all sections below).
+- `medium` → short report: only *What was implemented*, *Inputs and outputs*, *Regression
+  test results*, *Definition of Done*.
+- `low` → micro report: 5 lines — what, files touched, gate result (tests/lint).
+
+If the Task escalates mid-review (second `REQUEST CHANGES`), upgrade the report to the
+tier of the **new** band before re-submitting.
+<!-- cs: Úroveň reportu podle pásma tasku — high = plný, medium = zkrácený (4 sekce), low =
+     mikro (5 řádků). Při eskalaci pásma zvyš úroveň reportu na nové pásmo. -->
+
+Create `task-NNN-name/report.md` (full/`high` tier shown; trim per tier above):
 
 ```yaml
 ---
@@ -112,7 +127,7 @@ updated_at: <YYYY-MM-DD>
 ---
 ```
 
-Report language: **`<communication-language>`** (from `00-communication-language.mdc`).
+Report language: **`<communication-language>`** (from `000-communication-language.mdc`).
 
 Required sections (write in `<communication-language>`):
 ```markdown
@@ -162,10 +177,14 @@ Before signalling completion, verify:
 <!-- cs: Krok 8 — Předání Reviewerovi [Fáze R] -->
 
 A Task is **not** done when `report.md` is written — it goes to an **independent Reviewer**
-(a different agent/model than you) before the Human. Signal completion and let the Reviewer
-run `review-task` against your `git diff`, `spec.md`, and `dod.md`.
+(a different agent/model than you) first, in **every** band. Signal completion and let the
+Reviewer run `review-task` against your `git diff`, `spec.md`, and `dod.md`. Whether the
+Human is gated afterwards depends on the band (`090-apm-orchestration.mdc`) — Reviewer
+APPROVE is not optional in any band, the Human gate is.
 <!-- cs: Task není hotový napsáním report.md — jde nezávislému Reviewerovi (jiný agent/model
-     než ty) před Humanem. Reviewer spustí review-task proti tvému diffu, spec.md a dod.md. -->
+     než ty) v každém pásmu. Reviewer spustí review-task proti tvému diffu, spec.md a dod.md.
+     Jestli poté následuje brána pro Humana, závisí na pásmu — Reviewer APPROVE je povinné
+     vždy, brána pro Humana ne. -->
 
 If the Reviewer returns **REQUEST CHANGES** in `review.md`: fix each finding, update
 `report.md`, and re-submit. Max 3 review rounds, then the Human decides.
@@ -192,8 +211,9 @@ If the Human's message contains a commit trigger phrase (`s commitem`, `s commit
 <!-- cs: Pokud příkaz obsahuje commit trigger phrase, aktivuj skill commit-task po dokončení kroků 1–7. -->
 
 ## Additional resources
-- [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
-- [../../../rules/00-model-policy.mdc](../../../rules/00-model-policy.mdc)
+- [../../../rules/070-project-management.mdc](../../../rules/070-project-management.mdc)
+- [../../../rules/090-apm-orchestration.mdc](../../../rules/090-apm-orchestration.mdc)
+- [../../../rules/000-model-policy.mdc](../../../rules/000-model-policy.mdc)
 - [README.project_management.md](../../../README.project_management.md)
 - [../review-task/SKILL.md](../review-task/SKILL.md)
 - [../commit-task/SKILL.md](../commit-task/SKILL.md)

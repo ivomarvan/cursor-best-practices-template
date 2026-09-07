@@ -1,8 +1,8 @@
 ---
 description: >-
   Generic config-resolution mechanism (template default vs. project override) plus
-  binding project design invariants (DESIGN_RULES). Consulted by 00-model-policy.mdc
-  (AGENT_MODELS) and 00-communication-language.mdc (LANGUAGE) for their own config pairs.
+  binding project design invariants (DESIGN_RULES). Consulted by 000-model-policy.mdc
+  (AGENT_MODELS) and 000-communication-language.mdc (LANGUAGE) for their own config pairs.
 alwaysApply: true
 ---
 
@@ -13,9 +13,9 @@ alwaysApply: true
 <!-- cs: Mechanismus rozlišení konfigurace -->
 
 Three settings are resolved this way: `DESIGN_RULES` (this rule), `AGENT_MODELS`
-(`00-model-policy.mdc`), `LANGUAGE` (`00-communication-language.mdc`).
+(`000-model-policy.mdc`), `LANGUAGE` (`000-communication-language.mdc`).
 <!-- cs: Tímto způsobem se řeší tři nastavení: DESIGN_RULES (toto pravidlo), AGENT_MODELS
-     (00-model-policy.mdc), LANGUAGE (00-communication-language.mdc). -->
+     (000-model-policy.mdc), LANGUAGE (000-communication-language.mdc). -->
 
 For a setting `<NAME>`:
 <!-- cs: Pro nastavení <NAME>: -->

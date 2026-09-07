@@ -53,4 +53,4 @@ See `dod.md` for the checklist. Summary:
 - [ ] Full test suite passes (no regressions)
 
 ## Recommended Coder Model
-Coder role  <!-- model assigned per rules/00-model-policy.mdc; flag "Complexity: high" if a stronger model is warranted -->
+Coder role, band `low`  <!-- model assigned per rules/000-model-policy.mdc at this Task's band -->

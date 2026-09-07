@@ -11,7 +11,7 @@ What it does:
        yet (never overwrites a Human's existing configuration).
 
 Hard rule this script enforces: .cursor/ in the target project is 100% generated.
-Any override belongs in doc/apm_config/*.user.md — see rules/20-project-design-rules.mdc.
+Any override belongs in doc/apm_config/*.user.md — see rules/200-project-design-rules.mdc.
 
 Examples:
     install_into_project.py ~/dev/my-project

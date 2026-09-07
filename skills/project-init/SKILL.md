@@ -15,9 +15,9 @@ description: >-
 
 - You are acting as **Planner**.
 - Human has provided a **Project Brief** (informal input — text, bullet list, or verbal).
-- Rule `07-project-management.mdc` is in context (provides APM conventions).
+- Rule `070-project-management.mdc` is in context (provides APM conventions).
 
-<!-- cs: Jsi v roli Planner. Člověk poskytl Project Brief. Pravidlo 07-project-management.mdc je v kontextu. -->
+<!-- cs: Jsi v roli Planner. Člověk poskytl Project Brief. Pravidlo 070-project-management.mdc je v kontextu. -->
 
 ## Steps
 <!-- cs: Kroky -->
@@ -134,5 +134,5 @@ cp .cursor/skills/project-init/templates/GLOSSARY.md doc/project-progress/GLOSSA
 - [ ] Human has approved spec.md + roadmap.md [F0.5]
 
 ## Additional resources
-- [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
+- [../../../rules/070-project-management.mdc](../../../rules/070-project-management.mdc)
 - [README.project_management.md](../../../README.project_management.md)

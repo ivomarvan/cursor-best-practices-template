@@ -2,7 +2,7 @@
 description: >-
   Run full CI suite, then commit all changes with a smart message and push to master.
   Use when: user says "push".
-  Explicit exception to 02-git.mdc: direct push to master is allowed here.
+  Explicit exception to 020-git.mdc: direct push to master is allowed here.
 ---
 
 # Command: push
@@ -72,7 +72,7 @@ git log --oneline -5
 ### Step 4 — Build commit message
 <!-- cs: Krok 4 — Sestav commit message -->
 
-Follow Conventional Commits format (see `02-git.mdc`):
+Follow Conventional Commits format (see `020-git.mdc`):
 
 ```
 <type>(<scope>): <imperative description, max 72 chars>
@@ -137,7 +137,7 @@ EOF
 Re-check with `git log -1 --format=%B` before `git push`. Do not push until the message
 is clean.
 
-**Security note:** This is an explicit exception to the `02-git.mdc` prohibition on
+**Security note:** This is an explicit exception to the `020-git.mdc` prohibition on
 direct master pushes. It is safe here because CI checks passed in step 1.
 
 <!-- cs:
@@ -147,7 +147,7 @@ Made-with: Cursor nebo cursoragent@cursor.com, amendněte commit (stejný text z
 bez attribution řádků), znovu ověřte, teprve pak push.
 
 Bezpečnostní poznámka: Toto je explicitní výjimka ze zákazu přímého push na master
-v 02-git.mdc. Je to bezpečné, protože CI kontroly prošly v kroku 1.
+v 020-git.mdc. Je to bezpečné, protože CI kontroly prošly v kroku 1.
 -->
 
 ## Abort conditions

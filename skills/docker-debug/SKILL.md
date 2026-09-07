@@ -128,4 +128,4 @@ Services reach each other by **service name**, not `localhost`.
 
 ## Additional resources
 
-- [04-docker-standards.mdc](../../rules/04-docker-standards.mdc) — Dockerfile and compose standards
+- [040-docker-standards.mdc](../../rules/040-docker-standards.mdc) — Dockerfile and compose standards

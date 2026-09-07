@@ -19,13 +19,13 @@ updated_at: YYYY-MM-DD
 ## Epic E010 — <Short Name>
 
 **Status:** pending | in-progress | completed  
-**Complexity:** low | medium | high  
+**Band:** low | medium | high  <!-- Planner's band for this Epic, see rules/000-model-policy.mdc -->
 **Description:** One sentence — what this Epic delivers.
 
 ## Epic E020 — <Short Name>
 
 **Status:** pending  
-**Complexity:**  
+**Band:**  
 **Description:**
 
 <!-- Add Epics as needed. Use E015 to insert between E010 and E020, etc. -->

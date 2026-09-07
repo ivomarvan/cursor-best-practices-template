@@ -34,9 +34,9 @@ alwaysApply: false
 <!-- cs: Struktura projektu -->
 
 In a web application with a separate backend, the Vue.js project lives in `frontend/`
-at the project root (see `06-project-structure.mdc` — web application layout).
+at the project root (see `060-project-structure.mdc` — web application layout).
 The `src/` below is the internal Vite layout inside `frontend/`.
-<!-- cs: Ve webové aplikaci s backendem žije Vue.js projekt ve frontend/ v kořeni projektu (viz 06-project-structure.mdc). Níže uvedené src/ je interní layout Vite uvnitř frontend/. -->
+<!-- cs: Ve webové aplikaci s backendem žije Vue.js projekt ve frontend/ v kořeni projektu (viz 060-project-structure.mdc). Níže uvedené src/ je interní layout Vite uvnitř frontend/. -->
 
 ```
 frontend/

@@ -11,7 +11,7 @@ updated_at: YYYY-MM-DD
 
 # Epic Report: E010 — <Epic Name>
 
-<!-- Language: <communication-language> (from 00-communication-language.mdc) -->
+<!-- Language: <communication-language> (from 000-communication-language.mdc) -->
 
 ## Shrnutí epiky
 <!-- What was implemented in this Epic — 1 paragraph. -->

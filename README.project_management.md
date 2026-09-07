@@ -1,10 +1,13 @@
 # APM — Agentic Project Management
 
-A structured workflow for building software projects using two specialized AI agents:
-a **Planner** for analysis and decomposition, and a **Coder** for implementation.
+A structured workflow for building software projects using three specialized AI agents:
+a **Planner** for analysis and decomposition, a **Coder** for implementation, and an
+independent **Reviewer** that checks the Coder's work before it reaches the Human.
 
-APM gives you human oversight at every checkpoint while letting AI handle the cognitive
-work of planning and the mechanical work of coding.
+APM gives you human oversight scaled to actual risk — a Task's **band**
+(`low`/`medium`/`high`, see `rules/000-model-policy.mdc`) decides how much ceremony it
+costs — while letting AI handle the cognitive work of planning and the mechanical work of
+coding.
 
 ---
 
@@ -19,28 +22,49 @@ For each Epic:
     Planner decomposes → epic plan + task specs  [Definition of Ready gate] [Human approves]
     ↓
     For each Task:
-        Coder implements → tests → DoD checklist → report
+        Coder implements → tests → DoD checklist → report (tier by band)
         Reviewer (independent) → review.md (APPROVE / REQUEST CHANGES)
-            ↳ loop with Coder, max 3 rounds
-        [Human reviews]
+            ↳ loop with Coder, max 3 rounds (2nd REQUEST CHANGES escalates the band)
+        [Human reviews — only `high`-band or escalated Tasks; others wait for Epic close]
     ↓
-    Coder writes Epic Report
+    Coder writes Epic Report (lists every Task incl. band, so Human sees what it skipped)
     Planner + Human review Roadmap validity (+ ADR / spec reconciliation)
     ↓
 Project complete
 ```
 
-**Key principle:** Nothing moves forward without Human approval at each phase boundary.
+**Key principle:** Nothing moves forward without an independent Reviewer verdict; Human
+approval is required at phase boundaries **scaled to the Task's or Epic's band** — see
+[Bands](#bands) below.
 
 ---
 
+## Bands
+
+Every Task carries a **band** — `low`, `medium`, or `high` — decided upfront from
+deterministic triggers (new dependency, schema change, deletion, untrusted input, ...),
+never judged by feel. The band decides both **which model** runs the Task
+(`rules/000-model-policy.mdc`) and **how much ceremony** it costs
+(`rules/090-apm-orchestration.mdc`):
+
+| Band | Human gate per Task | Report |
+|---|---|---|
+| `high` | Yes (FT.7) | Full, 6 sections |
+| `medium` | No — surfaced in the Epic Report | Short, 4 sections |
+| `low` | No — Reviewer/gate only | Micro, 5 lines |
+
+A Task's band can only be **raised** (by anyone, on a second `REQUEST CHANGES` it raises
+automatically) and only **lowered by the Human**. This is what makes "Human doesn't review
+every Task" safe: the ceremony that Task actually needed still happens, just not
+necessarily as a blocking chat turn.
+
 ## The Actors
 
-Model per role is defined centrally in `rules/00-model-policy.mdc` (change it in one place).
+Model per role is defined centrally in `rules/000-model-policy.mdc` (change it in one place).
 
 ### Planner
 
-Act in the **Planner role** — a strong-reasoning model assigned per `rules/00-model-policy.mdc`
+Act in the **Planner role** — a strong-reasoning model assigned per `rules/000-model-policy.mdc`
 (the Human assigns it, or the agent asks before planning).
 
 The Planner never writes production code. Its job is:
@@ -57,8 +81,8 @@ If the Task Specification is vague or incomplete, the Coder will fail.
 ### Coder
 
 Act in the **Coder role** — a fast / cost-effective model assigned per
-`rules/00-model-policy.mdc`. The Planner flags Tasks that warrant a stronger model
-(`Complexity: high`); the Human decides what to assign.
+`rules/000-model-policy.mdc`, at the strength matching the Task's **band**
+(`low`/`medium`/`high` — see [Bands](#bands)); the Human decides the actual model.
 
 The Coder:
 - Reads `spec.md` and `dod.md` before writing a single line of code
@@ -68,13 +92,14 @@ The Coder:
 - Fills the Definition of Done checklist
 - Writes a Task Report in `<communication-language>` with code references
 
-If the spec is ambiguous or contradictory, the Coder stops and reports to Human.
+If the spec is ambiguous or contradictory, the Coder stops and reports to the **Planner**
+— it runs as the Planner's subagent and has no direct channel to the Human.
 The Coder never modifies files listed as "Do not modify" in the Context Bundle.
 
 ### Reviewer
 
 Act in the **Reviewer role** — a strong-reasoning model assigned per
-`rules/00-model-policy.mdc`. The Reviewer is a **different agent/model than the Coder**: an
+`rules/000-model-policy.mdc`. The Reviewer is a **different agent/model than the Coder**: an
 author should never grade their own work.
 
 The Reviewer:
@@ -141,7 +166,7 @@ The Context Bundle in each Task Specification is critical. It tells the Coder:
 
 **Definition of Ready (DoR) gate:** before any Task is handed to a Coder, its `spec.md`
 must pass the DoR checklist (goal measurable, Outputs concrete, Context Bundle complete,
-DoD verifiable, tests named, Coder role resolved per `rules/00-model-policy.mdc`). The DoR is
+DoD verifiable, tests named, Coder role resolved per `rules/000-model-policy.mdc`). The DoR is
 the counterpart of the DoD and is checked at the FE.2 Human review. A vague spec guarantees a
 failed Task — fix it first.
 
@@ -158,16 +183,19 @@ failed Task — fix it first.
 | FT.3 | Write and run tests — all new tests must pass |
 | FT.4 | Run full test suite — no regressions allowed |
 | FT.5 | Fill `dod.md` — mark each criterion ✅ or ❌ with note |
-| FT.6 | Write `report.md` with all required sections |
-| FT.7 | Human reviews — approve or reject with feedback |
+| FT.6 | Write `report.md` — tier depends on the Task's band, see [Bands](#bands) |
+| FT.7 | Human reviews — **only for `high`-band or escalated Tasks** (see [Bands](#bands)) |
 
 **On ambiguity:** If the Coder encounters something the spec doesn't cover, it stops
-and reports to Human. It does not make architectural decisions on its own.
+and reports to the **Planner** (not the Human directly — see the Coder actor above). It
+does not make architectural decisions on its own.
 
 **On regressions (FT.4):** Regressions must be fixed before submitting — never suppressed
-or skipped. If fixing a regression requires changing scope, Human decides.
+or skipped. If fixing a regression requires changing scope, notify the Planner.
 
-**Task Report structure** (written in `<communication-language>`):
+**Task Report structure** — full (`high`-band) tier shown, written in
+`<communication-language>`; `medium`/`low` Tasks use a shorter tier (see
+[Bands](#bands)):
 1. What was implemented
 2. Inputs and outputs (files read / created / modified)
 3. Methods and key decisions (with justification)
@@ -193,8 +221,11 @@ Human, not straight to Human review.
 | FR.3 | Reviewer writes `review.md`: verdict (APPROVE / REQUEST CHANGES) + findings |
 
 **On REQUEST CHANGES:** the Coder fixes each finding, updates `report.md`, and resubmits.
-The loop is bounded to **3 rounds**; if still failing, the Reviewer escalates to the Human.
-Only an **APPROVE** verdict advances the Task to Human review (FT.7).
+The loop is bounded to **3 rounds**; a **second** `REQUEST CHANGES` raises the Task's band
+one step (a `high`-band Task instead escalates straight to Human — the problem is the
+spec, not the model); if round 3 still fails, the Reviewer escalates to the Human.
+An **APPROVE** verdict completes the Task; whether it also advances to Human review (FT.7)
+depends on its band — see [Bands](#bands).
 
 ### Phase ER — Epic Closure
 
@@ -272,7 +303,7 @@ apm_category: task-spec         # document type (see table below)
 apm_ref: E010.T020              # reference: PROJECT | E010 | E010.T020
 apm_level: task                 # project | epic | task
 created_by: Planner             # Planner | Coder | Human
-model: <model-id>               # actual model used (assigned per rules/00-model-policy.mdc); omit if Human
+model: <model-id>               # actual model used (assigned per rules/000-model-policy.mdc); omit if Human
 intended_for: Coder             # Planner | Coder | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
@@ -312,12 +343,13 @@ To invoke a skill, use `@skill-name` in Cursor chat, or reference it directly:
 
 ## Cursor Rule
 
-`rules/07-project-management.mdc` activates automatically when working on files in
-`doc/project-progress/**/*.md`. It provides:
+`rules/070-project-management.mdc` and `rules/090-apm-orchestration.mdc` activate
+automatically when working on files in `doc/project-progress/**/*.md`. Together they
+provide:
 - Condensed APM terminology (machine-readable)
-- Document type reference table
-- File header schema
-- Required sections for Task Specification and Task Report
+- Document type reference table, file header schema
+- Required sections for Task Specification and Task Report (per band tier)
+- The Planner ↔ subagent protocol and the Human Gate Briefing format
 - Security guards (no git push without Human approval)
 
 ---
@@ -358,7 +390,8 @@ Quick reference:
 [ ] Iterate with Planner until spec.md and roadmap.md are approved [F0.5]
 [ ] For each Epic: invoke @plan-epic, check DoR per Task, review plan.md, approve [FE.2]
 [ ] For each Task: invoke @execute-task (Coder), then @review-task (Reviewer, different model)
-[ ] Review the Reviewer's review.md, then approve the Task as Human [FT.7]
+[ ] For `high`-band/escalated Tasks only: review review.md, approve as Human [FT.7]
+    (medium/low Tasks need no action here — they surface in the Epic Report)
 [ ] After each Epic: invoke @review-epic, review roadmap + ADR/spec validity [FER.2]
 ```
 
@@ -371,6 +404,8 @@ APM is designed to keep Human in control at all times:
 - **No git commit or push** without explicit Human instruction.
 - **No database migrations** without Human approval.
 - **No destructive file operations** without confirmation.
-- Every phase boundary requires Human approval before the next phase begins.
-- The Coder stops and escalates to Human when the spec is ambiguous.
+- Every phase boundary requires an independent Reviewer verdict; Human approval is
+  required at boundaries scaled to the Task's/Epic's band — see [Bands](#bands).
+- The Coder stops and escalates to the Planner when the spec is ambiguous; the Planner
+  escalates to Human if it cannot resolve it either.
 - The Planner proposes Roadmap changes; Human decides whether to apply them.

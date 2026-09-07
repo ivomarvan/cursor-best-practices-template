@@ -43,6 +43,11 @@ Before writing, think through:
 
 Tasks should be **independently implementable** and **testable in isolation**.
 
+**Cap: 6–8 Tasks per Epic.** More means the Epic is cut too wide — split it into two
+Epics rather than absorb the extra ceremony (see `090-apm-orchestration.mdc`).
+<!-- cs: Strop 6–8 tasků na epiku. Víc znamená, že je epika řezaná moc široce — rozděl na
+     dvě epiky, viz 090-apm-orchestration.mdc. -->
+
 ### Step 3 — Write Epic Plan [FE.1]
 <!-- cs: Krok 3 — Napsat plán epiky [FE.1] -->
 
@@ -69,8 +74,8 @@ Epic Plan structure:
 One paragraph — what this Epic delivers when complete.
 
 ## Task List
-| Task | Name | Depends on | Coder model | Complexity |
-|------|------|-----------|-------------|------------|
+| Task | Name | Depends on | Coder model | Band |
+|------|------|-----------|-------------|------|
 | T010 | Create database schema | — | Coder role | low |
 | T020 | Configure Docker services | T010 | Coder role | low |
 | T030 | Write integration tests | T010, T020 | Coder role | medium |
@@ -91,7 +96,7 @@ One paragraph — what this Epic delivers when complete.
 - [ ] Migration runs without error: `alembic upgrade head`
 - [ ] All tests pass
 - [ ] No regressions in full test suite
-**Recommended Coder model:** Coder role (Complexity: low) — model assigned per `00-model-policy.mdc`
+**Recommended Coder model:** Coder role, band `low` — model assigned per `000-model-policy.mdc`
 
 ### T020 — Configure Docker services
 ...
@@ -150,18 +155,21 @@ updated_at: <YYYY-MM-DD>
 <!-- cs: Krok 5 — Revize člověkem + brána Definition of Ready [FE.2] -->
 
 Before presenting, self-check **every** Task against the **Definition of Ready (DoR)**
-checklist in `07-project-management.mdc`. A vague spec guarantees a failed Task — the spec
+checklist in `070-project-management.mdc`. A vague spec guarantees a failed Task — the spec
 is the quality gate. Fix any Task that fails DoR before handing it to a Coder.
 <!-- cs: Před prezentací prověř každý task proti Definition of Ready (DoR) v
-     07-project-management.mdc. Vágní spec = selhaný task. Oprav, co neprojde DoR. -->
+     070-project-management.mdc. Vágní spec = selhaný task. Oprav, co neprojde DoR. -->
 
-Present `plan.md` to Human for approval.
-Key review points Human should check:
+Present the plan using the **Human Gate Briefing** format (`090-apm-orchestration.mdc`) —
+lead with where the project stands and what decision is needed, do not just attach
+`plan.md` and wait. Key review points to name explicitly in "Decision needed":
 - Each Task passes DoR (goal measurable, Context Bundle complete, DoD verifiable)?
-- Task granularity reasonable (not too large, not trivial)?
+- Task granularity reasonable (not too large, not trivial), count within the 6–8 cap?
 - Dependencies correct?
-- Recommended Coder model names the Coder role, with `Complexity: high` flagged where a
-  stronger model is warranted (models assigned per `00-model-policy.mdc`)?
+- Recommended Coder model names the Coder role at the Task's band (models assigned per
+  `000-model-policy.mdc`)?
+<!-- cs: Prezentuj plán ve formátu Human Gate Briefing (090-apm-orchestration.mdc) — začni
+     tím, kde je projekt a co je potřeba rozhodnout, ne jen přilož plan.md. -->
 
 Do **not** start any Task until Human approves the Epic Plan.
 
@@ -169,14 +177,15 @@ Do **not** start any Task until Human approves the Epic Plan.
 <!-- cs: Výstupní checklist -->
 
 - [ ] `epic-NNN-name/plan.md` — Epic goal + task table + all task specs
+- [ ] Task count within the 6–8 cap (or Epic split accordingly)
 - [ ] `epic-NNN-name/task-NNN-name/spec.md` for each Task
 - [ ] `epic-NNN-name/task-NNN-name/dod.md` for each Task (blank checkboxes)
 - [ ] Dependencies between Tasks explicitly stated
-- [ ] Recommended Coder model per Task names the Coder role + Complexity (models assigned per `00-model-policy.mdc`)
+- [ ] Recommended Coder model per Task names the Coder role + band (models assigned per `000-model-policy.mdc`)
 - [ ] Every Task passes the Definition of Ready checklist
 - [ ] Human approved the Epic Plan [FE.2]
 
 ## Additional resources
-- [../../../rules/07-project-management.mdc](../../../rules/07-project-management.mdc)
-- [../../../rules/00-model-policy.mdc](../../../rules/00-model-policy.mdc)
+- [../../../rules/070-project-management.mdc](../../../rules/070-project-management.mdc)
+- [../../../rules/000-model-policy.mdc](../../../rules/000-model-policy.mdc)
 - [README.project_management.md](../../../README.project_management.md)

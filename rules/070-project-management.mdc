@@ -1,6 +1,6 @@
 ---
 description: >-
-  APM (Agentic Project Management) workflow — two-actor model (Planner + Coder),
+  APM (Agentic Project Management) workflow — Planner/Coder/Reviewer roles,
   document structure, file naming, and header conventions for project-progress/.
   Apply when working on APM documents: spec, roadmap, epic plan, task spec, reports, DoD.
 globs: doc/project-progress/**/*.md
@@ -13,7 +13,7 @@ alwaysApply: false
 ## Actors
 <!-- cs: Aktéři -->
 
-| Actor | Role | Model (assigned per `00-model-policy.mdc`) |
+| Actor | Role | Model (assigned per `000-model-policy.mdc`) |
 |-------|------|-------|
 | **Planner** | Planning, decomposition, context preparation | strong reasoning |
 | **Coder** | Implementation, tests, reports | fast / cost-effective; per Task Specification |
@@ -27,6 +27,32 @@ alwaysApply: false
 
 The Reviewer is a **different agent/model than the Coder** (author must not grade own work).
 <!-- cs: Reviewer je jiný agent/model než Coder (autor nehodnotí vlastní práci). -->
+
+## Source of Truth (SoT)
+<!-- cs: Zdroj pravdy (SoT) -->
+
+A project names one document (or list) as its **SoT** — the binding reference all Phases
+check against. Which document that is, is project data, not a rule (see
+`200-project-design-rules.mdc` — a project may record it in `DESIGN_RULES.user.md`).
+<!-- cs: Projekt pojmenuje jeden dokument (nebo seznam) jako SoT — závaznou referenci, proti
+     které se ověřují všechny fáze. Který dokument to je, je projektová data, ne pravidlo. -->
+
+1. Before starting a Phase, check the chat instruction against the SoT.
+2. On conflict: **never silently prefer** the newer chat instruction. Stop, name the
+   conflict with a SoT reference, and offer: update the SoT · one-off exception · drop
+   the instruction.
+3. Record the decision in the **same step** — a one-off exception goes into the Task's
+   `report.md`, not into the SoT.
+4. This rule guards against **conflict**, not completeness — SoT silence is not a conflict.
+5. A document that stops being the SoT is **frozen**: its header points to the new SoT and
+   it is no longer maintained.
+<!-- cs: 1. Ověř pokyn z chatu proti SoT. 2. Při rozporu nepreferuj tiše novější pokyn z
+     chatu — pojmenuj rozpor a nabídni volby. 3. Rozhodnutí zapiš v témže kroku. 4. Pravidlo
+     hlídá rozpor, ne úplnost. 5. Dokument, který přestal být SoT, se zmrazí. -->
+
+Chat is a workspace, not project memory — anything that must outlive the window belongs
+in a file.
+<!-- cs: Chat je pracovní plocha, ne paměť projektu. Co má přežít okno, musí být v souboru. -->
 
 ## APM Phases
 <!-- cs: Fáze APM -->
@@ -98,7 +124,7 @@ apm_category: task-spec         # see Document Types table above
 apm_ref: E010.T020              # E010 = epic ref; E010.T020 = task ref
 apm_level: task                 # project | epic | task
 created_by: Planner             # Planner | Coder | Reviewer | Human
-model: <model-id>               # actual model used (assigned per 00-model-policy.mdc); omit if Human
+model: <model-id>               # actual model used (assigned per 000-model-policy.mdc); omit if Human
 intended_for: Coder             # Planner | Coder | Reviewer | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
@@ -115,8 +141,9 @@ updated_at: 2026-05-08
 5. **Dependencies** — which Tasks must be completed first
 6. **Test Specification** — what tests to write; happy path + edge cases
 7. **Definition of Done** — checklist (→ also written to `dod.md`)
-8. **Recommended Coder model** — names the **Coder role**; flag `Complexity: high` if the
-   Task warrants a stronger model. Actual models are assigned per `00-model-policy.mdc`.
+8. **Recommended Coder model** — names the **Coder role** at the Task's **band**
+   (`low`/`medium`/`high`, see `000-model-policy.mdc`). Actual models are assigned per
+   `000-model-policy.mdc`.
 
 ## Definition of Ready (DoR) — Task spec quality gate
 <!-- cs: Definition of Ready (DoR) — brána kvality zadání tasku -->
@@ -133,13 +160,13 @@ passes this checklist (the counterpart of the Definition of Done):
 - [ ] **Dependencies** are listed and already completed (or none).
 - [ ] **Test Specification** names happy path + ≥1 edge + ≥1 error case.
 - [ ] **Definition of Done** is verifiable (each item maps to a checkable artifact).
-- [ ] **Recommended Coder model** names the Coder role (with `Complexity: high` flagged if a
-  stronger model is warranted); models are assigned per `00-model-policy.mdc`.
+- [ ] **Recommended Coder model** names the Coder role at the Task's band; models are
+  assigned per `000-model-policy.mdc`.
 - [ ] Task is independently implementable and testable in isolation.
 
 <!-- cs: Goal měřitelný; Outputs konkrétní; Context Bundle úplný (číst i NEsahat);
      závislosti hotové; testy pojmenované (happy/edge/error); DoD ověřitelné;
-     model z 00-model-policy.mdc; task nezávisle implementovatelný a testovatelný. -->
+     model z 000-model-policy.mdc; task nezávisle implementovatelný a testovatelný. -->
 
 The DoR is checked at the **FE.2 Human review** of the Epic Plan. If a Task fails DoR,
 the Planner fixes the spec before any Coder starts.
@@ -152,7 +179,7 @@ the Planner fixes the spec before any Coder starts.
 A significant decision recorded in a Task/Epic Report must not stay buried there. When a
 decision **affects structure, dependencies, interfaces, or cross-task constraints**,
 promote it to an ADR in `doc/architecture/decisions/ADR-NNN-title.md` (see
-`06-project-structure.mdc`), and link the ADR from the report.
+`060-project-structure.mdc`), and link the ADR from the report.
 <!-- cs: Významné rozhodnutí z reportu nesmí zůstat pohřbené. Pokud ovlivňuje strukturu,
      závislosti, rozhraní nebo omezení napříč tasky, povyš ho na ADR v
      doc/architecture/decisions/ a z reportu na něj odkaž. -->
@@ -182,8 +209,14 @@ It does **NOT** prevent — and in fact **requires** — Coder to:
 ## Coder — Task Report
 <!-- cs: Coder — Task Report -->
 
-Write `task-NNN/report.md` prose in `<communication-language>` (see `00-communication-language.mdc`). This section defines structure in **English**; rendered `##`/`###` headings must follow the mapping table when `<lang-code>` ≠ `en`.
+Write `task-NNN/report.md` prose in `<communication-language>` (see `000-communication-language.mdc`). This section defines structure in **English**; rendered `##`/`###` headings must follow the mapping table when `<lang-code>` ≠ `en`.
 <!-- cs: Prostý text reportu piš v <communication-language>. Tato sekce je anglicky; nadpisy v reportu musí odpovídat tabulce mapping pro cs (ne en). -->
+
+This is the **full (`high`-band) report**. `medium`/`low` Tasks use a shorter tier, and
+the Human gate (FT.7) below is not opened for every Task — see the band table in
+`090-apm-orchestration.mdc`.
+<!-- cs: Tohle je plný report pro pásmo high. medium/low mají kratší úroveň a brána FT.7 se
+     neotevírá po každém tasku — viz tabulka pásem v 090-apm-orchestration.mdc. -->
 
 ### Required content (ordered `##` sections)
 <!-- cs: Povinný obsah (pořadí sekcí ##) -->

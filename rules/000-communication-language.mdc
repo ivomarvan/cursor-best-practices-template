@@ -1,7 +1,7 @@
 ---
 description: >-
   Communication language resolution mechanism. The active value lives in LANGUAGE config —
-  see the Config Resolution mechanism in `20-project-design-rules.mdc`.
+  see the Config Resolution mechanism in `200-project-design-rules.mdc`.
 alwaysApply: true
 ---
 
@@ -12,11 +12,11 @@ alwaysApply: true
 <!-- cs: Konfigurace LANGUAGE (aktivní nastavení) -->
 
 The active `<communication-language>` and `<lang-code>` are resolved from **LANGUAGE
-config**, per the Config Resolution mechanism in `20-project-design-rules.mdc`:
+config**, per the Config Resolution mechanism in `200-project-design-rules.mdc`:
 `.cursor/apm_config/LANGUAGE.default.md` (English) unless overridden in full by
 `doc/apm_config/LANGUAGE.user.md`.
 <!-- cs: Aktivní <communication-language> a <lang-code> se řeší z konfigurace LANGUAGE,
-     podle Config Resolution mechanismu v 20-project-design-rules.mdc: .cursor/
+     podle Config Resolution mechanismu v 200-project-design-rules.mdc: .cursor/
      apm_config/LANGUAGE.default.md (angličtina), pokud není zcela přepsáno v
      doc/apm_config/LANGUAGE.user.md. -->
 

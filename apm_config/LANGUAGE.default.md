@@ -2,9 +2,9 @@
 
 English is the default communication language shipped with the template. A consuming
 project overrides this file **in full** by creating `doc/apm_config/LANGUAGE.user.md` —
-see the Config Resolution mechanism in `rules/20-project-design-rules.mdc`. The
+see the Config Resolution mechanism in `rules/200-project-design-rules.mdc`. The
 install/migration script's `--lang` parameter seeds `LANGUAGE.user.md` automatically on
-first install (see `scripts/install-into-project.sh`).
+first install (see `scripts/install_into_project.py`).
 
 ## Active Setting
 

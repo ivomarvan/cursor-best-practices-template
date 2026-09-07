@@ -70,7 +70,7 @@ Krádež dat je možná, když agent má současně: (1) přístup k privátním
 (2) příjem nedůvěryhodného obsahu, (3) možnost odchozí komunikace. Odstranění libovolné nohy
 útok zablokuje.
 
-- **Souvislost s naším APM:** přímý základ pravidla `rules/08-agent-security.mdc`.
+- **Souvislost s naším APM:** přímý základ pravidla `rules/080-agent-security.mdc`.
 - Navazující: *Design Patterns for Securing LLM Agents against Prompt Injections* (odkazováno
   v článku) — šest vzorů obrany.
 
@@ -107,7 +107,7 @@ Vyvážené portfolio testů: hodně rychlých unit testů, méně integračníc
   - Pozor: komunitní zkušenost — `globs`/auto-attached pravidla v background agentech historicky
     nefungovala spolehlivě; ověř u svého workflow.
 - **Cursor SDK:** pro skutečnou per-role automatizaci modelů (Planner/Coder/Reviewer) mimo IDE
-  (souvisí s omezením popsaným v `rules/00-model-policy.mdc`).
+  (souvisí s omezením popsaným v `rules/000-model-policy.mdc`).
 
 ---
 
@@ -126,8 +126,8 @@ Vyvážené portfolio testů: hodně rychlých unit testů, méně integračníc
 | 1 | Nezávislý Reviewer | Building Effective Agents (evaluator–optimizer) | hotovo — `skills/review-task/` |
 | 2 | ADR most | Nygard — ADR | hotovo — rule 07 + skills |
 | 3 | Definition of Ready | (vlastní; protějšek DoD) | hotovo — rule 07 + plan-epic |
-| 7 | Prompt-injection obrana | Willison — lethal trifecta | hotovo — `rules/08-agent-security.mdc` |
-| 8 | Model-policy single source | 12-Factor Agents (own your config) | hotovo — `rules/00-model-policy.mdc` |
+| 7 | Prompt-injection obrana | Willison — lethal trifecta | hotovo — `rules/080-agent-security.mdc` |
+| 8 | Model-policy single source | 12-Factor Agents (own your config) | hotovo — `rules/000-model-policy.mdc` |
 | 4 | Spec reconciliation | APM memory/handover | částečně — v `review-epic` |
 | 5 | Paralelní tasky | Anthropic harness / Cursor Cloud Agents | navrženo |
 | 6 | Testovací strategie | Practical Test Pyramid | navrženo |

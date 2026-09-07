@@ -35,14 +35,14 @@ is exempt — mark it clearly with a `spike/` branch prefix.
 
 <!-- cs: 1. Rozhodnutí o Dockeru (povinné) -->
 
-Consult `03-docker-policy.mdc` and choose one:
-<!-- cs: Projdi 03-docker-policy.mdc a zvol jednu z možností: -->
+Consult `030-docker-policy.mdc` and choose one:
+<!-- cs: Projdi 030-docker-policy.mdc a zvol jednu z možností: -->
 
 - [ ] **Containerize** — add the service/runtime to `docker-compose.yml` with a pinned image version.
   <!-- cs: Kontejnerizuj — přidej do docker-compose.yml s pinovanou verzí image. -->
-- [ ] **Exempt** — add the technology to the Docker Exclude List in `03-docker-policy.mdc`
+- [ ] **Exempt** — add the technology to the Docker Exclude List in `030-docker-policy.mdc`
   with a written justification. Default is containerization; exemption requires a reason.
-  <!-- cs: Přidej výjimku — doplň do Docker Exclude List v 03-docker-policy.mdc s písemným zdůvodněním. Výchozí je kontejnerizace. -->
+  <!-- cs: Přidej výjimku — doplň do Docker Exclude List v 030-docker-policy.mdc s písemným zdůvodněním. Výchozí je kontejnerizace. -->
 
 ### 2. `.gitignore` — extend with technology-specific entries
 
@@ -50,9 +50,9 @@ Consult `03-docker-policy.mdc` and choose one:
 
 - [ ] Add build artifacts, caches, and generated files specific to this technology.
   <!-- cs: Přidej build artefakty, cache a generované soubory specifické pro tuto technologii. -->
-- [ ] Source: check the language/framework rule (e.g. `10-python.mdc`, `11-vuejs-vite-tailwind.mdc`)
+- [ ] Source: check the language/framework rule (e.g. `100-python.mdc`, `110-vuejs-vite-tailwind.mdc`)
   or use [gitignore.io](https://www.toptal.com/developers/gitignore) for the canonical list.
-  <!-- cs: Zdroj: jazykové pravidlo (např. 10-python.mdc) nebo gitignore.io pro kanonický seznam. -->
+  <!-- cs: Zdroj: jazykové pravidlo (např. 100-python.mdc) nebo gitignore.io pro kanonický seznam. -->
 
 ### 3. `README.md` — update or create
 
@@ -67,11 +67,11 @@ Consult `03-docker-policy.mdc` and choose one:
 
 <!-- cs: 4. Pravidlo pro jazyk/technologii — vytvoř pokud chybí -->
 
-- [ ] Does a `.cursor/rules/` file already exist for this technology? (e.g. `10-python.mdc`)
+- [ ] Does a `.cursor/rules/` file already exist for this technology? (e.g. `100-python.mdc`)
   <!-- cs: Existuje již pravidlo v .cursor/rules/ pro tuto technologii? -->
-- [ ] If not: create one following `00-meta-rules-and-skills.mdc`. Cover at minimum:
+- [ ] If not: create one following `000-meta-rules-and-skills.mdc`. Cover at minimum:
   tooling, code style, `.gitignore` entries, documentation standard.
-  <!-- cs: Pokud ne: vytvoř ho podle 00-meta-rules-and-skills.mdc. Minimálně: tooling, styl, .gitignore, dokumentace. -->
+  <!-- cs: Pokud ne: vytvoř ho podle 000-meta-rules-and-skills.mdc. Minimálně: tooling, styl, .gitignore, dokumentace. -->
 
 ### 5. Skill — create if the workflow is complex
 

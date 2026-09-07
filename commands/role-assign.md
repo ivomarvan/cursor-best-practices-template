@@ -14,11 +14,11 @@ description: >-
 
 Records which model a given APM role should use, by updating the **Active Role Assignments**
 table in `doc/apm_config/AGENT_MODELS.user.md` (the resolved AGENT_MODELS config — see the
-Config Resolution mechanism in `rules/20-project-design-rules.mdc`). Roles are not bound to
+Config Resolution mechanism in `rules/200-project-design-rules.mdc`). Roles are not bound to
 fixed models — this command is how the Human assigns them.
 <!-- cs: Zaznamená, který model má daná APM role používat, úpravou tabulky Active Role
      Assignments v doc/apm_config/AGENT_MODELS.user.md (vyřešená konfigurace AGENT_MODELS
-     — viz Config Resolution mechanismus v rules/20-project-design-rules.mdc). Role nejsou
+     — viz Config Resolution mechanismus v rules/200-project-design-rules.mdc). Role nejsou
      vázané na modely — takto je Human přiřazuje. -->
 
 ## Steps for the agent
@@ -29,26 +29,31 @@ fixed models — this command is how the Human assigns them.
 
 Parse the Human's message for:
 - **Role**: one or more of `Planner` | `Coder` | `Reviewer`.
+- **Band**: one or more of `low` | `medium` | `high` (see `rules/000-model-policy.mdc`).
+  Default to **all bands of the role** if the Human doesn't name one.
 - **Model**: the model id/name to assign (verbatim, as the Human writes it).
 
-If the role or the model is missing or ambiguous, **ASK** the Human — list the three roles
-and their current assignments, and let the Human name the model. Do **not** guess a model.
-<!-- cs: Pokud role nebo model chybí či jsou nejasné, ZEPTEJ SE Humana — vypiš tři role
-     a jejich aktuální přiřazení a nech Humana model pojmenovat. Model nehádej. -->
+If the role or the model is missing or ambiguous, **ASK** the Human — list the roles ×
+bands and their current assignments, and let the Human name the model. Do **not** guess a
+model or a band.
+<!-- cs: Pokud role nebo model chybí či jsou nejasné, ZEPTEJ SE Humana — vypiš role × pásma
+     a jejich aktuální přiřazení a nech Humana model pojmenovat. Model ani pásmo nehádej. -->
 
 ### Step 2 — Update the assignments table
 <!-- cs: Krok 2 — Aktualizuj tabulku přiřazení -->
 
 If `doc/apm_config/AGENT_MODELS.user.md` does not exist yet, create it by copying
 `.cursor/apm_config/AGENT_MODELS.default.md` first. Then, in its *Active Role Assignments*
-table, set the row for each chosen role: put the model in `Assigned model` and today's
-date in `Updated`. Change only those rows. To clear an assignment, set the model back to
-`unassigned` and `Updated` to `—`.
+table (rows = role, columns = band), set the cell(s) for each chosen role × band to the
+model. Change only those cells. To clear an assignment, set the cell back to `unassigned`.
+The Planner `low` / Reviewer `low` cells may legitimately read `—` (not applicable) —
+leave `—` alone unless the Human explicitly asks to change it.
 <!-- cs: Pokud doc/apm_config/AGENT_MODELS.user.md ještě neexistuje, vytvoř ho zkopírováním
-     .cursor/apm_config/AGENT_MODELS.default.md. Poté v jeho tabulce Active Role
-     Assignments nastav řádek pro každou zvolenou roli: model do Assigned model, dnešní
-     datum do Updated. Měň jen tyto řádky. Pro zrušení vrať model na `unassigned` a
-     Updated na `—`. -->
+     .cursor/apm_config/AGENT_MODELS.default.md. Poté v tabulce Active Role Assignments
+     (řádky = role, sloupce = pásmo) nastav buňky pro zvolenou roli × pásmo na model. Měň
+     jen tyto buňky. Pro zrušení vrať buňku na `unassigned`. Buňky Planner low / Reviewer
+     low smí legitimně být `—` (neaplikuje se) — neměň je, pokud o to Human výslovně
+     nepožádá. -->
 
 ### Step 3 — Confirm
 <!-- cs: Krok 3 — Potvrď -->

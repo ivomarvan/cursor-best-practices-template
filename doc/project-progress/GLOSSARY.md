@@ -2,8 +2,11 @@
 
 <!-- cs: Slovník pojmů pro APM — Agentem Řízený Vývoj -->
 
-> This file is for **human readers**. For machine-readable conventions, see `rules/07-project-management.mdc`.
-<!-- cs: Tento soubor je pro lidské čtenáře. Strojové konvence viz rules/07-project-management.mdc. -->
+> This file is for **human readers**. For machine-readable conventions, see
+> `rules/070-project-management.mdc` and, for the Human gate / band policy,
+> `rules/090-apm-orchestration.mdc`.
+<!-- cs: Tento soubor je pro lidské čtenáře. Strojové konvence viz rules/070-project-management.mdc
+     a pro politiku lidských bran/pásem rules/090-apm-orchestration.mdc. -->
 
 ---
 
@@ -30,16 +33,18 @@ The cheaper AI model responsible for implementing code, writing tests, running t
 check, filling the Definition of Done checklist, and writing Task and Epic Reports.
 
 The Coder always reads `spec.md` and `dod.md` before starting work. It never plans or changes
-the Roadmap — if the spec is ambiguous, it stops and asks Human.
+the Roadmap — if the spec is ambiguous, it stops and reports to the **Planner** (its
+orchestrator), not to Human directly: a Coder subagent has no channel of its own to Human.
 
 <!-- cs: Levnější AI model zodpovědný za implementaci kódu, psaní testů, regresní kontrolu,
      vyplnění DoD checklistu a psaní reportů.
-     Coder vždy čte spec.md a dod.md před zahájením práce. Nikdy neplánuje ani nemění roadmapu. -->
+     Coder vždy čte spec.md a dod.md před zahájením práce. Nikdy neplánuje ani nemění roadmapu.
+     Při nejasnosti reportuje Plannerovi, ne přímo Humanovi. -->
 
 ### Reviewer
 **Czech:** Recenzent
 
-A strong-reasoning AI model (assigned per `rules/00-model-policy.mdc`) that is a **different
+A strong-reasoning AI model (assigned per `rules/000-model-policy.mdc`) that is a **different
 agent than the Coder**. It performs an
 independent, adversarial review of a completed Task before the Human: it checks the real
 `git diff` against `spec.md` and `dod.md`, re-runs the tests itself, verifies every `✅`
@@ -66,6 +71,21 @@ You are the only actor who can authorize `git commit/push` or destructive operat
 <!-- cs: Ty — vlastník projektu. Poskytuješ vstupní brief, schvaluješ všechny dokumenty Planneru,
      revidujete výstup Codera a rozhoduješ o změnách roadmapy.
      Jsi jediný aktér, který může autorizovat git commit/push nebo destruktivní operace. -->
+
+### Band
+**Czech:** Pásmo
+
+A deterministic difficulty rating (`low` / `medium` / `high`) assigned to every Task
+(and, at the max over its Tasks, to its Epic for the Planner) from fixed triggers — never
+judged by feel. The band decides which model tier runs the Task
+(`rules/000-model-policy.mdc`) and how much process ceremony it costs: gate at FT.7 and
+report tier (`rules/090-apm-orchestration.mdc`). A second `REQUEST CHANGES` from the
+Reviewer raises the band automatically; only Human may lower one.
+
+<!-- cs: Deterministické hodnocení obtížnosti (low/medium/high) přiřazené každému tasku
+     (a epice Planneru, jako maximum přes její tasky) podle pevných spouštěčů — nikdy od oka.
+     Pásmo určuje jak úroveň modelu, tak cenu procesu: bránu na FT.7 a úroveň reportu.
+     Druhé REQUEST CHANGES od Reviewera pásmo automaticky zvedá; snížit ho smí jen Human. -->
 
 ---
 
@@ -168,7 +188,7 @@ Compensates for the Coder's limited project-wide context.
 A quality gate on the **input** side, the counterpart of the Definition of Done. Before a Task
 is handed to a Coder, its `spec.md` must pass the DoR checklist: measurable goal, concrete
 outputs, complete Context Bundle, verifiable DoD, named test cases, and the Coder role
-resolved (model assigned per `rules/00-model-policy.mdc`). Checked
+resolved (model assigned per `rules/000-model-policy.mdc`). Checked
 at the FE.2 Human review of the Epic Plan. A vague spec guarantees a failed Task.
 
 <!-- cs: Brána kvality na vstupní straně, protějšek Definition of Done. Než task dostane Coder,
@@ -190,28 +210,33 @@ Always includes: all new tests pass, full test suite passes (no regressions).
 ### Task Report (`task-NNN/report.md`)
 **Czech:** Report tasku
 
-Written by Coder after completing a Task. Language: `<communication-language>`.
-Contains: what was implemented, inputs/outputs, key decisions, code references,
-regression check result, and DoD summary.
+Written by Coder after completing a Task, in `<communication-language>`. Tier depends on
+the Task's **Band**: full (6 sections — what/inputs-outputs/decisions/code refs/
+regression/DoD) for `high`, short (4 sections) for `medium`, micro (5 lines) for `low` —
+see `rules/090-apm-orchestration.mdc`.
 
 The primary mechanism by which Human stays informed of what happened.
 
-<!-- cs: Napsáno Coderem po dokončení tasku. Jazyk: <communication-language>.
-     Obsahuje: co bylo implementováno, vstupy/výstupy, klíčová rozhodnutí, reference do kódu,
-     výsledek regresního testu a shrnutí DoD.
+<!-- cs: Napsáno Coderem po dokončení tasku, v <communication-language>. Úroveň závisí na
+     pásmu tasku: plná (6 sekcí) pro high, krátká (4 sekce) pro medium, mikro (5 řádků)
+     pro low.
      Primární mechanismus, kterým zůstává člověk informován o tom, co se dělo. -->
 
 ### Task Review (`task-NNN/review.md`)
 **Czech:** Revize tasku
 
-Written by the Reviewer (≠ Coder) after the Task Report, before Human review. Contains the
-verdict (APPROVE / REQUEST CHANGES), severity-tagged findings (blocker / major / minor),
-per-item verification of the DoD, and an independent test-run result. Only an APPROVE verdict
-advances the Task to Human review.
+Written by the Reviewer (≠ Coder) after the Task Report, before any Human review. Contains
+the verdict (APPROVE / REQUEST CHANGES), severity-tagged findings (blocker / major /
+minor), per-item verification of the DoD, and an independent test-run result. An APPROVE
+verdict completes the Task in every Band; whether it also advances to Human review (FT.7)
+depends on the Task's **Band** — only `high` (or an escalated Task) reaches FT.7,
+`medium`/`low` surface later in the Epic Report instead.
 
-<!-- cs: Napsáno Reviewerem (≠ Coder) po Task Reportu, před revizí Humanem. Obsahuje verdikt
-     (APPROVE / REQUEST CHANGES), nálezy podle závažnosti (blocker / major / minor), ověření
-     DoD po položkách a nezávislý výsledek testů. Jen verdikt APPROVE posune task k Humanovi. -->
+<!-- cs: Napsáno Reviewerem (≠ Coder) po Task Reportu, před případnou revizí Humanem. Obsahuje
+     verdikt (APPROVE / REQUEST CHANGES), nálezy podle závažnosti (blocker / major / minor), ověření
+     DoD po položkách a nezávislý výsledek testů. APPROVE task dokončí v každém pásmu; jestli
+     jde i k Humanovi na FT.7, závisí na pásmu — jen high (nebo eskalovaný) tam jde, medium/low
+     se objeví až v Epic Reportu. -->
 
 ### Epic Report (`epic-NNN/report.md`)
 **Czech:** Report epiky
@@ -248,6 +273,6 @@ Numbering in steps of 10: insert `E015` between `E010` and `E020`.
 |-------|------|-------|--------|
 | Project Init | F0.1–F0.5 | Human→Planner | `brief.md`, `spec.md`, `roadmap.md` |
 | Epic Planning | FE.1–FE.2 | Planner | `epic-NNN/plan.md`, task dirs (+ DoR gate) |
-| Task Execution | FT.1–FT.7 | Coder | implementation, tests, `dod.md`, `report.md` |
+| Task Execution | FT.1–FT.7 | Coder | implementation, tests, `dod.md`, `report.md` (FT.7 Human gate is Band-conditional — see `rules/090-apm-orchestration.mdc`) |
 | Task Review | FR.1–FR.3 | Reviewer | `task-NNN/review.md` (APPROVE / REQUEST CHANGES) |
 | Epic Closure | FER.1–FER.2 | Coder→Planner | `epic-NNN/report.md`, roadmap + ADR review |

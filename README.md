@@ -9,11 +9,11 @@ enforcing consistent coding standards across all your projects.
 
 This template is built around the idea of managing AI models like a real development team. By organizing AI development into a clearly structured process, the results go beyond mindless code generation.
 
-The workflow is divided into distinct roles (model per role: see `rules/00-model-policy.mdc`):
+The workflow is divided into distinct roles (model per role: see `rules/000-model-policy.mdc`):
 
 - 🧠 **Planner (Analyst/Architect)**: Handled by high-context reasoning models. The Planner analyzes requirements, breaks them down into Epics and Tasks, prepares precise specifications, sets boundaries (Context Bundles), and defines the Definition of Done. Each Task must pass a **Definition of Ready (DoR)** gate before a Coder starts.
 - 💻 **Coder (Developer)**: Handled by faster, cost-effective models. The Coder takes the Planner's specifications, implements the code, writes tests, and checks off the DoD requirements.
-- 🔎 **Reviewer (QA/Critic)**: A **different** agent/model than the Coder (a strong-reasoning model, assigned per `rules/00-model-policy.mdc`). Independently reviews the Coder's diff against `spec.md` and `dod.md`, verifies every `✅` against real artifacts, and returns an APPROVE / REQUEST CHANGES verdict **before** the Human looks at it. This evaluator–optimizer step catches the author-grades-own-work blind spot.
+- 🔎 **Reviewer (QA/Critic)**: A **different** agent/model than the Coder (a strong-reasoning model, assigned per `rules/000-model-policy.mdc`). Independently reviews the Coder's diff against `spec.md` and `dod.md`, verifies every `✅` against real artifacts, and returns an APPROVE / REQUEST CHANGES verdict **before** the Human looks at it. This evaluator–optimizer step catches the author-grades-own-work blind spot.
 - 👤 **Human (Tech Lead)**: Has the final say. Conducts code reviews, makes strategic decisions, and ensures no destructive operations happen without explicit approval.
 
 Output quality is enforced by strict repository rules:
@@ -54,7 +54,7 @@ cursor-best-practices-template/
 ## Configuration: defaults vs. project overrides
 
 Three settings — `AGENT_MODELS`, `DESIGN_RULES`, `LANGUAGE` — follow one Config
-Resolution mechanism (full details in `rules/20-project-design-rules.mdc`):
+Resolution mechanism (full details in `rules/200-project-design-rules.mdc`):
 
 | | Template default (this repo) | Project override (consuming project) |
 |---|---|---|
@@ -77,27 +77,28 @@ per-field merge). Otherwise the default applies.
 
 | File | Topic | Activation |
 |------|-------|-----------|
-| `00-communication-language.mdc` | Communication language resolution (see LANGUAGE config, EN default) | always |
-| `00-meta-rules-and-skills.mdc` | How to write rules and skills | always |
-| `00-model-policy.mdc` | Role→model resolution (see AGENT_MODELS config): Human assigns via `/role-assign` or agent asks | always |
-| `01-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
-| `02-git.mdc` | Conventional commits, branching, `.gitignore` | always |
-| `03-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
-| `04-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
-| `05-new-technology.mdc` | Process for adding new technologies | on request |
-| `06-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
-| `07-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
-| `08-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
-| `10-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
-| `11-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
-| `12-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
-| `13-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
-| `14-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
-| `15-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
-| `16-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
-| `17-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/*.py` |
-| `18-celery.mdc` | Celery tasks, queues, retries, worker config | `**/*.py` |
-| `20-project-design-rules.mdc` | Config Resolution mechanism (default vs. `.user.md`) + binding DESIGN_RULES | always |
+| `000-communication-language.mdc` | Communication language resolution (see LANGUAGE config, EN default) | always |
+| `000-meta-rules-and-skills.mdc` | How to write rules and skills | always |
+| `000-model-policy.mdc` | Role→model resolution (see AGENT_MODELS config): Human assigns via `/role-assign` or agent asks | always |
+| `010-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
+| `020-git.mdc` | Conventional commits, branching, `.gitignore` | always |
+| `030-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
+| `040-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
+| `050-new-technology.mdc` | Process for adding new technologies | on request |
+| `060-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
+| `070-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
+| `080-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
+| `090-apm-orchestration.mdc` | Planner↔subagent protocol, band-based Human gates, report tiers, Human Gate Briefing | `doc/project-progress/**` |
+| `100-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
+| `110-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
+| `120-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
+| `130-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
+| `140-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
+| `150-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
+| `160-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
+| `170-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/*.py` |
+| `180-celery.mdc` | Celery tasks, queues, retries, worker config | `**/*.py` |
+| `200-project-design-rules.mdc` | Config Resolution mechanism (default vs. `.user.md`) + binding DESIGN_RULES | always |
 
 ### Skills (`skills/`)
 
@@ -122,25 +123,29 @@ Slash commands invoked in Cursor chat (e.g. `/push`).
 
 | Command | Purpose |
 |---------|---------|
-| `/push` | Run the project CI mirror (`scripts/run_all_tests.sh`); if green, stage, commit (Conventional Commits), and push to `master`. Explicit exception to `02-git.mdc`. |
-| `/role-assign` | Assign a model to an APM role (Planner/Coder/Reviewer) in `rules/00-model-policy.mdc`. Asks if the role or model is not specified. |
-| `/role-show` | Show the current role→model assignments. |
+| `/push` | Run the project CI mirror (`scripts/run_all_tests.sh`); if green, stage, commit (Conventional Commits), and push to `master`. Explicit exception to `020-git.mdc`. |
+| `/role-assign` | Assign a model to an APM role × band (Planner/Coder/Reviewer × low/medium/high) in `doc/apm_config/AGENT_MODELS.user.md`. Asks if role, band, or model is not specified. |
+| `/role-show` | Show the current role × band → model assignments. |
 
-> **Model policy:** roles are **not** bound to fixed models (models and prices change). The
-> Human assigns a model to each role via `/role-assign`, or the agent asks before acting in an
-> unassigned role. The single source of truth is the resolved **AGENT_MODELS config**
-> (`doc/apm_config/AGENT_MODELS.user.md`, or `apm_config/AGENT_MODELS.default.md` if not
-> overridden) — see `rules/00-model-policy.mdc`. Cursor does not auto-switch models per
-> role — an assignment is documented intent plus a reminder.
+> **Model policy:** roles are **not** bound to fixed models (models and prices change), and
+> a Task's difficulty **band** (`low`/`medium`/`high`) decides which model tier applies. The
+> Human assigns a model to each role × band via `/role-assign`, or the agent asks before
+> acting in an unassigned cell. The single source of truth is the resolved **AGENT_MODELS
+> config** (`doc/apm_config/AGENT_MODELS.user.md`, or `apm_config/AGENT_MODELS.default.md`
+> if not overridden) — see `rules/000-model-policy.mdc`. Cursor does not auto-switch models
+> per role — an assignment is documented intent plus a reminder.
 
 ---
 
 ## Using this repo in your projects
 
-### Option A — Git submodule (recommended)
+### Option A — Git submodule
 
 The repo root maps directly to `.cursor/`, so Cursor discovers `rules/` and `skills/`
-without any extra configuration.
+without any extra configuration. Trade-off vs. Option C below: no bilingual-comment
+stripping (roughly double the token size on every agent call), plus submodule mechanics
+(`.gitmodules`, detached-HEAD updates) — prefer this only if you specifically need `.cursor/`
+to stay a live, pinned git dependency.
 
 ```bash
 # In your project root:
@@ -168,7 +173,7 @@ ln -s ~/dev/cursor-template/rules  .cursor/rules
 ln -s ~/dev/cursor-template/skills .cursor/skills
 ```
 
-### Option C — Copy via install script (no git submodule needed)
+### Option C — Copy via install script (recommended)
 
 `scripts/install_into_project.py` (plain Python 3, `argparse`-based CLI — run
 `--help` for the full option list) copies `commands/`, `hooks/`, `hooks.json`, `rules/`,
@@ -248,7 +253,7 @@ for d in .cursor-shared/skills/*/; do
 done
 
 # 3. Add project-specific rules directly into .cursor/rules/
-cat > .cursor/rules/20-project-specific.mdc << 'EOF'
+cat > .cursor/rules/210-project-specific.mdc << 'EOF'
 ---
 description: Project-specific conventions for <your-project>.
 alwaysApply: true
@@ -264,9 +269,9 @@ Resulting layout:
 your-project/
 ├── .cursor/
 │   ├── rules/
-│   │   ├── 00-communication-language.mdc  →  ../../.cursor-shared/rules/...  (symlink)
-│   │   ├── 10-python.mdc                  →  ../../.cursor-shared/rules/...  (symlink)
-│   │   └── 20-project-specific.mdc        ← your own rule, tracked in your repo
+│   │   ├── 000-communication-language.mdc  →  ../../.cursor-shared/rules/...  (symlink)
+│   │   ├── 100-python.mdc                  →  ../../.cursor-shared/rules/...  (symlink)
+│   │   └── 210-project-specific.mdc       ← your own rule, tracked in your repo
 │   └── skills/
 │       ├── python-dev/                    →  ../../.cursor-shared/skills/...  (symlink)
 │       └── my-custom-skill/               ← your own skill, tracked in your repo
@@ -296,7 +301,7 @@ python3 scripts/install_into_project.py ~/dev/my-project             # English (
 ```
 
 This seeds `doc/apm_config/LANGUAGE.user.md` in the target project — edit that file by
-hand at any time to change the language later (see `rules/00-communication-language.mdc`
+hand at any time to change the language later (see `rules/000-communication-language.mdc`
 for the resolution mechanism). No fork, no submodule edit, no translated `.mdc` comments
 required in the target project — `.cursor/` there is English-only and stripped of the
 `cs:` comments this template repo itself carries for its own maintainers.
@@ -304,7 +309,7 @@ required in the target project — `.cursor/` there is English-only and stripped
 Contributing a **new** bilingual comment language to this template repo itself (i.e.
 authoring `<!-- de: ... -->` comments throughout `rules/` and `skills/` for German-
 speaking template maintainers) is a separate, template-level change — see
-`rules/00-meta-rules-and-skills.mdc` for the bilingual-comment convention and open a PR.
+`rules/000-meta-rules-and-skills.mdc` for the bilingual-comment convention and open a PR.
 
 ---
 
@@ -375,7 +380,7 @@ git checkout main
 git pull
 
 # 3. Make your changes, then commit inside the submodule
-git add rules/15-qdrant.mdc
+git add rules/150-qdrant.mdc
 git commit -m "feat(qdrant): add vector database rule"
 
 # 4. Push the submodule changes to the template repo

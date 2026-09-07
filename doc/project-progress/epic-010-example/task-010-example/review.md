@@ -11,9 +11,9 @@ updated_at: YYYY-MM-DD
 
 # Task Review: E010.T010 — <Task Name>
 
-<!-- Language: <communication-language> (from 00-communication-language.mdc).
+<!-- Language: <communication-language> (from 000-communication-language.mdc).
      Written by an independent Reviewer (different agent/model than the Coder),
-     using a strong-reasoning model (assigned per 00-model-policy.mdc). See skill: review-task. -->
+     using a strong-reasoning model (assigned per 000-model-policy.mdc). See skill: review-task. -->
 
 ## Verdikt
 <!-- APPROVE  — nebo —  REQUEST CHANGES (round N) -->

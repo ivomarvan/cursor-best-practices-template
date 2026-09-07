@@ -105,16 +105,26 @@ Prefer **auto-attached** rules via `globs` over `alwaysApply: true` — saves co
 
 ### File Naming
 
-<!-- cs: Pojmenování souborů — číslo udává prioritu načítání -->
+Filename prefix groups rules by concern, in **steps of ten** (mirrors the Epic/Task
+numbering in `070-project-management.mdc`) — insert a new rule between two existing
+numbers instead of renumbering everything. The number is a grouping label, not a load
+priority: `alwaysApply` rules are all loaded together regardless of order, and
+`globs`/`description` rules attach independently per match.
+<!-- cs: Prefix v názvu souboru seskupuje pravidla podle tématu, v krocích po deseti
+     (stejná konvence jako číslování epik/tasků v 070-project-management.mdc) — nové
+     pravidlo se vloží mezi dvě existující čísla, ne přečíslováním všeho. Číslo je
+     seskupovací štítek, ne priorita načítání: alwaysApply pravidla se načítají vždy
+     všechna najednou bez ohledu na pořadí, globs/description pravidla se připojují
+     nezávisle podle shody. -->
 
 ```
-00-communication-language.mdc   # source of truth for language — always first
-00-meta-rules-and-skills.mdc
-01-general-programming.mdc
-02-git.mdc
-10-python.mdc
-10-typescript.mdc
-20-docker.mdc
+000-communication-language.mdc   # source of truth for language — always first
+000-meta-rules-and-skills.mdc
+010-general-programming.mdc
+020-git.mdc
+100-python.mdc
+110-typescript.mdc
+200-docker.mdc
 ```
 
 ## SKILL.md Structure

@@ -23,7 +23,7 @@ Displays which model each APM role (Planner, Coder, Reviewer) is currently assig
 
 Read the resolved *Active Role Assignments* table: `doc/apm_config/AGENT_MODELS.user.md`
 if it exists, otherwise `.cursor/apm_config/AGENT_MODELS.default.md` (see the Config
-Resolution mechanism in `rules/20-project-design-rules.mdc`).
+Resolution mechanism in `rules/200-project-design-rules.mdc`).
 <!-- cs: Přečti vyřešenou tabulku Active Role Assignments: doc/apm_config/
      AGENT_MODELS.user.md, pokud existuje, jinak .cursor/apm_config/
      AGENT_MODELS.default.md (viz Config Resolution mechanismus v rules/20-project-
@@ -32,10 +32,13 @@ Resolution mechanism in `rules/20-project-design-rules.mdc`).
 ### Step 2 — Present
 <!-- cs: Krok 2 — Zobraz -->
 
-Show each role with its assigned model. For any role marked `unassigned`, note that the
-agent will **ask** the Human before acting in that role (and that `/role-assign` can set it).
-<!-- cs: Zobraz každou roli s přiřazeným modelem. U role `unassigned` upozorni, že se agent
-     před prací v té roli ZEPTÁ Humana (a že /role-assign ji nastaví). -->
+Show the role × band table (`low`/`medium`/`high`, see `rules/000-model-policy.mdc`). For
+any cell marked `unassigned`, note that the agent will **ask** the Human before acting in
+that role/band (and that `/role-assign` can set it). A `—` cell (e.g. Planner `low`) means
+"not applicable", not "unassigned".
+<!-- cs: Zobraz tabulku role × pásmo. U buňky `unassigned` upozorni, že se agent před prací
+     v té roli/pásmu ZEPTÁ Humana (a že /role-assign ji nastaví). Buňka `—` (např. Planner
+     low) znamená "neaplikuje se", ne "nepřiřazeno". -->
 
 ### Step 3 — Reminder
 <!-- cs: Krok 3 — Připomínka -->

@@ -2,13 +2,13 @@
 """Strip bilingual annotation comments from template source files.
 
 The template's rules and skills carry bilingual comments (see
-`rules/00-meta-rules-and-skills.mdc`) of the form `<!-- cs: ... -->` (Markdown/HTML,
+`rules/000-meta-rules-and-skills.mdc`) of the form `<!-- cs: ... -->` (Markdown/HTML,
 possibly spanning multiple lines) and `# cs: ...` (YAML front matter / code blocks).
 These comments exist purely to help a human maintainer read the template in their own
 language; the English text next to them is the sole source of truth for the agent. This
 script removes them so that a copy installed into a consuming project carries fewer
 tokens, without touching illustrative example text that merely documents the comment
-syntax itself (e.g. inside `00-meta-rules-and-skills.mdc`).
+syntax itself (e.g. inside `000-meta-rules-and-skills.mdc`).
 
 Usage:
     strip_comments.py [--lang-code cs] < input > output

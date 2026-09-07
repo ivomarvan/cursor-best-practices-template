@@ -55,9 +55,9 @@ def extract_language_setting(language_file: Path) -> tuple[str, str]:
     """Parse the (pre-v1.1.0) Active Settings table for language name + code.
 
     Args:
-        language_file: A `rules/00-communication-language.mdc` file that was locally
-            hand-edited to change the active language (dirty relative to the pinned
-            submodule commit).
+        language_file: A `rules/00-communication-language.mdc` file (old, pre-rename
+            submodule path) that was locally hand-edited to change the active language
+            (dirty relative to the pinned submodule commit).
 
     Returns:
         A `(language_name, lang_code)` tuple. Falls back to `("English", "en")` for
@@ -91,7 +91,7 @@ def deregister_submodule_commands(target: Path) -> str:
     """Return the (unexecuted) shell commands needed to deregister the .cursor submodule.
 
     These are structural git operations left for the Human to run explicitly — see
-    `rules/02-git.mdc`.
+    `rules/020-git.mdc`.
 
     IMPORTANT: `git submodule deinit -f .cursor` empties `<target>/.cursor/` regardless
     of what is currently in it — including the plain-copy content this script just
