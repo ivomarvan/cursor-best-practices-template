@@ -51,6 +51,44 @@ All notable changes to `cursor-best-practices-template` are documented in this f
   role-only table) plus a place for a project's own additional `high` triggers.
   `AGENT_MODELS.user.md` may leave `Reviewer`/`low` unassigned if the deterministic gate
   already covers it — the template now says so explicitly.
+- **`doc/project-progress/DECISIONS.md`** (`skills/project-init/templates/DECISIONS.md`):
+  a short, append-only decisions register — one row per already-settled question — that
+  is the fast target the **Source of Truth** conflict check
+  (`rules/070-project-management.mdc`) diffs a new chat instruction against, instead of
+  re-reading the full `spec.md`/`roadmap.md`/`DESIGN_RULES.user.md` tree on every Phase.
+  Seeded by `project-init` alongside `GLOSSARY.md`.
+- **Epic type: spike** (`rules/070-project-management.mdc`): a formalized shell for
+  exploratory/experiment work — `spike/<desc>` branch (`rules/020-git.mdc`), a DoR naming
+  metrics/dataset/candidates instead of a feature Goal, a results-table + ADR as DoD, and
+  a Reviewer who checks reproducibility, not code quality. Stopping a spike is explicitly
+  a **Human decision made with the Planner**, never an automatic threshold. A matching
+  Docker-policy exception (`rules/030-docker-policy.mdc`) lets spike code skip the
+  mandatory `README.docker.md`/pinned-version ceremony until promoted to production.
+- **Deterministic gate — Python** (`skills/python-dev/templates/Makefile`, `ci.yml`): a
+  `make check` target (`ruff` + `mypy --strict` + `pytest`) that the Coder, the Reviewer,
+  and CI all run identically, wired into `skills/execute-task/SKILL.md` and
+  `skills/review-task/SKILL.md`. Python-only for now — `README.md` and
+  `skills/python-dev/SKILL.md` flag that C++/ESP32 and Vue/Vite need their own equivalent
+  target as future template work (see `doc/KNOWN_LIMITATIONS.md` §C).
+- **Subagent completion protocol** (`rules/090-apm-orchestration.mdc` §A): a Coder/
+  Reviewer subagent's final message to the Planner is exactly `DONE: <path>` or
+  `BLOCKED: <one question>` — no code, no prose summary — plus a standard handoff
+  sentence for resuming Planner work in a fresh chat window after the previous one fills up.
+- **`template_version` front-matter field** (`rules/070-project-management.mdc` and every
+  skill's document template): records the `.cursor/TEMPLATE_VERSION` value active when an
+  APM document was first created, for later audits of which template revision a Task's
+  conventions came from. Omitted only for `brief.md` (Human input).
+- **`check_installation.py`**: two new checks — every `rules/*.mdc` must declare
+  `alwaysApply` in its frontmatter, and `alwaysApply: true` combined with a non-empty
+  `globs` is now a reported `VIOLATION` (dead configuration — `globs` has no effect once
+  `alwaysApply` is true). A heuristic dead-link checker was considered and deliberately
+  **not** added — see the module docstring for why.
+- **`doc/KNOWN_LIMITATIONS.md`**: five review findings that were considered and
+  deliberately **not** fixed at the template level (checkpoint-per-Task commits
+  conflicting with the Human's own git-control rule; symlink double-loading needs live
+  Cursor introspection this agent lacks; per-stack deterministic gates beyond Python;
+  real piloting of the new mechanisms; agent self-reported token accounting) — each with
+  why, what was done instead, and the condition to revisit it.
 
 ### Changed
 
@@ -113,6 +151,61 @@ All notable changes to `cursor-best-practices-template` are documented in this f
   `rules/000-meta-rules-and-skills.mdc`. `scripts/migrate_submodule_to_copy.py`
   deliberately keeps the **old** `rules/00-communication-language.mdc` path where it
   inspects a pre-migration git submodule checkout, which predates this rename.
+- **`rules/000-meta-rules-and-skills.mdc`, `rules/060-project-structure.mdc`**: demoted
+  from `alwaysApply: true` to agent-requested (`description`-only) activation — both
+  already had a description written like an agent-requested trigger, and `060` was over
+  its `alwaysApply` line limit anyway. Saves ~200+ lines of context on every agent call
+  in a consuming project when neither topic is actually in play. `README.md`'s Rules
+  table Activation column updated to "on request" for both.
+- **This repo's own `.cursor/rules` / `.cursor/skills` symlinks removed.** They existed
+  only so this repo's own past self-development could dogfood its rules via Cursor —
+  irrelevant now that development here does not depend on it, and not needed by any
+  documented consumption path (Option A submodule mounts the repo root directly, which
+  already contains `rules/`/`skills/` at top level; Option C copies files). Verified this
+  does not affect existing Option A submodule consumers.
+- **`skills/project-init/templates/GLOSSARY.md`**: moved out of
+  `doc/project-progress/GLOSSARY.md` — `doc/` is never copied by
+  `scripts/install_into_project.py`, so a file only reachable there could never actually
+  be seeded into a consuming project (see Fixed, below). `scripts/lib/installer.py` and
+  `check_installation.py` both gained a `*/templates/*` exclusion from bilingual-comment
+  stripping / leaked-comment checks — GLOSSARY.md and DECISIONS.md are bilingual content
+  for the consuming project's Human, not agent rule text, so English is not their sole
+  source of truth the way it is for `rules/`/`skills/`.
+- **`rules/200-project-design-rules.mdc`**: a `DESIGN_RULES.user.md` "Forbidden
+  technologies" entry now explicitly takes precedence over the corresponding
+  `1xx-*.mdc` technology rule.
+- **`rules/050-new-technology.mdc`**: added a "Bulk registration" variant for
+  introducing several technologies at once (typically Phase 0) — same per-technology
+  checklist, but one consolidated `README.md` table instead of repeated prose.
+- **`rules/080-agent-security.mdc`**: added a rule that scripts consuming live untrusted
+  network input run as a CLI process outside the agent chat session; the agent works
+  from their recorded output/fixtures, not a live mid-session fetch.
+- **`rules/140-fastapi.mdc`**: `globs` narrowed from `**/*.py` (every Python file in any
+  project) to the `backend/`/`api/` tree plus the file names this rule's own "Project
+  Structure" section already prescribes (`main.py`, `router.py`, `dependencies.py`,
+  `service.py`, `schemas.py`) — a non-FastAPI Python project no longer pays this rule's
+  context cost on every `.py` edit. `description` updated so the agent still pulls the
+  rule in for FastAPI code that lands outside this layout (`060-project-structure.mdc`
+  gained a matching one-line pointer to keep the two rules in sync).
+
+### Fixed
+
+- **`skills/project-init/SKILL.md` step 6**: referenced
+  `.cursor/skills/project-init/templates/GLOSSARY.md`, which did not exist yet (the only
+  glossary content lived at `doc/project-progress/GLOSSARY.md`, a path `doc/` never
+  copies into a consuming project). The file now actually exists at that path; step 6
+  also seeds the new `DECISIONS.md` template.
+- **`rules/020-git.mdc`**: removed a `globs:` line that had no effect next to
+  `alwaysApply: true` (now also caught by `check_installation.py`).
+- **`rules/070-project-management.mdc`** Coder Task Report "Required content" table was
+  missing the **Deviations from spec.md** section that `skills/execute-task/SKILL.md`'s
+  template and `skills/review-task/SKILL.md`'s Step R4 already both required and checked
+  for — the table now lists all 7 sections in the order every other document agrees on.
+- **`README.md`** Rules table "Activation" column was stale for four rows: `150-qdrant.mdc`,
+  `170-redis.mdc`, and `180-celery.mdc` were shown as `**/*.py` (implying no narrowing at
+  all, though the actual `globs` in each file already were narrow) and
+  `140-fastapi.mdc` still showed its pre-this-session pattern. All four now show a
+  representative excerpt of their actual `globs`.
 
 ### Hard rule introduced
 

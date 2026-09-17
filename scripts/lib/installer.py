@@ -163,9 +163,16 @@ class TemplateInstaller:
                 shutil.copy2(src, dst)
 
         for path in target_cursor.rglob("*"):
-            if path.is_file() and path.suffix in FILTER_SUFFIXES:
-                filtered = strip_comments(path.read_text(encoding="utf-8"), lang_code="cs")
-                path.write_text(filtered, encoding="utf-8")
+            if not path.is_file() or path.suffix not in FILTER_SUFFIXES:
+                continue
+            if "templates" in path.relative_to(target_cursor).parts:
+                # Skill-shipped project deliverables (e.g. project-init's GLOSSARY.md /
+                # DECISIONS.md seeds) are bilingual content for the consuming project's
+                # Human, not agent rule text — English is not the sole source of truth
+                # for them the way it is for rules/skills, so keep both languages.
+                continue
+            filtered = strip_comments(path.read_text(encoding="utf-8"), lang_code="cs")
+            path.write_text(filtered, encoding="utf-8")
 
     def _write_version_marker(self, target_cursor: Path, version: str) -> None:
         """Write `.cursor/TEMPLATE_VERSION` recording the installed template version."""

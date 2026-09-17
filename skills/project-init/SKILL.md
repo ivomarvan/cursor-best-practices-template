@@ -65,6 +65,7 @@ apm_ref: PROJECT
 apm_level: project
 created_by: Planner
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: All
 created_at: <YYYY-MM-DD>
 updated_at: <YYYY-MM-DD>
@@ -91,6 +92,7 @@ apm_ref: PROJECT
 apm_level: project
 created_by: Planner
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: All
 created_at: <YYYY-MM-DD>
 updated_at: <YYYY-MM-DD>
@@ -120,8 +122,9 @@ If rejected: revise and resubmit. Do not proceed to Epic planning until approved
 
 ```bash
 mkdir -p doc/project-progress
-# Copy GLOSSARY.md template
+# Copy the GLOSSARY.md and DECISIONS.md templates shipped with this skill
 cp .cursor/skills/project-init/templates/GLOSSARY.md doc/project-progress/GLOSSARY.md
+cp .cursor/skills/project-init/templates/DECISIONS.md doc/project-progress/DECISIONS.md
 ```
 
 ## Output Checklist
@@ -131,6 +134,7 @@ cp .cursor/skills/project-init/templates/GLOSSARY.md doc/project-progress/GLOSSA
 - [ ] `doc/project-progress/spec.md` — all 6 required sections present
 - [ ] `doc/project-progress/roadmap.md` — Epics numbered E010, E020...
 - [ ] `doc/project-progress/GLOSSARY.md` — copied from template
+- [ ] `doc/project-progress/DECISIONS.md` — copied from template (empty register)
 - [ ] Human has approved spec.md + roadmap.md [F0.5]
 
 ## Additional resources

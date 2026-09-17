@@ -38,9 +38,24 @@ Human runs the chat with the **Planner**; Planner spawns Coder and Reviewer as s
 - If a Coder subagent hits a question it cannot answer from `spec.md`, it returns the
   question to the **Planner**, not to the Human directly — the subagent did not open the
   chat with the Human and has no way to ask it.
+- **Subagent completion signal** — a Coder/Reviewer subagent's final message to the
+  Planner is exactly one of:
+  - `DONE: <path to report.md or review.md>`
+  - `BLOCKED: <one question>`
+
+  No code, no diff, no prose summary in that message — the Planner reads the actual file,
+  never the subagent's own account of it (same principle as "read the verdict from
+  `review.md`" above).
+- **Resuming after a chat window fills up** — start the new Planner chat with: *"Read
+  `epic-NNN/plan.md` and the state of every task directory in it; continue from the first
+  Task that has no `review.md` with verdict APPROVE."* This is the standard handoff
+  sentence, not a one-off instruction to reconstruct each time.
 <!-- cs: Reviewerovi jen spec/dod/diff; report.md je tvrzení k ověření. Rodičovské okno
      ve fázi T nepíše kód (kromě výjimky §D). Verdikt čti z review.md. Nejasnost řeš před
-     zadáním subagentovi. Coder subagent se ptá Plannera, ne Humana. -->
+     zadáním subagentovi. Coder subagent se ptá Plannera, ne Humana. Subagent hlásí
+     přesně DONE: <cesta> nebo BLOCKED: <otázka>, žádný kód ani prózu. Nový Planner chat
+     po zaplnění okna začíná standardní větou: přečti plan.md a stav tasků, pokračuj od
+     prvního tasku bez APPROVE v review.md. -->
 
 ## B — Gate and report tier by band
 <!-- cs: B — Brána a úroveň reportu podle pásma -->

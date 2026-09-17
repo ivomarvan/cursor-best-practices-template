@@ -68,8 +68,15 @@ All new tests must pass. If any fail: fix implementation, not the test.
 ### Step 4 — Regression Check [FT.4]
 <!-- cs: Krok 4 — Regresní check [FT.4] -->
 
-Run the **full** test suite (not just Task tests):
+Run the **full** test suite (not just Task tests). If the project has a `Makefile` with
+a `check` target (deterministic gate — see `skills/python-dev/SKILL.md`), run that
+instead of calling the test runner directly, so the same command the Reviewer and CI use
+also gates your own submission:
+<!-- cs: Pokud projekt má Makefile s cílem check (deterministický gate), spusť ten,
+     místo přímého volání test runneru — stejný příkaz, který použije Reviewer a CI. -->
 ```bash
+make check           # if a deterministic gate exists for this stack
+# or, if not:
 pytest tests/ -v --tb=short
 ```
 
@@ -121,6 +128,7 @@ apm_ref: E010.T020
 apm_level: task
 created_by: Coder
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: Human
 created_at: <YYYY-MM-DD>
 updated_at: <YYYY-MM-DD>

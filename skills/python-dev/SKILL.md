@@ -96,9 +96,42 @@ docker compose exec <service> mypy src/module/parser.py
 docker compose exec <service> mypy src/ --strict
 ```
 
-### Full Quality Gate
+### Deterministic Gate — `make check`
 
-<!-- cs: Plná kontrola před commitem -->
+<!-- cs: Deterministická brána — make check -->
+
+The manual chain above is fine for local auto-fixing, but the Coder, the Reviewer, and
+CI need the exact **same** command so "passes" means the same thing in every context —
+see `rules/090-apm-orchestration.mdc`. Copy the shipped template once per project:
+<!-- cs: Ruční řetězec výše je fajn pro lokální auto-fix, ale Coder, Reviewer i CI
+     potřebují stejný příkaz, aby "prošlo" znamenalo totéž ve všech třech kontextech. -->
+
+```bash
+# One-time setup per project
+cp .cursor/skills/python-dev/templates/Makefile ./Makefile
+mkdir -p .github/workflows
+cp .cursor/skills/python-dev/templates/ci.yml .github/workflows/ci.yml
+# Edit Makefile's SERVICE variable if your docker-compose service isn't named "app"
+```
+
+```bash
+# Every subsequent run — Coder before writing report.md, Reviewer at Step R3, CI on push
+make check
+```
+
+`make check` runs `ruff check`, `ruff format --check`, `mypy --strict`, `pytest`, in that
+order, and fails on the first non-zero exit. This is the Python instance of the generic
+"deterministic gate" concept — other stacks in this template (C++/ESP32, Vue/Vite) do
+not yet ship an equivalent target; adding one there is future template work (see
+`README.md`, "Deterministic gate coverage").
+<!-- cs: make check spustí ruff check, ruff format --check, mypy --strict, pytest v
+     tomto pořadí, a padne na první nenulový exit kód. Je to pythonová instance obecného
+     konceptu "deterministický gate" — ostatní stacky v šabloně (C++/ESP32, Vue/Vite)
+     ještě obdobný cíl nemají; to je budoucí práce na šabloně. -->
+
+### Full Quality Gate (manual, auto-fixing)
+
+<!-- cs: Plná kontrola před commitem (ruční, s auto-fixem) -->
 
 ```bash
 docker compose exec <service> ruff check --fix . \

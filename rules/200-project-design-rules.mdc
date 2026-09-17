@@ -55,3 +55,11 @@ that take precedence over general rules.
 
 Consider these rules if they affect your changes.
 <!-- cs: Zvaž tato pravidla, pokud ovlivňují tvé změny. -->
+
+A **"Forbidden technologies"** entry in the resolved `DESIGN_RULES` takes precedence over
+the corresponding `1xx-*.mdc` technology rule — do not apply a technology rule to
+something the project has explicitly forbidden, even if a file matching its `globs`
+exists (e.g. a vendored file, a migration path being phased out).
+<!-- cs: Položka "Forbidden technologies" ve vyřešeném DESIGN_RULES má přednost před
+     odpovídajícím pravidlem 1xx-*.mdc — nepoužívej pravidlo technologie na něco, co
+     projekt explicitně zakázal, i když existuje soubor odpovídající jeho globs. -->

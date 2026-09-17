@@ -101,6 +101,22 @@ never interpreted or reformulated. Serves as the permanent record of original in
 <!-- cs: Surový, nestrukturovaný vstup od člověka na začátku projektu. Zaznamenaný doslova.
      Slouží jako trvalý záznam původního záměru. -->
 
+### Decisions Register (`DECISIONS.md`)
+**Czech:** Registr rozhodnutí
+
+A short, append-only table — one row per already-settled question (question, decision,
+date, reference) — that every Phase checks a new chat instruction against before
+starting. It exists because re-reading the full `spec.md`/`roadmap.md`/`DESIGN_RULES.user.md`
+tree on every Phase does not scale; `DECISIONS.md` is the fast, always-scannable target
+for the Source of Truth conflict check (`rules/070-project-management.mdc`). The full SoT
+documents remain authoritative for completeness.
+
+<!-- cs: Krátká, append-only tabulka — jeden řádek na už vyřešenou otázku (otázka,
+     rozhodnutí, datum, odkaz) — proti které se ověřuje nový pokyn z chatu před zahájením
+     každé fáze. Existuje, protože číst celý strom spec.md/roadmap.md/DESIGN_RULES.user.md
+     při každé fázi neškáluje; DECISIONS.md je rychlý, vždy celý čitelný cíl kontroly
+     rozporu SoT. Plné SoT dokumenty zůstávají autoritativní pro úplnost. -->
+
 ### Project Specification (`spec.md`)
 **Czech:** Specifikace projektu
 

@@ -2,7 +2,7 @@
 description: >-
   Standard project directory structure — source code, documentation, experiments,
   local data, and web app layout. Apply when creating new projects or directories.
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Project Directory Structure
@@ -102,6 +102,12 @@ project-root/
 Do **not** use `src/backend/` and `src/frontend/` — it implies a single unified build
 that does not reflect reality.
 <!-- cs: Nepoužívej src/backend/ a src/frontend/ — implikuje jeden build, což neodpovídá realitě. -->
+
+A FastAPI backend (single-service or split) belongs under `backend/` or `api/` — this
+is also the path `140-fastapi.mdc`'s `globs` expects, so following it makes that rule
+auto-attach instead of relying on agent judgment alone.
+<!-- cs: Backend na FastAPI (samostatný i vydělený) patří pod backend/ nebo api/ — na tuto
+     cestu cílí i globs v 140-fastapi.mdc, takže dodržení = automatické načtení pravidla. -->
 
 ## `tests/` placement
 

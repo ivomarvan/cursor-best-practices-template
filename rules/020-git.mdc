@@ -2,7 +2,6 @@
 description: >-
   Git rules — commit conventions, branching, PR workflow, and generic .gitignore.
   Language-specific .gitignore entries live in the respective language rules.
-globs: "**/.gitignore, **/.gitattributes, **/CHANGELOG.md"
 alwaysApply: true
 ---
 
@@ -65,6 +64,7 @@ develop           ← integration of feature branches (optional for larger proje
 feature/<desc>    ← new functionality
 fix/<desc>        ← bug fix
 chore/<desc>      ← maintenance, dependency updates
+spike/<desc>      ← exploratory work / experiment epic (070-project-management.mdc)
 ```
 
 - Branches merged via **Pull Request / Merge Request** with code review.

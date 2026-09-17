@@ -2,8 +2,11 @@
 description: >-
   FastAPI best practices — project structure, dependency injection, service layer,
   Pydantic v2, pydantic-settings, lifespan, async patterns, error handling.
-  Activated for Python files in FastAPI projects.
-globs: "**/*.py"
+  Activated for files under a backend/api tree or matching the FastAPI layout this
+  rule itself prescribes below (main.py, router.py, dependencies.py, ...). For a
+  FastAPI file outside that layout, the agent should still pull this rule in based
+  on this description.
+globs: "**/backend/**/*.py, **/api/**/*.py, **/main.py, **/router.py, **/routers/**/*.py, **/dependencies.py, **/service.py, **/schemas.py"
 alwaysApply: false
 ---
 
@@ -15,8 +18,13 @@ alwaysApply: false
 
 <!-- cs: Struktura projektu — domain-driven organizace -->
 
-Organize by domain, not by file type.
-<!-- cs: Organizuj podle domény, ne podle typu souboru. -->
+Organize by domain, not by file type. Keep the app under a `backend/`/`api/` tree (see
+`060-project-structure.mdc`) and use the file names below (`router.py`, `service.py`,
+`dependencies.py`, `main.py`) — this rule's own `globs` (above) targets exactly this
+layout, so following it is what makes this rule auto-attach.
+<!-- cs: Organizuj podle domény, ne podle typu souboru. Drž appku pod stromem backend/api
+     (viz 060-project-structure.mdc) a použij jména souborů níže — glob tohoto pravidla
+     cílí přesně na tenhle layout, takže dodržení layoutu = automatické načtení pravidla. -->
 
 ```
 # ❌ — file-type grouping (hard to navigate as project grows)

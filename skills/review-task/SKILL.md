@@ -80,9 +80,14 @@ Any `✅` you cannot verify is a **finding** (severity: blocker).
 ### Step R3 — Re-run the test suite independently
 <!-- cs: Krok R3 — Spusť testy nezávisle -->
 
-Do not trust the report's test numbers. Run them yourself:
+Do not trust the report's test numbers. Run them yourself. If the project has a
+`Makefile` with a `check` target (deterministic gate — see `skills/python-dev/SKILL.md`),
+run that — it is the same command CI runs, so a Reviewer APPROVE cannot disagree with CI:
+<!-- cs: Nevěř číslům z reportu, spusť sám. Pokud existuje Makefile s cílem check, spusť
+     ten — je to stejný příkaz, který běží v CI. -->
 ```bash
-# language-appropriate; e.g.
+make check           # if a deterministic gate exists for this stack
+# or, language-appropriate, e.g.:
 pytest tests/ -v --tb=short
 ```
 Record real counts and exit code. Mismatch vs. `report.md` is a finding.
@@ -122,6 +127,7 @@ apm_ref: E010.T020
 apm_level: task
 created_by: Reviewer
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: Coder, Human
 created_at: <YYYY-MM-DD>
 updated_at: <YYYY-MM-DD>

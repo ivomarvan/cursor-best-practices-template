@@ -44,6 +44,7 @@ apm_ref: E010
 apm_level: epic
 created_by: Coder
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: Human, Planner
 created_at: <YYYY-MM-DD>
 updated_at: <YYYY-MM-DD>
@@ -81,10 +82,22 @@ Co bylo jinak než plánováno? Proč? Jaký mělo dopad?
 Poznatky z implementace relevantní pro plánování dalších Epik.
 (Rizika, technický dluh, přidané závislosti, potřebné refaktory.)
 
+## Využití tokenů (vyplní Human)
+Planner: ~<počet> · Coder: ~<počet> · Reviewer: ~<počet> — opsáno z UI Cursoru.
+Nepovinné pole — agent nemá spolehlivou introspekci vlastní spotřeby tokenů za celou
+session, proto ho nevyplňuje sám; ponech `—`, pokud to Human nedoplní.
+
 ## Reference
 - Epic Plan: [plan.md](plan.md)
 - Task Reports: [T010](task-010-name/report.md), [T020](task-020-name/report.md)
 ```
+
+The **"Využití tokenů"** section is Human-filled, not Coder-filled — an agent cannot
+reliably introspect its own session token usage; only Cursor's UI shows real counts. The
+Coder leaves it as `—` when writing the Epic Report; do not guess or estimate a number.
+<!-- cs: Sekci "Využití tokenů" vyplňuje Human, ne Coder — agent nemá spolehlivou
+     introspekci vlastní spotřeby tokenů, jen Cursor UI ukazuje reálná čísla. Coder ji
+     při psaní Epic Reportu nechává jako "—"; číslo nehádá. -->
 
 ## Part B — Roadmap Review (Planner + Human) [FER.2]
 <!-- cs: Část B — Review Roadmapy (Planner + Human) [FER.2] -->
@@ -153,6 +166,7 @@ Human should verify before approving Epic closure:
 <!-- cs: Výstupní checklist -->
 
 - [ ] `epic-NNN/report.md` — all required sections, in `<communication-language>` [FER.1]
+- [ ] "Využití tokenů" left as `—` unless Human already filled it in (Coder never estimates)
 - [ ] Roadmap reviewed with Human [FER.2]
 - [ ] `roadmap.md` updated if needed (with updated_at)
 - [ ] Human has confirmed readiness to proceed to next Epic

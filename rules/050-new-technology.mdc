@@ -90,3 +90,23 @@ Consult `030-docker-policy.mdc` and choose one:
   <!-- cs: Všechny nové závislosti jsou pinované na konkrétní verzi. -->
 - [ ] Each dependency has a justification comment in the dependency file.
   <!-- cs: Každá závislost má zdůvodnění v souboru závislostí. -->
+
+## Bulk registration (at project start)
+
+<!-- cs: Hromadná registrace (na startu projektu) -->
+
+When several technologies are introduced **at once** (typically Phase 0 / `project-init`,
+before any Task exists), run this checklist **once per technology** as usual, but do not
+repeat the full prose per technology in `README.md`. Instead:
+<!-- cs: Když se najednou zavádí víc technologií (typicky Fáze 0 / project-init, dřív než
+     existuje jakýkoli Task), projdi checklist pro každou technologii jednou jako obvykle,
+     ale v README.md neopakuj plnou prózu pro každou. Místo toho: -->
+
+- [ ] Record the outcome of items 1–6 above as **one consolidated table** in `README.md`
+  (columns: Technology | Docker decision | New rule/skill created | Dependency pinned).
+  <!-- cs: Zapiš výsledek bodů 1–6 jako jednu souhrnnou tabulku v README.md (sloupce:
+       Technologie | Rozhodnutí o Dockeru | Vytvořené pravidlo/skill | Závislost pinovaná). -->
+- [ ] One `docker-compose.yml` review pass covers all newly containerized services,
+  not one pass per technology.
+  <!-- cs: Jeden průchod docker-compose.yml pro všechny nově kontejnerizované služby,
+       ne jeden průchod na technologii. -->

@@ -2,7 +2,7 @@
 description: >-
   Meta-rules for writing Cursor rules (.mdc) and skills (SKILL.md).
   Apply these rules whenever creating or editing agent rules and skills.
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Meta-Rules: Writing Cursor Rules and Skills

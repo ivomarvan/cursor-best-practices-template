@@ -17,6 +17,15 @@ Checks performed:
     2. Length limits — `alwaysApply: true` rules <= 150 lines, `globs` rules <= 250
        lines, `skills/*/SKILL.md` <= 500 lines (see `rules/000-meta-rules-and-skills.mdc`
        for the source of these limits).
+    3. Frontmatter sanity — every `rules/*.mdc` has a YAML frontmatter block with an
+       `alwaysApply` key; and `alwaysApply: true` never appears together with a
+       non-empty `globs` (the `globs` key has no effect once `alwaysApply` is true —
+       it is dead configuration and a sign the wrong activation type was intended).
+
+Not checked: dead links between documents (references to renamed/removed rules or
+skills) — this would require a heuristic (regex over prose) with a real false-positive
+rate on code blocks that merely illustrate a path, so it is deliberately left out rather
+than shipped half-reliable.
 
 Exit code: 1 if any discrepancy was found, 0 if the layout is clean.
 
@@ -114,6 +123,7 @@ class InstallationChecker:
         results: list[CheckResult] = []
         results.extend(self._check_placement())
         results.extend(self._check_lengths())
+        results.extend(self._check_rule_frontmatter())
         return results
 
     def _check_placement(self) -> list[CheckResult]:
@@ -200,6 +210,11 @@ class InstallationChecker:
         for path in sorted(self._cursor_dir.rglob("*")):
             if not path.is_file() or path.suffix not in _CHECKED_SUFFIXES:
                 continue
+            if "templates" in path.relative_to(self._target).parts:
+                # Skill-shipped project deliverables (e.g. project-init's GLOSSARY.md /
+                # DECISIONS.md) are intentionally left bilingual — see
+                # scripts/lib/installer.py's matching exclusion.
+                continue
             text = path.read_text(encoding="utf-8", errors="replace")
             match = _LEAKED_COMMENT_PATTERN.search(text)
             if match:
@@ -226,6 +241,37 @@ class InstallationChecker:
                 self._check_line_limit(path, SKILL_LIMIT, "skill")
                 for path in sorted(skills_dir.glob("*/SKILL.md"))
             )
+        return results
+
+    def _check_rule_frontmatter(self) -> list[CheckResult]:
+        """Every rule must declare `alwaysApply`, and never combine it (`true`) with a
+        non-empty `globs` — that combination is dead configuration (see module docstring).
+        """
+        rules_dir = self._cursor_dir / "rules"
+        if not rules_dir.is_dir():
+            return []
+        results = []
+        for path in sorted(rules_dir.glob("*.mdc")):
+            text = path.read_text(encoding="utf-8", errors="replace")
+            frontmatter = _parse_frontmatter(text)
+            label = str(path.relative_to(self._target))
+            if "alwaysApply" not in frontmatter:
+                results.append(
+                    CheckResult(Status.VIOLATION, label, "missing 'alwaysApply' key in frontmatter")
+                )
+                continue
+            always_apply = frontmatter.get("alwaysApply", "").strip().lower() == "true"
+            has_globs = bool(frontmatter.get("globs", "").strip())
+            if always_apply and has_globs:
+                results.append(
+                    CheckResult(
+                        Status.VIOLATION,
+                        f"{label} alwaysApply+globs conflict",
+                        "globs has no effect once alwaysApply is true — remove one",
+                    )
+                )
+            else:
+                results.append(CheckResult(Status.OK, f"{label} frontmatter"))
         return results
 
     def _check_rule_length(self, path: Path) -> CheckResult:

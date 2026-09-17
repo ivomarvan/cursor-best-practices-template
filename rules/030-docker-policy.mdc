@@ -91,6 +91,14 @@ When introducing a new technology, framework, or runtime dependency to the proje
 **Default is containerization.** Exemption requires an explicit reason.
 <!-- cs: Výchozí volba je kontejnerizace. Výjimka vyžaduje explicitní zdůvodnění. -->
 
+**Spike/exploratory exception**: code on a `spike/` branch or under `experiments/` (see
+`070-project-management.mdc` spike Epic type) may skip the mandatory `README.docker.md`
+and pinned-version ceremony while it stays a spike. Apply this policy in full the moment
+the work is promoted to production (`experiments/` convention, `060-project-structure.mdc`).
+<!-- cs: Výjimka pro spike/experiment: kód na spike/ větvi nebo v experiments/ smí
+     přeskočit povinné README.docker.md a pinovanou verzi, dokud zůstává spikem. Jakmile
+     se přesune do produkce, platí tato politika beze zbytku. -->
+
 ## Disk Space — Avoiding Waste
 
 <!-- cs: Místo na disku — jak nezabírat zbytečně -->

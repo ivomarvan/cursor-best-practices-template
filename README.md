@@ -41,11 +41,9 @@ cursor-best-practices-template/
 ├── scripts/        # install_into_project.py, migrate_submodule_to_copy.py, lib/
 │                   # (NOT copied into a consuming project — tooling stays here)
 ├── doc/            # Template-level documentation and APM document templates
+│   ├── KNOWN_LIMITATIONS.md  # Reviewed and deliberately not fixed yet — see file for why
 │   ├── guides/             # How-to guides (e.g. agentic-engineering-resources.md)
 │   └── project-progress/   # APM templates (brief, spec, roadmap, epics, tasks)
-├── .cursor/
-│   ├── rules  →  ../rules     # symlink — enables rules while editing this repo
-│   └── skills →  ../skills    # symlink — enables skills while editing this repo
 ├── README.md
 ├── CHANGELOG.md                   # Version history
 └── README.project_management.md   # APM workflow documentation
@@ -78,26 +76,26 @@ per-field merge). Otherwise the default applies.
 | File | Topic | Activation |
 |------|-------|-----------|
 | `000-communication-language.mdc` | Communication language resolution (see LANGUAGE config, EN default) | always |
-| `000-meta-rules-and-skills.mdc` | How to write rules and skills | always |
+| `000-meta-rules-and-skills.mdc` | How to write rules and skills | on request |
 | `000-model-policy.mdc` | Role→model resolution (see AGENT_MODELS config): Human assigns via `/role-assign` or agent asks | always |
 | `010-general-programming.mdc` | OOP, SOLID, clean code, error handling, logging | always |
 | `020-git.mdc` | Conventional commits, branching, `.gitignore` | always |
 | `030-docker-policy.mdc` | When Docker is mandatory; exemptions | always |
 | `040-docker-standards.mdc` | Dockerfile standards, multi-stage builds | `Dockerfile*` |
 | `050-new-technology.mdc` | Process for adding new technologies | on request |
-| `060-project-structure.mdc` | Universal directory layout, `doc/` structure | always |
+| `060-project-structure.mdc` | Universal directory layout, `doc/` structure | on request |
 | `070-project-management.mdc` | APM workflow, terminology, file headers, DoR, ADR bridge | `doc/project-progress/**` |
 | `080-agent-security.mdc` | Untrusted-content / prompt-injection / lethal-trifecta defense | always |
 | `090-apm-orchestration.mdc` | Planner↔subagent protocol, band-based Human gates, report tiers, Human Gate Briefing | `doc/project-progress/**` |
 | `100-python.mdc` | Python 3.11+, type hints, docstrings, pytest, ruff | `**/*.py` |
 | `110-vuejs-vite-tailwind.mdc` | Vue 3 + Vite + Tailwind CSS, Composition API | `**/*.vue`, `**/*.ts` |
 | `120-cpp-esp32.mdc` | C/C++ ESP-IDF, FreeRTOS, RAII, Doxygen | `**/*.c`, `**/*.cpp`, `**/*.h` |
-| `130-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql` |
-| `140-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/router*.py`, `**/main.py` |
-| `150-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*.py` |
+| `130-sql-postgresql.mdc` | SQL conventions, Alembic, psycopg 3, roles | `**/*.sql`, `**/alembic/**` |
+| `140-fastapi.mdc` | FastAPI, pydantic-settings, dependency injection | `**/backend/**`, `**/api/**`, `**/router.py` |
+| `150-qdrant.mdc` | Qdrant client, collections, search, repository pattern | `**/*qdrant*.py`, `**/*vector*.py` |
 | `160-sqlalchemy.mdc` | SQLAlchemy 2.x ORM, async sessions, eager loading, Alembic autogenerate | `**/models.py`, `**/session.py` |
-| `170-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/*.py` |
-| `180-celery.mdc` | Celery tasks, queues, retries, worker config | `**/*.py` |
+| `170-redis.mdc` | Redis usage, key naming, TTL, client patterns | `**/redis_client.py`, `**/cache*.py` |
+| `180-celery.mdc` | Celery tasks, queues, retries, worker config | `**/tasks.py`, `**/celery*.py` |
 | `200-project-design-rules.mdc` | Config Resolution mechanism (default vs. `.user.md`) + binding DESIGN_RULES | always |
 
 ### Skills (`skills/`)
@@ -116,6 +114,14 @@ per-field merge). Otherwise the default applies.
 | `execute-task/` | APM Phase T | Implement Task: code + tests + DoD + report |
 | `review-task/` | APM Phase R | Independent Reviewer: diff vs spec/dod → `review.md` verdict |
 | `review-epic/` | APM Phase ER | Write Epic Report + review Roadmap validity |
+
+> **Deterministic gate coverage:** `skills/python-dev/templates/` ships a `Makefile`
+> (`make check` = ruff + mypy --strict + pytest) and a matching GitHub Actions
+> `ci.yml` — the same command the Coder, the Reviewer, and CI all run, so "passes"
+> means the same thing everywhere (see `rules/090-apm-orchestration.mdc`). This exists
+> **only for Python** today. C++/ESP32 and Vue/Vite need an equivalent `make check`-style
+> target defined for their own toolchains (`idf.py build` + test; `npm test` + `eslint` +
+> `vue-tsc`) — that is future template work, not yet shipped.
 
 ### Commands (`commands/`)
 

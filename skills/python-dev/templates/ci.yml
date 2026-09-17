@@ -1,0 +1,28 @@
+# Deterministic-gate CI workflow for Python projects — runs the exact same `make check`
+# target a Coder/Reviewer runs locally, so CI cannot disagree with what was reviewed.
+# See skills/python-dev/SKILL.md and rules/090-apm-orchestration.mdc.
+#
+# Copy this file to .github/workflows/ci.yml in your project.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Docker Compose services
+        run: docker compose up -d
+
+      - name: Run the deterministic gate
+        run: make check
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

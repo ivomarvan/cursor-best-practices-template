@@ -254,6 +254,7 @@ Once all Tasks are approved:
 ```
 doc/project-progress/
 ├── GLOSSARY.md                      # Bilingual glossary of APM terms
+├── DECISIONS.md                     # Decisions register — fast SoT conflict-check target
 ├── brief.md                         # Project Brief (Human, verbatim)
 ├── spec.md                          # Project Specification (Planner)
 ├── roadmap.md                       # Roadmap — ordered Epic list (Planner)
@@ -302,9 +303,10 @@ Every APM document begins with YAML front matter:
 apm_category: task-spec         # document type (see table below)
 apm_ref: E010.T020              # reference: PROJECT | E010 | E010.T020
 apm_level: task                 # project | epic | task
-created_by: Planner             # Planner | Coder | Human
+created_by: Planner             # Planner | Coder | Reviewer | Human
 model: <model-id>               # actual model used (assigned per rules/000-model-policy.mdc); omit if Human
-intended_for: Coder             # Planner | Coder | Human | All
+template_version: v1.1.0        # from .cursor/TEMPLATE_VERSION, read once at document creation
+intended_for: Coder             # Planner | Coder | Reviewer | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
 ---
@@ -313,6 +315,7 @@ updated_at: 2026-05-08
 | `apm_category` value | Document |
 |---------------------|----------|
 | `project-brief` | `brief.md` |
+| `decisions-register` | `DECISIONS.md` |
 | `project-spec` | `spec.md` (project level) |
 | `roadmap` | `roadmap.md` |
 | `epic-plan` | `epic-NNN/plan.md` |
@@ -357,7 +360,8 @@ provide:
 ## Terminology Reference
 
 For full bilingual definitions of all APM terms, see
-[`doc/project-progress/GLOSSARY.md`](doc/project-progress/GLOSSARY.md).
+[`skills/project-init/templates/GLOSSARY.md`](skills/project-init/templates/GLOSSARY.md)
+(the file `project-init` seeds into a new project's `doc/project-progress/GLOSSARY.md`).
 
 Quick reference:
 
