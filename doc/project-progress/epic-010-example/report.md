@@ -4,6 +4,7 @@ apm_ref: E010
 apm_level: epic
 created_by: Coder
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: Human, Planner
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
@@ -18,10 +19,10 @@ updated_at: YYYY-MM-DD
 
 ## Dokončené tasky
 
-| Task | Název | Výsledek |
-|------|-------|---------|
-| T010 | <name> | ✅ |
-| T020 | <name> | ✅ |
+| Task | Název | Pásmo | Human brána po tasku | Kola revize | BLOCKED | Výsledek |
+|------|-------|-------|----------------------|-------------|---------|---------|
+| T010 | <name> | low | ne | 0 | 0 | ✅ |
+| T020 | <name> | high | ano [FT.7] | 1 | 0 | ✅ |
 
 ## Klíčová rozhodnutí a poznatky
 <!-- Decisions made during the Epic that affect future development.

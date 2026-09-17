@@ -44,7 +44,19 @@ Paste or transcribe the Human's informal input verbatim. Do not interpret yet.
 ### Step 2 — Iterative Clarification [F0.2]
 <!-- cs: Krok 2 — Iterativní upřesnění [F0.2] -->
 
-Ask Human targeted questions to resolve ambiguities. Cover:
+**Skip this step** if the brief already contains a decisions register (or the project has
+a filled `DECISIONS.md`) **and** no open blocking questions — a complete brief is not
+re-interrogated (see `070-project-management.mdc` SoT rule: what the SoT answers, do not
+ask). Go straight to Step 3.
+<!-- cs: Krok přeskoč, když brief už má registr rozhodnutí (nebo projekt vyplněný
+     DECISIONS.md) a žádné otevřené blokující otázky — hotový brief se znovu nevyslýchá.
+     Rovnou na krok 3. -->
+
+Otherwise ask Human targeted questions to resolve ambiguities — **one decision per
+question**, each with the options and your recommendation (`005-decision-protocol.mdc`).
+Cover:
+<!-- cs: Jinak polož cílené otázky — jedno rozhodnutí na otázku, s možnostmi a doporučením
+     (005-decision-protocol.mdc). Pokryj: -->
 - **Scope**: what is explicitly IN and OUT of scope?
 - **Users**: who uses the system? what are their key workflows?
 - **Constraints**: technology stack, deployment target, performance requirements?
@@ -79,6 +91,18 @@ Required sections:
 4. **Key Technical Decisions** — stack, architecture style, major constraints
 5. **Assumptions** — what we assume to be true
 6. **Project-Level Definition of Done** — criteria for project completion
+7. **Source of Truth** — the ordered list of SoT documents (`070-project-management.mdc`);
+   `spec.md` alone is the default, a detailed brief may stay in the list.
+
+**Detailed brief.** If the brief already contains architecture, data model, or domain
+detail (tables, schemas, flows), do **not** compress it into `spec.md`. Move each such
+section to its own file under `doc/architecture/<topic>.md` (verbatim, Human's input is
+never rewritten), link it from `spec.md` § 4, and list the moved files in the SoT
+section. `spec.md` stays the short entry point; the detail stays authoritative.
+<!-- cs: 7. Source of Truth — seřazený seznam SoT dokumentů; default je jen spec.md.
+     Podrobný brief: architekturu, datový model a doménový detail nekomprimuj do spec.md,
+     přesuň každou sekci beze změny do doc/architecture/<téma>.md, odkaž ze spec.md § 4 a
+     soubory uveď v sekci SoT. spec.md zůstane krátkým vstupem, detail zůstane závazný. -->
 
 ### Step 4 — Write Roadmap [F0.4]
 <!-- cs: Krok 4 — Napsat Roadmapu [F0.4] -->
@@ -131,7 +155,8 @@ cp .cursor/skills/project-init/templates/DECISIONS.md doc/project-progress/DECIS
 <!-- cs: Výstupní checklist -->
 
 - [ ] `doc/project-progress/brief.md` — Human's input preserved verbatim
-- [ ] `doc/project-progress/spec.md` — all 6 required sections present
+- [ ] `doc/project-progress/spec.md` — all 7 required sections present
+- [ ] Detailed brief sections moved verbatim to `doc/architecture/` and linked (if any)
 - [ ] `doc/project-progress/roadmap.md` — Epics numbered E010, E020...
 - [ ] `doc/project-progress/GLOSSARY.md` — copied from template
 - [ ] `doc/project-progress/DECISIONS.md` — copied from template (empty register)

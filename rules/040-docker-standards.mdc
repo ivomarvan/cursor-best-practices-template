@@ -133,6 +133,19 @@ volumes:
   postgres_data:
 ```
 
+Application container opt-in via `profiles` (infrastructure always up, app natively —
+see `030-docker-policy.mdc`):
+<!-- cs: Kontejner aplikace volitelný přes profiles (infrastruktura vždy běží, aplikace
+     nativně — viz 030-docker-policy.mdc): -->
+
+```yaml
+services:
+  api:
+    profiles: ["full"]    # opt-in: docker compose --profile full up
+  db:
+    image: postgres:16.2-alpine   # always available
+```
+
 ## Security
 
 <!-- cs: Bezpečnost -->

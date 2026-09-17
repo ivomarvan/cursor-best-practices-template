@@ -4,6 +4,7 @@ apm_ref: PROJECT
 apm_level: project
 created_by: Planner
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: All
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD

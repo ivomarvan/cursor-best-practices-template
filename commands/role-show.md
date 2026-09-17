@@ -34,16 +34,18 @@ Resolution mechanism in `rules/200-project-design-rules.mdc`).
 
 Show the role × band table (`low`/`medium`/`high`, see `rules/000-model-policy.mdc`). For
 any cell marked `unassigned`, note that the agent will **ask** the Human before acting in
-that role/band (and that `/role-assign` can set it). A `—` cell (e.g. Planner `low`) means
-"not applicable", not "unassigned".
+that role/band (and that `/role-assign` can set it). A `—` cell (Planner `low`, Reviewer
+`low`) means "not applicable" — never occurs / gate only — not "unassigned".
 <!-- cs: Zobraz tabulku role × pásmo. U buňky `unassigned` upozorni, že se agent před prací
-     v té roli/pásmu ZEPTÁ Humana (a že /role-assign ji nastaví). Buňka `—` (např. Planner
-     low) znamená "neaplikuje se", ne "nepřiřazeno". -->
+     v té roli/pásmu ZEPTÁ Humana (a že /role-assign ji nastaví). Buňka `—` (Planner low,
+     Reviewer low) znamená "neaplikuje se" — nenastává / jen gate — ne "nepřiřazeno". -->
 
 ### Step 3 — Reminder
 <!-- cs: Krok 3 — Připomínka -->
 
-Note the Cursor limitation: models are not auto-switched per role; the Human selects the
-model in the model selector.
-<!-- cs: Připomeň omezení Cursoru: modely se per role nepřepínají automaticky; Human vybírá
-     model v selektoru. -->
+Note the Cursor limitation: the parent window's model is not auto-switched per role — the
+Human selects it in the model selector; subagents get the model via the call's `model`
+parameter (`rules/000-model-policy.mdc`, Resolution rule step 2).
+<!-- cs: Připomeň omezení Cursoru: model rodičovského okna se per role nepřepíná — Human ho
+     vybírá v selektoru; subagenti dostanou model parametrem model při volání
+     (000-model-policy.mdc, krok 2). -->

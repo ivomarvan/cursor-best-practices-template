@@ -11,25 +11,37 @@ description: >-
 ## What this command does
 <!-- cs: Co příkaz dělá -->
 
-1. Runs `scripts/run_all_tests.sh` (project-specific CI mirror).
+1. Runs the project's **deterministic gate** — `make check` (see
+   `skills/python-dev/SKILL.md`), the same command the Coder, the Reviewer, and CI run.
 2. If any check fails → prints the failure and **stops**. No git operations.
 3. If all checks pass → stages all changes, builds a commit message, commits, pushes.
 
+`/push` is the slash-command form of the explicit consent that `020-git.mdc` requires;
+`commit-task` is the phrase-triggered form with feature-branch and CI variants.
+
 <!-- cs:
-1. Spustí scripts/run_all_tests.sh (projektový CI mirror).
+1. Spustí deterministický gate projektu — make check, stejný příkaz jako Coder, Reviewer a CI.
 2. Pokud některá kontrola selže → vypíše chybu a ZASTAVÍ se. Žádné git operace.
 3. Pokud vše projde → přidá změny, sestaví commit message, commitne, pushne.
+/push je slash-příkazová podoba výslovného souhlasu z 020-git.mdc; commit-task je podoba
+spouštěná frází, s variantami pro feature větev a CI.
 -->
 
 ## Steps for the agent
 <!-- cs: Kroky pro agenta -->
 
-### Step 1 — Run CI checks
-<!-- cs: Krok 1 — Spusť CI kontroly -->
+### Step 1 — Run the deterministic gate
+<!-- cs: Krok 1 — Spusť deterministický gate -->
 
 ```bash
+make check                      # if the project has a Makefile with a `check` target
+# fallback for projects without one:
 bash scripts/run_all_tests.sh
 ```
+
+If neither exists: **stop** and tell the Human the project has no gate yet (first Task of
+the first Epic should create one — `skills/python-dev/SKILL.md`).
+<!-- cs: Pokud neexistuje ani jedno: zastav se a řekni Humanovi, že projekt ještě nemá gate. -->
 
 - If exit code ≠ 0: report which check failed, **stop here**. Do not proceed.
 - If exit code = 0: continue.
@@ -156,6 +168,6 @@ v 020-git.mdc. Je to bezpečné, protože CI kontroly prošly v kroku 1.
 Stop immediately and report if any of the following is true:
 <!-- cs: Okamžitě zastavte a nahlaste pokud platí cokoliv z následujícího: -->
 
-- `scripts/run_all_tests.sh` exits with non-zero.
+- `make check` (or the fallback script) exits with non-zero, or no gate exists.
 - `git status` shows nothing to commit (nothing staged after `git add -A`).
 - Staged files include `.env`, credentials, or private keys.

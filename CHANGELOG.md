@@ -2,6 +2,84 @@
 
 All notable changes to `cursor-best-practices-template` are documented in this file.
 
+## v1.2.0
+
+### Added
+
+- **Manifest-based ownership inside `.cursor/`** (`.cursor/TEMPLATE_MANIFEST`): the
+  installer records every file it writes and on re-install removes/rewrites exactly
+  those. Project-owned rules (`rules/9xx-<slug>.mdc` — reserved namespace), own skills
+  and commands, and Cursor's `mcp.json` survive. Pre-manifest installs fall back to
+  removing only the current template's paths. `check_installation.py` verifies the
+  manifest, reports project-owned files as kept, and flags a rule outside `9xx-` that is
+  not in the manifest as a probable orphan. `200-project-design-rules.mdc` § Ownership,
+  `000-meta` file naming, and README § *Adding project-specific rules and skills*
+  (replaces the submodule-only wrapper pattern as the primary guidance) document it.
+- **`rules/005-decision-protocol.mdc`** (`alwaysApply`): how any role asks the Human for a
+  decision — one decision per message, plain-language problem, 2–4 options with
+  consequences, one recommendation marked *(Recommended)*, then wait. Referenced from the
+  Human Gate Briefing (`090` § C) and from `project-init` Step 2.
+- **Template's own deterministic gate**: `Makefile` (`make check` = ruff + ruff format
+  --check + mypy --strict + pytest), `pyproject.toml`, `tests/` (strip_comments unit tests;
+  install into a temp project and run `check_installation.py` on it), and
+  `.github/workflows/ci.yml`. A rule over its line limit or a leaked `cs:` comment now
+  fails CI here, not in a consuming project.
+- **`doc/DECISIONS.md`**: append-only register of settled template design questions.
+- **Installer copies `apm_config/*.default.md` to `.cursor/apm_config/`**, so the
+  resolution rule in `200-project-design-rules.mdc` is literally true inside the project.
+  `check_installation.py` verifies the three default files.
+- **`090` § E — Scope of the ceremony**: 6–8 Task cap moved here from § D; explicit
+  statement that changes outside an Epic (typos, docs, config) need no APM ceremony.
+- **Epic Report**: `Kola revize` (REQUEST CHANGES count) and `BLOCKED` columns as the
+  cheap DoR-quality signal (`review-epic`, example `report.md`).
+- **`project-init`**: Step 2 is skipped when the brief already has a decisions register
+  and no open questions; Step 3 gains § 7 *Source of Truth* and the rule to move detailed
+  brief sections verbatim to `doc/architecture/` instead of compressing them.
+- **`README.cs.md`**: plain-language Czech guide — what the template is, vocabulary,
+  installation, APM day-to-day, git trigger phrases, project rules, FAQ, file map.
+- **README.md and README.project_management.md rewritten** against the current state:
+  vocabulary sections, quick start, manifest-based ownership, bands/gates/subagent
+  protocol, decision protocol, SoT + `DECISIONS.md`, spike Epics, upgrade routine,
+  *Developing the template*; submodule/symlink guides collapsed into details blocks.
+
+### Changed
+
+- **Reviewer `low` = `—`** in `AGENT_MODELS.default.md` (was `unassigned`, which made
+  every `low` Task stop to ask the Human). `000-model-policy.mdc` defines `—` (step 4)
+  and splits step 2 into parent-window (remind Human) vs. subagent (pass `model`
+  parameter) delivery.
+- **`090` § A / `review-task`**: the Reviewer reads `report.md` last (integrity check),
+  the Planner's prompt never paraphrases it; dirty working tree → path-scoped diff over
+  `spec.md` Outputs, stated in `review.md`; after APPROVE the Planner *offers* a commit
+  (Human answers with a trigger phrase) — never commits on its own.
+- **`commit-task`**: new *Before Every Commit* block — Reviewer APPROVE (or gate for
+  `low`), `make check` locally, secret guard after `git add -A`.
+- **`/push`** runs `make check` (fallback `scripts/run_all_tests.sh`); documented as the
+  slash-command form of the consent `020-git.mdc` requires.
+- **`030-docker-policy.mdc`**: Docker exemptions are recorded in the project's
+  `DESIGN_RULES.user.md`, never by editing the rule inside `.cursor/`; `profiles` YAML
+  example moved to `040-docker-standards.mdc`.
+- **Context slimming of `alwaysApply` rules**: generic `.gitignore` block moved from
+  `020-git.mdc` to `060-project-structure.mdc`; read-only git command list removed;
+  bilingual-comment convention referenced from `000-communication-language.mdc` instead
+  of duplicated (canonical copy in `000-meta-rules-and-skills.mdc`). `120-cpp-esp32.mdc`
+  trimmed under the 250-line `globs` limit (installed form).
+- **`000-meta-rules-and-skills.mdc`**: line limits are measured on the installed
+  (comment-stripped) form.
+- **`hooks/session-start.sh`** sets `core.hooksPath` only when unset; an existing
+  different value is respected and a chaining hint printed. `hooks/README.md` updated for
+  Option C.
+- **`skills/python-dev/templates/Makefile`**: `RUNNER` and `MYPY_PATHS` variables —
+  `make check RUNNER=` runs the gate natively for Docker-exempt projects and spikes.
+- Report tier row says 7 sections (matches `070`); example APM docs carry
+  `template_version`; `README.md` fork guide merges `upstream/master`.
+
+### Fixed
+
+- `check_installation.py`: `apm_config/` is expected under `.cursor/` (was listed as a
+  violation); `tests/` added to the never-copied set; mypy `--strict` clean.
+- Stale reference to `communication-language.mdc` in `000-meta-rules-and-skills.mdc`.
+
 ## v1.1.0
 
 ### Added

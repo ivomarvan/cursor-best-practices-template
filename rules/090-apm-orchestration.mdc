@@ -26,10 +26,17 @@ cost to actual risk", using the Task's band (`low`/`medium`/`high`, see `000-mod
 
 Human runs the chat with the **Planner**; Planner spawns Coder and Reviewer as subagents.
 
-- Give the Reviewer only `spec.md`, `dod.md`, and `git diff`. Mark `report.md` as a
-  **claim to verify**, never as evidence — the Coder's own wording (e.g. "tests pass")
-  must not leak into the Reviewer's prompt, or independence is lost even with a
-  fresh-context subagent.
+- The Reviewer forms its findings from `spec.md`, `dod.md`, the `git diff`, and its own
+  test run **first**; it opens `report.md` only afterwards, to check report integrity
+  (`review-task` steps R1–R4). The Planner's prompt to the Reviewer must not paraphrase
+  the report — the Coder's own wording (e.g. "tests pass") leaking into the prompt breaks
+  independence even with a fresh-context subagent.
+- **Diff scope.** If the working tree holds changes from more than this Task (nothing was
+  committed in between), the Reviewer diffs only the paths named in `spec.md` Outputs and
+  states in `review.md` that the review was path-scoped. The clean alternative is a
+  commit per Task — the Human decides that: after each APPROVE the Planner **offers**
+  a commit (one line: *"Commit this Task? Reply with a trigger phrase, `020-git.mdc`."*)
+  and never commits on its own.
 - **The parent window does not write code in Phase T** — except the `low`-band exception
   in §D below. Otherwise the `model:` audit trail breaks and code ships unreviewed.
 - Read the verdict from `review.md`, never from your own summary of it.
@@ -50,11 +57,15 @@ Human runs the chat with the **Planner**; Planner spawns Coder and Reviewer as s
   `epic-NNN/plan.md` and the state of every task directory in it; continue from the first
   Task that has no `review.md` with verdict APPROVE."* This is the standard handoff
   sentence, not a one-off instruction to reconstruct each time.
-<!-- cs: Reviewerovi jen spec/dod/diff; report.md je tvrzení k ověření. Rodičovské okno
-     ve fázi T nepíše kód (kromě výjimky §D). Verdikt čti z review.md. Nejasnost řeš před
-     zadáním subagentovi. Coder subagent se ptá Plannera, ne Humana. Subagent hlásí
-     přesně DONE: <cesta> nebo BLOCKED: <otázka>, žádný kód ani prózu. Nový Planner chat
-     po zaplnění okna začíná standardní větou: přečti plan.md a stav tasků, pokračuj od
+<!-- cs: Reviewer si nálezy udělá nejdřív ze spec/dod/diffu a vlastního běhu testů,
+     report.md otevře až potom kvůli integritě; Planner v promptu report neparafrázuje.
+     Rozsah diffu: když strom obsahuje víc tasků, Reviewer diffuje jen cesty z Outputs
+     a napíše to do review.md; čistá alternativa je commit po tasku — Planner ho po
+     APPROVE nabídne jednou větou, nikdy neprovede sám. Rodičovské okno ve fázi T nepíše
+     kód (kromě výjimky §D). Verdikt čti z review.md. Nejasnost řeš před zadáním
+     subagentovi. Coder subagent se ptá Plannera, ne Humana. Subagent hlásí přesně
+     DONE: <cesta> nebo BLOCKED: <otázka>, žádný kód ani prózu. Nový Planner chat po
+     zaplnění okna začíná standardní větou: přečti plan.md a stav tasků, pokračuj od
      prvního tasku bez APPROVE v review.md. -->
 
 ## B — Gate and report tier by band
@@ -62,17 +73,18 @@ Human runs the chat with the **Planner**; Planner spawns Coder and Reviewer as s
 
 | Band | Human gate (FT.7) | Report tier | Written by |
 |---|---|---|---|
-| `high` | Every Task | Full (6 sections, see `070-project-management.mdc`) | Coder |
+| `high` | Every Task | Full (7 sections, see `070-project-management.mdc`) | Coder |
 | `medium` | None per Task — surfaced in the Epic Report table (§C) | Short: *What was implemented*, *Inputs/outputs*, *Regression test results*, *DoD* | Coder |
 | `low` | None — Reviewer gate (tests/lint) + APPROVE is sufficient | Micro: 5 lines — what, files touched, gate result | Coder, or Planner directly (§D) |
 
-A Task is not done without a Reviewer verdict in every band — for `low`, that may be the
-deterministic gate alone if `AGENT_MODELS` intentionally leaves Reviewer `low` unassigned
-(see `000-model-policy.mdc`); otherwise an explicit `review.md` APPROVE is required.
-<!-- cs: Task není hotový bez verdiktu Reviewera v žádném pásmu — u low to smí být jen
-     deterministická brána, pokud AGENT_MODELS záměrně nechává Reviewer low nepřiřazeného;
-     jinak je potřeba explicitní APPROVE v review.md. Tabulka: high = brána po každém
-     tasku, medium/low = ne, jen v Epic Reportu. -->
+A Task is not done without a Reviewer verdict in every band — for `low`, that is the
+deterministic gate alone when `AGENT_MODELS` has Reviewer `low` = `—` (the template
+default, see `000-model-policy.mdc`); if a project assigned a model there, an explicit
+`review.md` APPROVE is required.
+<!-- cs: Task není hotový bez verdiktu Reviewera v žádném pásmu — u low je to jen
+     deterministická brána, když má AGENT_MODELS Reviewer low = — (default šablony);
+     pokud projekt přiřadil model, je potřeba explicitní APPROVE v review.md. Tabulka:
+     high = brána po každém tasku, medium/low = ne, jen v Epic Reportu. -->
 
 ### Escalation raises the gate too
 <!-- cs: Eskalace zvedá i bránu -->
@@ -98,18 +110,31 @@ and wait:
 
 **Where we are:** 1–2 sentences — position in the Epic/project, what's done, what's next.
 **What changed:** 3–5 bullets, not the full report.
-**Decision needed:** a concrete question or A-vs-B choice — never "please approve".
+**Decision needed:** one concrete question or A-vs-B choice with a recommendation
+(`005-decision-protocol.mdc`) — never "please approve", never several at once.
 **If you do nothing:** the default behavior / consequence of inaction.
 ```
 
-## D — Low-band exceptions
-<!-- cs: D — Výjimky pro pásmo low -->
+## D — Low-band exception
+<!-- cs: D — Výjimka pro pásmo low -->
 
-- **Parent-window implementation.** For a `low`-band Task, the Planner may implement it
-  directly in the parent window instead of spawning a Coder subagent. Trade-off: no
-  separate `model:` audit entry for that change — note it in `plan.md`'s Task row instead
-  of a standalone `report.md`.
+**Parent-window implementation.** For a `low`-band Task, the Planner may implement it
+directly in the parent window instead of spawning a Coder subagent. Trade-off: no
+separate `model:` audit entry for that change — note it in `plan.md`'s Task row instead
+of a standalone `report.md`.
+<!-- cs: Planner smí low task napsat sám v rodičovském okně (poznámka v plan.md místo
+     report.md). -->
+
+## E — Scope of the ceremony
+<!-- cs: E — Rozsah ceremonie -->
+
 - **Task cap.** An Epic plans **6–8 Tasks**. If decomposition needs more, split into two
   Epics — a wider Epic degrades planning quality more than it saves ceremony.
-<!-- cs: Planner smí low task napsat sám v rodičovském okně (poznámka v plan.md místo
-     report.md). Epika plánuje 6–8 tasků; víc = rozdělit na dvě epiky. -->
+- **Outside an Epic.** Typos, documentation, config tweaks and similar changes the Human
+  asks for directly are **not** Tasks: no `spec.md`, no `report.md`, no Reviewer. They
+  follow `020-git.mdc` and the project's deterministic gate. Do not answer such a request
+  with `BLOCKED` because it lacks an Epic.
+<!-- cs: Epika plánuje 6–8 tasků; víc = rozdělit na dvě epiky. Mimo epiku: překlepy,
+     dokumentace, konfigurace na přímé zadání Humana nejsou tasky — bez spec/report/
+     Revieweru, řídí se 020-git.mdc a gatem projektu. Neodpovídej BLOCKED jen proto, že
+     chybí epika. -->

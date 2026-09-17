@@ -48,6 +48,21 @@ Parse the Human's message to identify:
 
 <!-- cs: Parsuj seznam tasků a variantu z trigger phrase. -->
 
+## Before Every Commit (all variants)
+<!-- cs: Před každým commitem (všechny varianty) -->
+
+1. **Reviewer verdict.** For an APM Task, `task-NNN/review.md` must read APPROVE (or, for
+   `low` with Reviewer `—`, the gate must pass) — unless the Human explicitly says
+   "commit without review". Never commit a Task the Reviewer rejected.
+2. **Deterministic gate locally**: `make check` if the project has it. A red gate stops
+   the commit — fixing locally is cheaper than a CI round trip.
+3. **Secret guard.** After `git add -A`, run `git status --short`; if it stages `.env`,
+   credentials, private keys, or anything under `nogit_data/`, unstage them and **stop**.
+<!-- cs: 1. Verdikt Revieweru: review.md tasku = APPROVE (u low s Reviewer — stačí gate),
+     pokud Human výslovně neřekne "commit bez revize". 2. make check lokálně, červený gate
+     commit zastaví. 3. Po git add -A zkontroluj git status; .env, credentials, klíče,
+     nogit_data/ odstraň ze stage a zastav se. -->
+
 ## Branch Naming Convention
 <!-- cs: Pojmenování větví -->
 
@@ -194,7 +209,7 @@ master
 ```
 
 Rules:
-- Execute the task before committing (if not yet done).
+- Execute the task **and obtain the Reviewer's APPROVE** before committing (if not yet done).
 - Each new branch is created from the previous feature branch (not from `master`).
 - Squash merge to master only after the **last task's** CI is green.
 - If any task fails CI after max attempts: STOP, report, do NOT proceed to next task.

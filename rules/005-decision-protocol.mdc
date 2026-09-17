@@ -1,0 +1,77 @@
+---
+description: >-
+  How the agent asks the Human for a decision — one decision at a time, plain-language
+  problem statement, options with consequences, one recommendation, then wait.
+alwaysApply: true
+---
+
+# Decision Protocol — Asking the Human
+
+<!-- cs: Protokol rozhodování — jak se ptát Humana -->
+
+Applies to every role (Planner, Coder, Reviewer) and every phase, in APM and outside it.
+<!-- cs: Platí pro každou roli a fázi, v APM i mimo něj. -->
+
+## When to ask
+
+<!-- cs: Kdy se ptát -->
+
+- **Ask** for genuine decisions: scope, trade-offs with lasting consequences, risk, cost,
+  anything the SoT and `DECISIONS.md` do not answer.
+  <!-- cs: Ptej se na skutečná rozhodnutí: rozsah, trade-offy s trvalými důsledky, riziko,
+       cena, cokoli, co SoT a DECISIONS.md neřeší. -->
+- **Do not ask** about routine judgment calls a careful colleague would make alone —
+  make them, and record them in the report (`## Použité metody a rozhodnutí`).
+  <!-- cs: Neptej se na rutinní volby, které by pečlivý kolega udělal sám — udělej je a
+       zapiš do reportu. -->
+- First finish everything that does **not** depend on the answer; ask at the end of the
+  turn, together with the delivered progress.
+  <!-- cs: Nejdřív dokonči vše, co na odpovědi nezávisí; ptej se na konci tahu spolu s
+       odvedenou prací. -->
+
+## How to ask — one decision per message
+
+<!-- cs: Jak se ptát — jedno rozhodnutí na zprávu -->
+
+1. **One decision.** Never batch several questions. The next one comes after the answer.
+   <!-- cs: Jedno rozhodnutí. Nikdy neslučuj více otázek; další přijde po odpovědi. -->
+2. **Problem, plainly.** Explain as to someone who has not seen the code: what is
+   undecided, why it matters, what happens if it stays open. No unexplained jargon.
+   <!-- cs: Problém polopaticky: co není rozhodnuto, proč na tom záleží, co se stane,
+        když to zůstane otevřené. Žádný nevysvětlený žargon. -->
+3. **Options.** 2–4 realistic options, each with its consequence in one line.
+   <!-- cs: Možnosti: 2–4 realistické, každá s důsledkem v jednom řádku. -->
+4. **Recommendation.** Name one option and say why. Put it first, marked *(Recommended)*.
+   <!-- cs: Doporučení: jednu možnost pojmenuj a zdůvodni; uveď ji první s označením
+        (Recommended). -->
+5. **Wait.** Do not act on a guess and do not implement the recommended option before the
+   answer — unless the Human has pre-authorized defaults for that class of decision.
+   <!-- cs: Počkej. Nejednej podle odhadu a nezačínej doporučenou možnost před odpovědí —
+        pokud Human pro tento typ rozhodnutí předem nepovolil defaulty. -->
+
+If a structured question tool is available in the current mode, use it with exactly this
+content (problem in the prompt, options as choices, recommended first).
+<!-- cs: Je-li k dispozici nástroj pro strukturované otázky, použij ho se stejným
+     obsahem (problém v zadání, možnosti jako volby, doporučená první). -->
+
+## Template
+
+<!-- cs: Šablona -->
+
+Written in `<communication-language>`:
+<!-- cs: Psáno v <communication-language>: -->
+
+```markdown
+**Decision 1/N — <short title>**
+Problem: <2–4 plain sentences>
+Options:
+  A) <option> — <consequence>          (Recommended)
+  B) <option> — <consequence>
+I recommend A because <one reason>.
+```
+
+Within APM, the *Decision needed* line of the Human Gate Briefing
+(`090-apm-orchestration.mdc` § C) follows this protocol; subagents route decisions to the
+Planner as `BLOCKED: <question>` in the same shape.
+<!-- cs: V APM se tímto protokolem řídí řádek Decision needed v Human Gate Briefingu;
+     subagenti posílají rozhodnutí Plannerovi jako BLOCKED: <otázka> ve stejném tvaru. -->

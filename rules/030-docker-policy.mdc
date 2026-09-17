@@ -63,16 +63,10 @@ services:
     image: redis:7.2-alpine
 ```
 
-Use `profiles` to make the application container opt-in when native environment suffices:
-<!-- cs: Použij profiles, aby kontejner aplikace byl volitelný, pokud nativní prostředí postačuje: -->
-
-```yaml
-services:
-  api:
-    profiles: ["full"]    # opt-in: docker compose --profile full up
-  db:
-    image: postgres:16.2-alpine   # always available
-```
+Use compose `profiles` to make the application container opt-in when the native
+environment suffices (example in `040-docker-standards.mdc`).
+<!-- cs: Použij compose profiles, aby kontejner aplikace byl volitelný, pokud nativní prostředí
+     postačuje (příklad v 040-docker-standards.mdc). -->
 
 ## Adding a New Technology
 
@@ -84,9 +78,14 @@ When introducing a new technology, framework, or runtime dependency to the proje
 
 1. **Containerize it** — add the service to `docker-compose.yml` with a pinned image version.
    <!-- cs: Kontejnerizuj — přidej službu do docker-compose.yml s pinovanou verzí image. -->
-2. **Exempt it** — add the technology type to the Docker Exclude List in this rule
-   (`030-docker-policy.mdc`) with a written justification.
-   <!-- cs: Přidej výjimku — doplň typ technologie do Docker Exclude List v tomto pravidle (030-docker-policy.mdc) s písemným zdůvodněním. -->
+2. **Exempt it** — record the exemption with a written justification in the project's
+   `DESIGN_RULES.user.md` (section *Docker exemptions*, see `200-project-design-rules.mdc`).
+   Never edit this rule inside a consuming project — it is template-owned and rewritten
+   on re-install. If the exemption is general, propose it for the Exclude List above.
+   <!-- cs: Přidej výjimku — zapiš ji s písemným zdůvodněním do projektového
+        DESIGN_RULES.user.md (sekce Docker exemptions, viz 200-project-design-rules.mdc).
+        Toto pravidlo v konzumujícím projektu nikdy needituj — patří šabloně a při
+        re-instalaci se přepíše. Je-li výjimka obecná, navrhni ji do Exclude Listu výše. -->
 
 **Default is containerization.** Exemption requires an explicit reason.
 <!-- cs: Výchozí volba je kontejnerizace. Výjimka vyžaduje explicitní zdůvodnění. -->

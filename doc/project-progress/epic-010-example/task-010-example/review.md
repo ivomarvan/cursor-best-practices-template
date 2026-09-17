@@ -4,6 +4,7 @@ apm_ref: E010.T010
 apm_level: task
 created_by: Reviewer
 model: <model-name>
+template_version: <from .cursor/TEMPLATE_VERSION>
 intended_for: Coder, Human
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD

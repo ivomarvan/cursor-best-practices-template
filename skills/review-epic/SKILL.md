@@ -61,15 +61,22 @@ Required sections:
 Co bylo v rámci epiky implementováno — 1 odstavec.
 
 ## Dokončené tasky
-| Task | Název | Pásmo | Human brána po tasku | Výsledek |
-|------|-------|-------|----------------------|---------|
-| T010 | Create database schema | low | ne | ✅ |
-| T020 | Configure Docker services | high | ano [FT.7] | ✅ |
+| Task | Název | Pásmo | Human brána po tasku | Kola revize | BLOCKED | Výsledek |
+|------|-------|-------|----------------------|-------------|---------|---------|
+| T010 | Create database schema | low | ne | 0 | 0 | ✅ |
+| T020 | Configure Docker services | high | ano [FT.7] | 2 | 1 | ✅ |
 
 The "Human brána po tasku" column is what makes `medium`/`low` Tasks visible to Human for
-the first time here — they were never gated individually.
+the first time here — they were never gated individually. "Kola revize" = number of
+`REQUEST CHANGES` verdicts before APPROVE; "BLOCKED" = number of subagent `BLOCKED:`
+returns. Both come from `review.md` / the Planner's notes in `plan.md` and are the cheap
+signal of where spec quality (DoR) was weak — put a one-line cause under *Doporučení pro
+Planner* for any Task with ≥ 2 in either column.
 <!-- cs: Sloupec "Human brána po tasku" je místo, kde Human poprvé uvidí medium/low tasky —
-     ty neměly bránu jednotlivě. -->
+     ty neměly bránu jednotlivě. "Kola revize" = počet REQUEST CHANGES před APPROVE;
+     "BLOCKED" = počet BLOCKED: návratů subagenta. Obojí z review.md / poznámek Plannera v
+     plan.md; je to levný signál slabé kvality specifikace (DoR) — u tasku s ≥ 2 v kterémkoli
+     sloupci napiš jednořádkovou příčinu do Doporučení pro Planner. -->
 
 ## Klíčová rozhodnutí a poznatky
 - Rozhodnutí učiněná v průběhu epiky, která ovlivňují další vývoj.

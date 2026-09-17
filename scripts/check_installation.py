@@ -7,9 +7,12 @@ reports discrepancies for the Human to act on.
 
 Checks performed:
     1. Placement — every expected entry under `<target>/.cursor/` exists
-       (`commands/`, `hooks/`, `hooks.json`, `rules/`, `skills/`, `TEMPLATE_VERSION`);
-       `doc/apm_config/*.user.md` exist; no entry outside the expected copy set leaked
-       into `.cursor/` (e.g. `apm_config/`, `scripts/`, `README.md`); `.cursor` is not
+       (`apm_config/`, `commands/`, `hooks/`, `hooks.json`, `rules/`, `skills/`,
+       `TEMPLATE_VERSION`, `TEMPLATE_MANIFEST`); `.cursor/apm_config/*.default.md` and
+       `doc/apm_config/*.user.md` exist; no template-only entry leaked into `.cursor/`
+       (e.g. `scripts/`, `README.md`); project-owned files not listed in the manifest
+       follow the project namespace (`rules/9xx-*.mdc`; skills/commands free-form) —
+       a rule outside that namespace is reported as a probable orphan; `.cursor` is not
        (still) a git submodule; the legacy `DESIGN_RULES.md` / `doc/AGENT_MODELS.md`
        files are absent (expected only if `--config-layout v1.0.0` was used
        deliberately); no leftover bilingual `cs:` comments (stripping should have
@@ -46,21 +49,50 @@ ALWAYS_APPLY_LIMIT = 150
 GLOBS_LIMIT = 250
 SKILL_LIMIT = 500
 
-#: Top-level entries install_into_project.py copies into <target>/.cursor/.
-EXPECTED_CURSOR_ENTRIES: tuple[str, ...] = ("commands", "hooks", "hooks.json", "rules", "skills")
+#: Top-level entries install_into_project.py copies into <target>/.cursor/ (must match
+#: `lib.installer.COPY_ENTRIES`; a test in tests/ enforces that).
+EXPECTED_CURSOR_ENTRIES: tuple[str, ...] = (
+    "apm_config",
+    "commands",
+    "hooks",
+    "hooks.json",
+    "rules",
+    "skills",
+)
+
+#: Template defaults that must be present under <target>/.cursor/apm_config/ — the
+#: "default" half of the Config Resolution mechanism (rules/200-project-design-rules.mdc).
+EXPECTED_DEFAULT_FILES: tuple[str, ...] = (
+    "AGENT_MODELS.default.md",
+    "DESIGN_RULES.default.md",
+    "LANGUAGE.default.md",
+)
 
 #: Entries that must NEVER appear under <target>/.cursor/ — they are template-only
 #: (development/meta files, never part of the copy set).
 UNEXPECTED_CURSOR_ENTRIES: tuple[str, ...] = (
-    "apm_config",
     "scripts",
+    "tests",
     "doc",
     "README.md",
     "README.project_management.md",
+    "README.cs.md",
     "LICENSE",
     "img",
     "CHANGELOG.md",
 )
+
+#: Files Cursor itself may keep under .cursor/ — never template-owned, always fine.
+CURSOR_NATIVE_ENTRIES: tuple[str, ...] = (
+    "mcp.json",
+    "environment.json",
+    "worktrees.json",
+    "BUGBOT.md",
+)
+
+#: Project-owned rules must use this prefix so they never collide with template rules
+#: (template numbering stops at 2xx) — see rules/200-project-design-rules.mdc.
+_PROJECT_RULE_PATTERN = re.compile(r"^9\d\d-[a-z0-9][a-z0-9-]*\.mdc$")
 
 #: Config overrides install_into_project.py seeds under <target>/doc/apm_config/.
 EXPECTED_APM_CONFIG_FILES: tuple[str, ...] = (
@@ -112,7 +144,7 @@ class InstallationChecker:
 
     def __init__(self, target: Path) -> None:
         """Args:
-            target: Root of the consuming project to audit (must already exist).
+        target: Root of the consuming project to audit (must already exist).
         """
         self._target = target
         self._cursor_dir = target / ".cursor"
@@ -129,10 +161,13 @@ class InstallationChecker:
     def _check_placement(self) -> list[CheckResult]:
         results = [self._check_entry_exists(entry) for entry in EXPECTED_CURSOR_ENTRIES]
         results.append(self._check_entry_exists("TEMPLATE_VERSION"))
-        results.extend(self._check_no_unexpected_entries())
+        results.append(self._check_entry_exists("TEMPLATE_MANIFEST"))
+        results.extend(self._check_project_owned_files())
         results.extend(
-            self._check_apm_config_file(name) for name in EXPECTED_APM_CONFIG_FILES
+            self._check_entry_exists(f"apm_config/{name}") for name in EXPECTED_DEFAULT_FILES
         )
+        results.extend(self._check_no_unexpected_entries())
+        results.extend(self._check_apm_config_file(name) for name in EXPECTED_APM_CONFIG_FILES)
         results.append(self._check_not_a_submodule())
         results.extend(self._check_legacy_files_removed())
         results.extend(self._check_no_leaked_comments())
@@ -147,12 +182,18 @@ class InstallationChecker:
     def _check_no_unexpected_entries(self) -> list[CheckResult]:
         if not self._cursor_dir.is_dir():
             return []
-        allowed = set(EXPECTED_CURSOR_ENTRIES) | {"TEMPLATE_VERSION"}
-        results = []
+        allowed = (
+            set(EXPECTED_CURSOR_ENTRIES)
+            | set(CURSOR_NATIVE_ENTRIES)
+            | {"TEMPLATE_VERSION", "TEMPLATE_MANIFEST"}
+        )
+        results: list[CheckResult] = []
         for entry in sorted(self._cursor_dir.iterdir()):
             if entry.name in allowed:
                 continue
-            severity = Status.VIOLATION if entry.name in UNEXPECTED_CURSOR_ENTRIES else Status.WARNING
+            severity = (
+                Status.VIOLATION if entry.name in UNEXPECTED_CURSOR_ENTRIES else Status.WARNING
+            )
             results.append(
                 CheckResult(
                     severity,
@@ -160,6 +201,43 @@ class InstallationChecker:
                     "not part of the standard copy set — should not be under .cursor/",
                 )
             )
+        return results
+
+    def _check_project_owned_files(self) -> list[CheckResult]:
+        """Files under .cursor/ that the manifest does not list are project-owned. Rules
+        must live in the 9xx- namespace; anything else there is a probable orphan from an
+        older template version (or a hand-edit) and would be lost or shadowed.
+        """
+        manifest = self._cursor_dir / "TEMPLATE_MANIFEST"
+        if not manifest.is_file():
+            return []
+        owned = {
+            line.strip()
+            for line in manifest.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
+        }
+        owned |= {"TEMPLATE_MANIFEST"}
+        results: list[CheckResult] = []
+        project_files = 0
+        for path in sorted(self._cursor_dir.rglob("*")):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(self._cursor_dir).as_posix()
+            if relative in owned or relative in CURSOR_NATIVE_ENTRIES:
+                continue
+            project_files += 1
+            if relative.startswith("rules/") and not _PROJECT_RULE_PATTERN.match(path.name):
+                results.append(
+                    CheckResult(
+                        Status.WARNING,
+                        f".cursor/{relative} not in manifest",
+                        "project rules must be named rules/9xx-<slug>.mdc — this looks "
+                        "like an orphan from an older template version or a hand-edit",
+                    )
+                )
+        results.append(
+            CheckResult(Status.OK, f"{project_files} project-owned file(s) under .cursor/ (kept)")
+        )
         return results
 
     def _check_apm_config_file(self, name: str) -> CheckResult:
@@ -186,7 +264,7 @@ class InstallationChecker:
         return CheckResult(Status.OK, ".cursor is not a git submodule")
 
     def _check_legacy_files_removed(self) -> list[CheckResult]:
-        results = []
+        results: list[CheckResult] = []
         for relative in LEGACY_PATHS:
             path = self._target / relative
             if path.exists():
@@ -206,7 +284,7 @@ class InstallationChecker:
     def _check_no_leaked_comments(self) -> list[CheckResult]:
         if not self._cursor_dir.is_dir():
             return []
-        results = []
+        results: list[CheckResult] = []
         for path in sorted(self._cursor_dir.rglob("*")):
             if not path.is_file() or path.suffix not in _CHECKED_SUFFIXES:
                 continue
@@ -231,10 +309,12 @@ class InstallationChecker:
         return results
 
     def _check_lengths(self) -> list[CheckResult]:
-        results = []
+        results: list[CheckResult] = []
         rules_dir = self._cursor_dir / "rules"
         if rules_dir.is_dir():
-            results.extend(self._check_rule_length(path) for path in sorted(rules_dir.glob("*.mdc")))
+            results.extend(
+                self._check_rule_length(path) for path in sorted(rules_dir.glob("*.mdc"))
+            )
         skills_dir = self._cursor_dir / "skills"
         if skills_dir.is_dir():
             results.extend(
@@ -250,7 +330,7 @@ class InstallationChecker:
         rules_dir = self._cursor_dir / "rules"
         if not rules_dir.is_dir():
             return []
-        results = []
+        results: list[CheckResult] = []
         for path in sorted(rules_dir.glob("*.mdc")):
             text = path.read_text(encoding="utf-8", errors="replace")
             frontmatter = _parse_frontmatter(text)
@@ -294,7 +374,9 @@ class InstallationChecker:
         line_count = len(text.splitlines())
         label = f"{path.relative_to(self._target)} ({category}, {line_count}/{limit} lines)"
         if line_count > limit:
-            return CheckResult(Status.VIOLATION, label, f"exceeds {category} limit of {limit} lines")
+            return CheckResult(
+                Status.VIOLATION, label, f"exceeds {category} limit of {limit} lines"
+            )
         return CheckResult(Status.OK, label)
 
 

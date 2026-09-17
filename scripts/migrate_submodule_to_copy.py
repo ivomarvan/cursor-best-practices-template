@@ -42,7 +42,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib.installer import TemplateInstallError, TemplateInstaller  # noqa: E402
+from lib.installer import TemplateInstaller, TemplateInstallError  # noqa: E402
 from lib.migration import (  # noqa: E402
     deregister_submodule_commands,
     extract_language_setting,
@@ -129,7 +129,10 @@ def main(argv: list[str] | None = None) -> int:
     new_language_file = apm_config_dir / "LANGUAGE.user.md"
     if submodule_lang_file.is_file() and not new_language_file.exists():
         if is_dirty(target / ".cursor", "rules/00-communication-language.mdc"):
-            print("detected locally-modified 00-communication-language.mdc — extracting active setting")
+            print(
+                "detected locally-modified 00-communication-language.mdc — "
+                "extracting active setting"
+            )
             language_name, lang_code = extract_language_setting(submodule_lang_file)
             write_language_override(new_language_file, language_name, lang_code)
             print(f"migrated language setting -> {new_language_file}")
@@ -170,9 +173,7 @@ def main(argv: list[str] | None = None) -> int:
         "command block ends with a final install_into_project.py re-run to regenerate "
         "it, now safely outside of any submodule registration:\n"
     )
-    commands = deregister_submodule_commands(target).replace(
-        "<template-root>", str(template_root)
-    )
+    commands = deregister_submodule_commands(target).replace("<template-root>", str(template_root))
     print(commands)
     return 0
 

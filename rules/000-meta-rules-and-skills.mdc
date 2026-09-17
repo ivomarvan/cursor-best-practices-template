@@ -15,8 +15,8 @@ alwaysApply: false
 
 - **Language of code and rules**: all text in `.mdc` files and `SKILL.md` is always in **technical English** — concise, clear, no filler.
   <!-- cs: Jazyk kódu a rules: veškerý text v .mdc a SKILL.md je vždy v technické angličtině — stručně, jasně, bez zbytečných slov. -->
-- **Communication language**: defined in `communication-language.mdc` as `<communication-language>` (`<lang-code>`).
-  <!-- cs: Jazyk komunikace s uživatelem: definován v communication-language.mdc jako <communication-language> (<lang-code>). -->
+- **Communication language**: resolved per `000-communication-language.mdc` as `<communication-language>` (`<lang-code>`).
+  <!-- cs: Jazyk komunikace s uživatelem: řešen podle 000-communication-language.mdc jako <communication-language> (<lang-code>). -->
 - **Bilingual principle** (when `<lang-code>` ≠ `en`):
   <!-- cs: Princip dvojjazyčnosti (pokud <lang-code> ≠ en): -->
   - Every `.mdc` file and `SKILL.md` contains **`<communication-language>` comments** faithfully mirroring the English text.
@@ -69,6 +69,10 @@ alwaysApply: false    # true = applies regardless of context
     <!-- cs: globs / auto-attached → 250 řádků přijatelné — načítá se jen pokud odpovídající soubory jsou v kontextu. -->
   - Move anything longer to a skill's `reference.md`.
     <!-- cs: Delší obsah přesuň do reference.md skillu. -->
+  - Limits are measured on the **installed** form (bilingual comments stripped) — that
+    is what the agent loads; `scripts/check_installation.py` enforces them there.
+    <!-- cs: Limity se měří na nainstalované podobě (bez dvojjazyčných komentářů) — tu
+         agent načítá; vynucuje je scripts/check_installation.py. -->
 - No explaining the obvious — the agent is an expert.
   <!-- cs: Žádné vysvětlování triviálního — agent je expert, nepotřebuje přednášku. -->
 - Use **❌ / ✅ code examples** instead of vague instructions.
@@ -116,6 +120,11 @@ priority: `alwaysApply` rules are all loaded together regardless of order, and
      seskupovací štítek, ne priorita načítání: alwaysApply pravidla se načítají vždy
      všechna najednou bez ohledu na pořadí, globs/description pravidla se připojují
      nezávisle podle shody. -->
+
+Template rules use `000`–`2xx`. **`9xx-<slug>.mdc` is reserved for project-owned rules**
+in a consuming project — they survive template re-install (`200-project-design-rules.mdc`).
+<!-- cs: Pravidla šablony používají 000–2xx. 9xx-<slug>.mdc je rezervováno pro projektová
+     pravidla v konzumujícím projektu — přežijí re-instalaci šablony. -->
 
 ```
 000-communication-language.mdc   # source of truth for language — always first

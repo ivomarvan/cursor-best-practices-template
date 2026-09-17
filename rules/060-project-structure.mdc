@@ -202,3 +202,38 @@ Add a `README.md` inside listing source URLs and download dates.
 ```
 nogit_data/log/<module>/<script>/<YYMMDD>/<HHMMSS>.log.txt
 ```
+
+## `.gitignore` — generic base (always commit)
+
+<!-- cs: .gitignore — generický základ platný pro každý projekt -->
+
+Start from this base and extend with language-specific entries (see the respective
+language rule). Git conventions themselves live in `020-git.mdc`.
+<!-- cs: Začni od tohoto základu a rozšiř o jazykové záznamy (viz jazykové pravidlo).
+     Konvence Gitu samotného jsou v 020-git.mdc. -->
+
+```gitignore
+# Secrets and environment
+.env
+.env.*
+!.env.example
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Personal convention — local data never committed
+nogit_data/
+
+# Generic logs and temp files
+*.log
+*.tmp
+```

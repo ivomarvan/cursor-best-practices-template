@@ -34,8 +34,9 @@ Reviewer — closes that gap before the Human spends attention. This is the
 - `task-NNN-name/spec.md`, `dod.md`, and `report.md` exist.
 - The Coder's implementation is committed or present as a working-tree diff.
 
-<!-- cs: Jsi Reviewer, ne Coder. Použij silný model — úroveň Planner z 000-model-policy.mdc.
-     spec.md, dod.md a report.md existují. Implementace je v diffu. -->
+<!-- cs: Jsi Reviewer, ne Coder. Použij model přiřazený Revieweru v pásmu tasku podle
+     vyřešené konfigurace AGENT_MODELS; unassigned → zeptej se, — (low) → revizí je jen
+     deterministický gate. spec.md, dod.md a report.md existují. Implementace je v diffu. -->
 
 ## Trust boundary
 <!-- cs: Hranice důvěry -->
@@ -63,6 +64,13 @@ git diff <base>..HEAD         # if the Coder committed
 Read `spec.md` (Goal, Outputs, Context Bundle, Test Specification, DoD) and `dod.md`.
 Read `report.md` last — as a claim to verify, not as truth.
 <!-- cs: Přečti spec.md a dod.md. report.md čti až nakonec — jako tvrzení k ověření. -->
+
+**Dirty working tree.** If `git status` shows changes that belong to other Tasks (nothing
+was committed in between), restrict the diff to the paths named in `spec.md` Outputs
+(`git diff -- <paths>`), and write in `review.md` § Shrnutí that the review was
+**path-scoped** — unrelated files were not reviewed. See `090-apm-orchestration.mdc` § A.
+<!-- cs: Špinavý strom: pokud git status ukazuje změny jiných tasků, omez diff na cesty
+     z Outputs ve spec.md a do review.md § Shrnutí napiš, že revize byla path-scoped. -->
 
 ### Step R2 — Verify each Definition of Done item
 <!-- cs: Krok R2 — Ověř každou položku DoD -->
@@ -174,6 +182,8 @@ REVIEW → verdict
 if APPROVE:
     if band == high (or Task escalated, see below) → hand to Human [FT.7]
     else (medium/low)                              → done; surfaced in Epic Report only
+    in both cases the Planner OFFERS a commit (one line, Human answers with a trigger
+    phrase from 020-git.mdc) — never commits on its own
 if REQUEST CHANGES and round < 3:
     round == 2 → escalate the Task's band one step (000-model-policy.mdc) and upgrade its
                  report tier to match (090-apm-orchestration.mdc)

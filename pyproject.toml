@@ -1,0 +1,25 @@
+# Tooling config for the template's own scripts/ and tests/ — the template's
+# deterministic gate (see .github/workflows/ci.yml). Consuming projects are NOT affected:
+# this file is never copied by install_into_project.py.
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+# scripts/ modules import each other by bare name (sys.path is set at runtime).
+known-first-party = ["lib", "check_installation", "install_into_project"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+mypy_path = "scripts"
+files = ["scripts", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

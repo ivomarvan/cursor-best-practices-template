@@ -26,10 +26,12 @@ Human instruction ("I never want automatic commits — I want absolute control o
 repository"). Making per-Task commits a *default* behavior would override that
 instruction from inside the template, which is not this template's call to make.
 
-**What is possible instead**: document it as a strong recommendation — use the
-`commit-task` skill's "with feature commit" variant after every Task. It cannot be made
-automatic without the Human either invoking that trigger every time or changing the
-underlying Git policy.
+**What is possible instead** (implemented in v1.2.0): after every APPROVE the Planner
+*offers* a commit in one line and the Human answers with a trigger phrase
+(`rules/090-apm-orchestration.mdc` § A, `skills/review-task/SKILL.md` R6). If the Human
+declines, the Reviewer path-scopes its diff to the Task's `spec.md` Outputs and says so in
+`review.md`. It cannot be made automatic without the Human either invoking that trigger
+every time or changing the underlying Git policy.
 
 **Revisit when**: the Human decides to relax the git-control rule for a specific project
 via that project's own `DESIGN_RULES.user.md`.

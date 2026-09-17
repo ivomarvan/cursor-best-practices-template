@@ -1,415 +1,526 @@
 # APM — Agentic Project Management
 
-A structured workflow for building software projects using three specialized AI agents:
-a **Planner** for analysis and decomposition, a **Coder** for implementation, and an
-independent **Reviewer** that checks the Coder's work before it reaches the Human.
+APM is the project workflow shipped with this template. It treats AI models the way a
+small engineering team treats people: one plans, one implements, an independent one
+reviews, and the human lead decides — but only where a decision is actually needed.
 
-APM gives you human oversight scaled to actual risk — a Task's **band**
-(`low`/`medium`/`high`, see `rules/000-model-policy.mdc`) decides how much ceremony it
-costs — while letting AI handle the cognitive work of planning and the mechanical work of
-coding.
-
----
-
-## Quick Overview
-
-```
-Human provides brief
-    ↓
-Planner formalizes → spec.md + roadmap.md  [Human approves]
-    ↓
-For each Epic:
-    Planner decomposes → epic plan + task specs  [Definition of Ready gate] [Human approves]
-    ↓
-    For each Task:
-        Coder implements → tests → DoD checklist → report (tier by band)
-        Reviewer (independent) → review.md (APPROVE / REQUEST CHANGES)
-            ↳ loop with Coder, max 3 rounds (2nd REQUEST CHANGES escalates the band)
-        [Human reviews — only `high`-band or escalated Tasks; others wait for Epic close]
-    ↓
-    Coder writes Epic Report (lists every Task incl. band, so Human sees what it skipped)
-    Planner + Human review Roadmap validity (+ ADR / spec reconciliation)
-    ↓
-Project complete
-```
-
-**Key principle:** Nothing moves forward without an independent Reviewer verdict; Human
-approval is required at phase boundaries **scaled to the Task's or Epic's band** — see
-[Bands](#bands) below.
+This document is the complete description of that workflow: the roles, the phases, the
+documents, the safety mechanisms, and what you as the Human do at each point. The
+machine-readable version the agent follows is in two rules —
+`rules/070-project-management.mdc` (documents, structure, terminology) and
+`rules/090-apm-orchestration.mdc` (how the roles talk to each other and when you are
+asked) — plus five skills, one per phase.
 
 ---
 
-## Bands
+## Table of contents
 
-Every Task carries a **band** — `low`, `medium`, or `high` — decided upfront from
-deterministic triggers (new dependency, schema change, deletion, untrusted input, ...),
-never judged by feel. The band decides both **which model** runs the Task
-(`rules/000-model-policy.mdc`) and **how much ceremony** it costs
-(`rules/090-apm-orchestration.mdc`):
+- [The problem APM solves](#the-problem-apm-solves)
+- [The four roles](#the-four-roles)
+- [Bands: how much ceremony a Task gets](#bands-how-much-ceremony-a-task-gets)
+- [Models: who runs which role](#models-who-runs-which-role)
+- [Overview of the workflow](#overview-of-the-workflow)
+- [Phase 0 — Project initialisation](#phase-0--project-initialisation)
+- [Phase E — Epic planning](#phase-e--epic-planning)
+- [Phase T — Task execution](#phase-t--task-execution)
+- [Phase R — Independent review](#phase-r--independent-review)
+- [Phase ER — Epic closure](#phase-er--epic-closure)
+- [How the roles talk: the subagent protocol](#how-the-roles-talk-the-subagent-protocol)
+- [Human gates and the briefing format](#human-gates-and-the-briefing-format)
+- [Source of Truth and the decisions register](#source-of-truth-and-the-decisions-register)
+- [Spike Epics](#spike-epics)
+- [What is *not* a Task](#what-is-not-a-task)
+- [Documents and directory layout](#documents-and-directory-layout)
+- [Safety and Human control](#safety-and-human-control)
+- [Checklists](#checklists)
+- [Terminology](#terminology)
 
-| Band | Human gate per Task | Report |
+---
+
+## The problem APM solves
+
+Letting an agent "just build it" from a long chat produces three predictable failures:
+
+1. **The author grades its own work.** A model that wrote the code will also report that
+   the tests pass and the spec is met — and it over-rates itself. Something independent
+   has to check the diff against the spec.
+2. **Context is lost.** Decisions made in chat evaporate when the window fills up or a
+   new session starts; the next agent silently contradicts them.
+3. **Review does not scale for one person.** If the human has to inspect every change,
+   the methodology becomes their full-time job and they stop doing it.
+
+APM answers each: an independent **Reviewer** role with a different model and a fresh
+context; **files, not chat, as project memory** (specs, reports, a decisions register);
+and **bands** that route human attention only to risky work.
+
+---
+
+## The four roles
+
+A *role* is a job description, not a model. Which model plays which role is
+configuration (see [Models](#models-who-runs-which-role)).
+
+### Planner — analyst and architect
+
+Runs in **your chat window**. Never writes production code (one exception, below). It:
+
+- turns your informal brief into `spec.md` (what to build) and `roadmap.md` (in what order);
+- decomposes each Epic into 6–8 Tasks that are independently implementable and testable;
+- writes for every Task a **Task Specification** with a **Context Bundle** — exactly which
+  files the Coder must read, which it must not touch, which interfaces earlier Tasks expose;
+- spawns the Coder and the Reviewer as subagents and reads their output *files*;
+- opens Human gates with a short briefing and asks for decisions one at a time;
+- after each Epic, checks with you whether the Roadmap is still right.
+
+The Planner's output is the quality gate for everything downstream: a vague spec is the
+most common cause of a failed Task, which is why specs pass a *Definition of Ready* first.
+
+*Exception:* a `low`-band Task may be implemented by the Planner directly in the parent
+window (it is mechanical and gate-checkable); it is then noted in `plan.md` instead of a
+separate report.
+
+### Coder — developer
+
+Runs as a **subagent** with a cheaper, faster model (a stronger one for `high`-band
+Tasks). It reads `spec.md` and `dod.md` before writing a line, implements exactly what the
+spec says, writes tests (happy path, edge cases, error cases), runs the deterministic gate
+(`make check`), fills the Definition of Done, and writes `report.md` in your communication
+language. If the spec does not cover something, it stops and returns the question to the
+**Planner** — it has no channel to you and must not make architectural decisions alone.
+
+### Reviewer — independent critic
+
+Runs as a **subagent** with a strong model that is **different from the Coder's**. It
+forms its findings from the real `git diff`, `spec.md`, `dod.md`, and a test run it
+executes itself; it opens the Coder's `report.md` only afterwards, to check that the report
+is honest. It verifies every ✅ in `dod.md` against an artifact, hunts scope creep, files
+touched outside the Context Bundle, placeholder tests, missing error cases, and undisclosed
+deviations, and writes `review.md` with a verdict — **APPROVE** or **REQUEST CHANGES** —
+and severity-tagged findings (blocker / major / minor). It never edits code.
+
+For `low`-band Tasks the Reviewer is, by default, not an LLM at all: the deterministic gate
+*is* the review (`AGENT_MODELS` default: Reviewer `low` = `—`).
+
+### Human — tech lead
+
+You. You write the brief, approve `spec.md` and `roadmap.md`, approve each Epic plan,
+decide at every `high`-band gate, close each Epic, and own every git commit. Everything
+else runs without you and is reported back in the Epic Report.
+
+---
+
+## Bands: how much ceremony a Task gets
+
+Every Task carries a **band** — `low`, `medium`, or `high` — assigned by the Planner from
+**deterministic triggers**, never by feel (`rules/000-model-policy.mdc`):
+
+| Band | When | Human gate after the Task | Task Report | LLM review |
+|---|---|---|---|---|
+| `low` | Mechanical: no new public interface, no new dependency, fully checkable by tests/linter | none | micro — 5 lines | no — deterministic gate only (default) |
+| `medium` | Everything else: new module or endpoint, new dependency, tests that need design | none — listed in the Epic Report | short — 4 sections | yes |
+| `high` | Any hard trigger: schema/migration change · CI/build/deploy or anything under `.cursor/` · a contract other Tasks depend on · deletion of files or data · handling untrusted input · project-specific triggers from `AGENT_MODELS.user.md` | **yes** | full — 7 sections | yes |
+
+Rules that keep this safe:
+
+- A band can be **raised by anyone**, and is raised **automatically** on a Task's second
+  `REQUEST CHANGES`. Only the Human may **lower** one.
+- Raising a band retroactively raises the Task's report tier and gate too.
+- The Planner is banded **per Epic** (the maximum over its Tasks); Coder and Reviewer
+  **per Task**.
+- An Epic whose first two Tasks each needed more than one review round raises its
+  default band one step — a signal that the specs are too thin.
+
+---
+
+## Models: who runs which role
+
+The concrete model per **role × band** is the `AGENT_MODELS` config:
+`.cursor/apm_config/AGENT_MODELS.default.md`, replaced in full by your
+`doc/apm_config/AGENT_MODELS.user.md` if it exists. Edit it with `/role-assign` or by hand;
+inspect it with `/role-show`.
+
+| Cell value | Meaning |
+|---|---|
+| a model name | use it — in the parent window the agent reminds you to switch the selector; for a subagent it passes the name as the call's `model` parameter |
+| `unassigned` | the agent **asks you** before acting in that role/band (and offers to save the answer) |
+| `—` | not applicable: Planner `low` never occurs; Reviewer `low` is the deterministic gate |
+
+The `model:` line in every APM document's front matter records the model that actually
+produced it — an audit trail, not policy.
+
+---
+
+## Overview of the workflow
+
+```
+You write brief.md (informal, any length)
+   │
+   ▼  Phase 0  project-init                      Planner ↔ you
+spec.md + roadmap.md ─────────────────────────── [gate F0.5: you approve]
+   │
+   ▼  Phase E  plan-epic                          Planner          (per Epic)
+epic-NNN/plan.md, task-NNN/spec.md + dod.md ──── [DoR gate] ── [gate FE.2: you approve]
+   │
+   ▼  Phase T  execute-task                       Coder subagent   (per Task)
+code + tests + make check + report.md
+   │
+   ▼  Phase R  review-task                        Reviewer subagent, different model
+review.md: APPROVE ─┬─ REQUEST CHANGES → back to Coder (max 3 rounds; 2nd raises band)
+                    │
+                    ├─ band high → [gate FT.7: you decide]
+                    └─ band medium/low → done; Planner offers a commit
+   │
+   ▼  Phase ER  review-epic                       Coder, then Planner ↔ you
+epic-NNN/report.md (all Tasks, bands, review rounds, BLOCKED count)
+roadmap check ────────────────────────────────── [gate FER.2: you decide]
+```
+
+---
+
+## Phase 0 — Project initialisation
+
+**Skill:** `project-init` · **Actors:** you → Planner · **Steps F0.1–F0.5**
+
+| Step | What happens | Output |
 |---|---|---|
-| `high` | Yes (FT.7) | Full, 6 sections |
-| `medium` | No — surfaced in the Epic Report | Short, 4 sections |
-| `low` | No — Reviewer/gate only | Micro, 5 lines |
+| F0.1 | You deliver the brief in any form. The Planner saves it **verbatim** — your words are never rewritten. | `brief.md` |
+| F0.2 | Clarification — *skipped* if the brief already contains a decisions register and no open questions. Otherwise the Planner asks about scope, personas, constraints, success criteria, non-goals — **one decision per question**, with options and a recommendation. | discussion |
+| F0.3 | Project Specification. If the brief holds detailed architecture or data-model sections, they are **moved verbatim** to `doc/architecture/<topic>.md` and linked — never compressed. | `spec.md` (7 sections: Goal, Scope, Non-Goals, Key Technical Decisions, Assumptions, Project DoD, Source of Truth) |
+| F0.4 | Roadmap — the ordered list of Epics, numbered `E010, E020, …` so `E015` can be inserted later. | `roadmap.md` |
+| F0.5 | **Human gate.** You approve both documents; nothing is planned before that. | ✅ |
 
-A Task's band can only be **raised** (by anyone, on a second `REQUEST CHANGES` it raises
-automatically) and only **lowered by the Human**. This is what makes "Human doesn't review
-every Task" safe: the ceremony that Task actually needed still happens, just not
-necessarily as a blocking chat turn.
-
-## The Actors
-
-Model per role is defined centrally in `rules/000-model-policy.mdc` (change it in one place).
-
-### Planner
-
-Act in the **Planner role** — a strong-reasoning model assigned per `rules/000-model-policy.mdc`
-(the Human assigns it, or the agent asks before planning).
-
-The Planner never writes production code. Its job is:
-- Understanding the project through discussion with Human
-- Writing `spec.md` (what to build) and `roadmap.md` (in what order)
-- Decomposing each Epic into concrete, independently testable Tasks
-- Preparing a **Context Bundle** for each Task — the exact files Coder must read,
-  the files it must not touch, and the interfaces prior Tasks expose
-- Reviewing whether the Roadmap is still valid after each Epic closes
-
-The Planner's output is the quality gate for everything the Coder does.
-If the Task Specification is vague or incomplete, the Coder will fail.
-
-### Coder
-
-Act in the **Coder role** — a fast / cost-effective model assigned per
-`rules/000-model-policy.mdc`, at the strength matching the Task's **band**
-(`low`/`medium`/`high` — see [Bands](#bands)); the Human decides the actual model.
-
-The Coder:
-- Reads `spec.md` and `dod.md` before writing a single line of code
-- Implements exactly what the spec says — no more, no less
-- Writes tests (happy path + edge cases + error cases)
-- Runs the **full test suite** to catch regressions
-- Fills the Definition of Done checklist
-- Writes a Task Report in `<communication-language>` with code references
-
-If the spec is ambiguous or contradictory, the Coder stops and reports to the **Planner**
-— it runs as the Planner's subagent and has no direct channel to the Human.
-The Coder never modifies files listed as "Do not modify" in the Context Bundle.
-
-### Reviewer
-
-Act in the **Reviewer role** — a strong-reasoning model assigned per
-`rules/000-model-policy.mdc`. The Reviewer is a **different agent/model than the Coder**: an
-author should never grade their own work.
-
-The Reviewer:
-- Reviews against ground truth — the real `git diff`, `spec.md`, `dod.md`, and a test run
-  it executes itself — not the Coder's narrative in `report.md`
-- Verifies **every** `✅` in `dod.md` against an actual artifact (file/test/endpoint)
-- Hunts scope creep, files touched against the Context Bundle, weak/placeholder tests,
-  missing edge/error cases, quality-gate violations, and undisclosed deviations
-- Writes `review.md` with a verdict (**APPROVE** / **REQUEST CHANGES**) and
-  severity-tagged findings (blocker / major / minor)
-- Never edits production code — the Coder fixes findings in a bounded loop (max 3 rounds);
-  if it exceeds the limit, the Reviewer escalates to the Human
-
-This is the **evaluator–optimizer** pattern: an independent critic between the author and
-the Human. It directly addresses the LLM tendency to over-rate its own output.
+The skill also seeds `doc/project-progress/GLOSSARY.md` (bilingual APM terms) and an
+empty `DECISIONS.md` (see [Source of Truth](#source-of-truth-and-the-decisions-register)).
 
 ---
 
-## Workflow in Detail
+## Phase E — Epic planning
 
-### Phase 0 — Project Initialization
+**Skill:** `plan-epic` · **Actor:** Planner · **Steps FE.1–FE.2**
 
-**Steps F0.1–F0.5** | Actor: Human → Planner
+The Planner decomposes one Epic into **6–8 Tasks** (more → split the Epic). Each Task
+must be independently implementable, independently testable, and half a day to two days
+of Coder work. It writes:
 
-| Step | Action | Output |
-|------|--------|--------|
-| F0.1 | Human delivers informal Project Brief | `brief.md` saved verbatim |
-| F0.2 | Planner asks clarifying questions; iterates with Human | (discussion) |
-| F0.3 | Planner writes Project Specification | `spec.md` |
-| F0.4 | Planner writes Roadmap (ordered list of Epics) | `roadmap.md` |
-| F0.5 | Human reviews and approves both documents | ✅ Gate |
+1. `epic-NNN/plan.md` — the Epic Plan: Task table (name, dependencies, band, Coder role)
+   and every Task Specification;
+2. `epic-NNN/task-NNN/spec.md` — the specification extracted for the Coder;
+3. `epic-NNN/task-NNN/dod.md` — the blank Definition of Done checklist.
 
-The iterative discussion in F0.2 is the most important step. The Planner should surface:
-- Scope boundaries ("Is X in or out?")
-- User personas and their workflows
-- Technology constraints and preferences
-- Success criteria — how do we know the project is done?
-- Explicit non-goals — what must we not build?
+A **Task Specification** has eight required sections: Goal · Inputs · Outputs · Context
+Bundle · Dependencies · Test Specification · Definition of Done · Recommended Coder model
+(= the Coder role at the Task's band).
 
-`spec.md` is the **single source of truth** for the entire project. It does not change
-unless Human explicitly approves a revision. When assumptions prove wrong during
-implementation, the spec is updated with a record of what changed and why.
+**Definition of Ready (DoR).** Before any Task reaches a Coder, its spec must pass this
+checklist — the counterpart of the DoD:
 
-### Phase E — Epic Planning
+- Goal concrete and measurable (not "improve X")
+- Outputs name exact files/interfaces
+- Context Bundle lists files to read **and** files not to modify
+- Dependencies listed and already completed
+- Test Specification names happy path + ≥ 1 edge + ≥ 1 error case
+- Every DoD item maps to a checkable artifact
+- Coder role resolved for the Task's band
+- Task implementable and testable in isolation
 
-**Steps FE.1–FE.2** | Actor: Planner
-
-Before writing any code, the Planner decomposes the Epic into Tasks.
-
-Each Task must be:
-- **Independently implementable** — Coder can complete it without simultaneous work on other Tasks
-- **Independently testable** — passing tests prove the Task is correct
-- **Appropriately sized** — typically half a day to two days of Coder work
-
-The Planner writes:
-1. `epic-NNN/plan.md` — the full Epic Plan with all Task Specifications
-2. `epic-NNN/task-NNN/spec.md` — the Task Specification extracted for easy Coder reference
-3. `epic-NNN/task-NNN/dod.md` — blank Definition of Done checklist
-
-The Context Bundle in each Task Specification is critical. It tells the Coder:
-- Which files to read to understand the context
-- Which files are off-limits (owned by infrastructure, another Task, etc.)
-- What interfaces prior Tasks have already implemented
-
-**Definition of Ready (DoR) gate:** before any Task is handed to a Coder, its `spec.md`
-must pass the DoR checklist (goal measurable, Outputs concrete, Context Bundle complete,
-DoD verifiable, tests named, Coder role resolved per `rules/000-model-policy.mdc`). The DoR is
-the counterpart of the DoD and is checked at the FE.2 Human review. A vague spec guarantees a
-failed Task — fix it first.
-
-**FE.2 gate:** Human reviews the Epic Plan before Coder begins any Task.
-
-### Phase T — Task Execution
-
-**Steps FT.1–FT.7** | Actor: Coder
-
-| Step | Action |
-|------|--------|
-| FT.1 | Read `spec.md` completely, including Context Bundle |
-| FT.2 | Implement code per specification |
-| FT.3 | Write and run tests — all new tests must pass |
-| FT.4 | Run full test suite — no regressions allowed |
-| FT.5 | Fill `dod.md` — mark each criterion ✅ or ❌ with note |
-| FT.6 | Write `report.md` — tier depends on the Task's band, see [Bands](#bands) |
-| FT.7 | Human reviews — **only for `high`-band or escalated Tasks** (see [Bands](#bands)) |
-
-**On ambiguity:** If the Coder encounters something the spec doesn't cover, it stops
-and reports to the **Planner** (not the Human directly — see the Coder actor above). It
-does not make architectural decisions on its own.
-
-**On regressions (FT.4):** Regressions must be fixed before submitting — never suppressed
-or skipped. If fixing a regression requires changing scope, notify the Planner.
-
-**Task Report structure** — full (`high`-band) tier shown, written in
-`<communication-language>`; `medium`/`low` Tasks use a shorter tier (see
-[Bands](#bands)):
-1. What was implemented
-2. Inputs and outputs (files read / created / modified)
-3. Methods and key decisions (with justification)
-4. Code references (file paths and line ranges)
-5. Regression check result
-6. Definition of Done summary
-
-**ADR bridge:** if a Task makes a decision that affects structure, dependencies, interfaces,
-or other tasks, the Coder records it as an ADR in `doc/architecture/decisions/` and links it
-from `report.md`. This keeps architectural knowledge out of buried task reports.
-
-### Phase R — Independent Review
-
-**Steps FR.1–FR.3** | Actor: Reviewer (≠ Coder)
-
-After the Coder writes `report.md`, the Task goes to an **independent Reviewer** before the
-Human, not straight to Human review.
-
-| Step | Action |
-|------|--------|
-| FR.1 | Reviewer gathers ground truth: real `git diff`, `spec.md`, `dod.md`; re-runs tests |
-| FR.2 | Reviewer verifies every `✅`, hunts scope creep / weak tests / undisclosed deviations |
-| FR.3 | Reviewer writes `review.md`: verdict (APPROVE / REQUEST CHANGES) + findings |
-
-**On REQUEST CHANGES:** the Coder fixes each finding, updates `report.md`, and resubmits.
-The loop is bounded to **3 rounds**; a **second** `REQUEST CHANGES` raises the Task's band
-one step (a `high`-band Task instead escalates straight to Human — the problem is the
-spec, not the model); if round 3 still fails, the Reviewer escalates to the Human.
-An **APPROVE** verdict completes the Task; whether it also advances to Human review (FT.7)
-depends on its band — see [Bands](#bands).
-
-### Phase ER — Epic Closure
-
-**Steps FER.1–FER.2** | Actor: Coder → Planner
-
-Once all Tasks are approved:
-
-1. **Coder** writes `epic-NNN/report.md` aggregating all Task Reports.
-   Sections: completed Tasks, key decisions, deviations from plan, recommendations for Planner.
-
-2. **Planner** reads the Epic Report, re-reads `roadmap.md` and `spec.md`, then assesses:
-   - Are the upcoming Epics still correct given what we learned?
-   - Did implementation reveal risks, new dependencies, or invalid assumptions?
-
-3. **Planner presents one of three conclusions to Human:**
-   - **Roadmap unchanged** → proceed to next Epic
-   - **Update needed** → propose specific changes to `roadmap.md` with justification
-   - **Major revision** → discuss with Human before writing anything
-
-4. If Human approves changes, update `roadmap.md` (`updated_at` + content).
+**Gate FE.2.** You review the Epic Plan (with the DoR results) and approve it. The
+Planner opens the gate with a [briefing](#human-gates-and-the-briefing-format).
 
 ---
 
-## Directory Structure
+## Phase T — Task execution
+
+**Skill:** `execute-task` · **Actor:** Coder (subagent) · **Steps FT.1–FT.7**
+
+| Step | Action |
+|---|---|
+| FT.1 | Read `spec.md` completely, including the Context Bundle |
+| FT.2 | Implement exactly the specification — no more, no less |
+| FT.3 | Write and run the new tests |
+| FT.4 | Run the **full** suite / `make check` — regressions are fixed, never skipped; a scope change goes back to the Planner |
+| FT.5 | Fill `dod.md` — every item ✅ or ❌ with a note |
+| FT.6 | Write `report.md` at the tier of the Task's band |
+| FT.7 | Human gate — **only for `high`-band or escalated Tasks** (after Phase R) |
+
+**Task Report tiers** (written in your communication language):
+
+| Tier | Band | Content |
+|---|---|---|
+| Full | `high` | 1 What was implemented · 2 Inputs and outputs · 3 Methods and decisions · 4 Deviations from spec.md · 5 Code references · 6 Regression test results · 7 Definition of Done |
+| Short | `medium` | 1, 2, 6, 7 |
+| Micro | `low` | 5 lines: what, files touched, gate result |
+
+Section 4 matters: a deviation the Coder found necessary but did not disclose is a
+Reviewer finding when it shows up in the diff.
+
+**ADR bridge.** A decision that affects structure, dependencies, interfaces, or other
+Tasks is not left buried in a report — the Coder writes an ADR in
+`doc/architecture/decisions/ADR-NNN-title.md` and links it; the Reviewer flags any such
+decision that lacks one.
+
+**`doc/` write permission.** "Do not modify `doc/**`" in a Context Bundle protects *other*
+Tasks' specs, the Epic plan, `spec.md`, `roadmap.md`, and ADRs. The Coder still must
+write its own `report.md` and fill its own `dod.md`.
+
+---
+
+## Phase R — Independent review
+
+**Skill:** `review-task` · **Actor:** Reviewer (subagent, ≠ Coder) · **Steps R1–R6**
+
+| Step | Action |
+|---|---|
+| R1 | Gather ground truth: `spec.md`, `dod.md`, the real `git diff`. If the working tree also holds other Tasks' changes, diff only the paths named in the spec's *Outputs* and say so in `review.md` ("path-scoped"). Read `report.md` **last**. |
+| R2 | Verify each DoD ✅ against an artifact (file, test, endpoint) |
+| R3 | Re-run the test suite / `make check` independently |
+| R4 | Adversarial checklist: scope creep, Context Bundle violations, weak tests, missing error cases, undisclosed deviations, missing ADRs, secrets, quality-gate violations |
+| R5 | Write `review.md`: verdict + findings tagged blocker / major / minor |
+| R6 | Loop: on REQUEST CHANGES the Coder fixes and resubmits; on APPROVE the Task is done |
+
+**The bounded loop.** At most **3 rounds**. A **second** `REQUEST CHANGES` raises the
+Task's band one step and hands the same Task to a Coder of the new band; a Task already at
+`high` stops and escalates to you — the problem is the spec, not the model. If round 3
+still fails, the Reviewer escalates to you. Review history is appended, never deleted.
+
+**After APPROVE** the Planner *offers* a commit in one line ("Commit this Task? Reply with
+a trigger phrase"). It never commits on its own; committing per Task is what gives the
+next Reviewer a clean diff, declining is your call.
+
+---
+
+## Phase ER — Epic closure
+
+**Skill:** `review-epic` · **Actors:** Coder, then Planner ↔ you · **Steps FER.1–FER.2**
+
+1. The **Coder** writes `epic-NNN/report.md`: summary; a table of **every** Task with its
+   band, whether you gated it, the number of review rounds, and the number of `BLOCKED`
+   returns (both cheap signals of weak specs — any Task with ≥ 2 gets a one-line cause);
+   key decisions; deviations from the plan; recommendations for the Planner; token usage
+   (filled by you from Cursor's UI — the agent cannot introspect it reliably).
+2. The **Planner** re-reads `roadmap.md` and `spec.md` and assesses: are the upcoming
+   Epics still right? Did we learn about risks, dependencies, wrong assumptions? Are new
+   ADRs consistent with `spec.md`?
+3. **Gate FER.2.** The Planner presents one of three conclusions: *Roadmap unchanged* ·
+   *Update needed* (specific changes with reasons) · *Major revision* (discuss first).
+4. If you approve, `roadmap.md` is updated (`updated_at` + content).
+
+---
+
+## How the roles talk: the subagent protocol
+
+`rules/090-apm-orchestration.mdc` § A. You talk to the **Planner**; the Planner spawns the
+Coder and the Reviewer as subagents. Rules that make this reliable:
+
+- **The parent window writes no code in Phase T** (except the `low`-band exception) —
+  otherwise the `model:` audit trail breaks and code ships unreviewed.
+- **Ambiguity is resolved before dispatch.** A subagent cannot ask follow-ups; a vague
+  spec wastes a whole run.
+- A subagent's final message is exactly **`DONE: <path to report.md / review.md>`** or
+  **`BLOCKED: <one question>`** — no code, no summary. The Planner reads the file.
+- The Planner **reads the verdict from `review.md`**, never from its own summary.
+- The Reviewer's prompt **never paraphrases the Coder's report** — "tests pass" leaking
+  into it would break independence even with a fresh context.
+- **Resuming after the chat window fills up** — start a new Planner chat with the standard
+  sentence: *"Read `epic-NNN/plan.md` and the state of every task directory in it;
+  continue from the first Task that has no `review.md` with verdict APPROVE."*
+
+---
+
+## Human gates and the briefing format
+
+A **Human gate** is where the agent stops and waits for you. Gates open at F0.5 (spec +
+roadmap), FE.2 (each Epic plan), FT.7 (each `high`-band or escalated Task), and FER.2
+(each Epic close). Never after a `medium`/`low` Task.
+
+Every gate starts with a briefing, not a raw report:
+
+```markdown
+## Gate: <Task/Epic/Roadmap name>
+
+**Where we are:** 1–2 sentences — position in the Epic/project, what's done, what's next.
+**What changed:** 3–5 bullets, not the full report.
+**Decision needed:** one concrete question or A-vs-B choice with a recommendation.
+**If you do nothing:** the default behaviour / consequence of inaction.
+```
+
+*Decision needed* follows `rules/005-decision-protocol.mdc`: one decision per message,
+the problem in plain language, 2–4 options with their consequences, one marked
+*(Recommended)*, then wait. Routine judgment calls are made by the agent and recorded in
+the report; only genuine decisions (scope, trade-offs, risk, cost) reach you.
+
+---
+
+## Source of Truth and the decisions register
+
+The **Source of Truth (SoT)** is the document, or ordered list of documents, that binds
+the project — `spec.md` by default; a detailed brief or `doc/architecture/*.md` may be
+on the list (recorded in `spec.md` § 7 or `DESIGN_RULES.user.md`).
+
+Re-reading the whole SoT every phase does not scale, so
+`doc/project-progress/DECISIONS.md` is the **fast conflict-check target**: a short,
+append-only table of settled questions. Before every phase the agent scans it (falling
+back to the full SoT only for unrecorded questions). On a conflict with a new chat
+instruction it **never silently prefers the newer one** — it stops, names the conflict,
+and offers: update the record · one-off exception · drop the instruction. The outcome is
+recorded in the same step. Chat is a workspace, not project memory: anything that must
+outlive the window goes into a file.
+
+---
+
+## Spike Epics
+
+A **spike** answers a question ("is A or B faster / cheaper / simpler?") instead of
+shipping a feature, on a `spike/<desc>` branch. It differs from a normal Epic:
+
+- DoR names the metric(s), dataset, and candidates — not a feature goal.
+- Outputs are a results table/CSV plus a short `README.md`; production code is optional.
+- Tests cover only the measurement tool; the candidates are exempt from coverage rules.
+- DoD = metrics filled in **and** an ADR recording the choice and why.
+- The Reviewer checks **reproducibility**, not code quality.
+- Stopping is **your** decision, made with the Planner — never an automatic threshold.
+- Docker ceremony (`README.docker.md`, pinned versions) may be skipped while it is a spike;
+  `make check RUNNER=` runs the gate natively.
+
+---
+
+## What is *not* a Task
+
+Typos, documentation, config tweaks, and similar changes you ask for directly are **not**
+Tasks: no `spec.md`, no `report.md`, no Reviewer. They follow `020-git.mdc` and the
+deterministic gate. The agent must not answer such a request with `BLOCKED` because it
+lacks an Epic (`rules/090-apm-orchestration.mdc` § E).
+
+---
+
+## Documents and directory layout
 
 ```
 doc/project-progress/
-├── GLOSSARY.md                      # Bilingual glossary of APM terms
-├── DECISIONS.md                     # Decisions register — fast SoT conflict-check target
-├── brief.md                         # Project Brief (Human, verbatim)
+├── GLOSSARY.md                      # bilingual APM terms (seeded by project-init)
+├── DECISIONS.md                     # decisions register — append-only
+├── brief.md                         # your brief, verbatim
 ├── spec.md                          # Project Specification (Planner)
-├── roadmap.md                       # Roadmap — ordered Epic list (Planner)
+├── roadmap.md                       # ordered Epics (Planner)
 ├── epic-010-setup-infrastructure/
-│   ├── plan.md                      # Epic Plan + all Task Specs (Planner)
+│   ├── plan.md                      # Epic Plan + all Task Specifications (Planner)
 │   ├── report.md                    # Epic Report (Coder)
 │   ├── task-010-create-database/
 │   │   ├── spec.md                  # Task Specification + Context Bundle (Planner)
-│   │   ├── dod.md                   # Definition of Done checklist (Planner → Coder fills)
+│   │   ├── dod.md                   # Definition of Done (Planner writes, Coder fills)
 │   │   ├── report.md                # Task Report (Coder)
-│   │   └── review.md                # Task Review (Reviewer) — APPROVE / REQUEST CHANGES
-│   └── task-020-configure-docker/
-│       ├── spec.md
-│       ├── dod.md
-│       ├── report.md
-│       └── review.md
-└── epic-020-core-api/
-    └── ...
+│   │   └── review.md                # Task Review — APPROVE / REQUEST CHANGES (Reviewer)
+│   └── task-020-configure-docker/ …
+└── epic-020-core-api/ …
 ```
 
-**Numbering convention:** Steps of 10 (`E010`, `E020`, `T010`, `T020`).
-Insert between existing items: `epic-015-auth-refactor` fits between `epic-010` and `epic-020`.
-This maintains shell sort order while allowing flexible insertion.
+Numbering in steps of ten (`E010`, `T020`) keeps shell sort order and leaves room to
+insert `epic-015-…` later. `doc/project-progress/` sits next to `doc/architecture/`
+(ADRs), `doc/guides/`, `doc/api/`, `doc/external/` (`rules/060-project-structure.mdc`).
 
-### Integration with project `doc/`
+### Front matter
 
-`doc/project-progress/` sits alongside the standard doc subdirectories:
-
-```
-doc/
-├── architecture/          # System design, ADRs
-├── guides/                # How-to guides, runbooks
-├── api/                   # API specifications
-├── external/              # Read-only external references
-└── project-progress/      # APM artifacts (this workflow)
-```
-
----
-
-## File Header Convention
-
-Every APM document begins with YAML front matter:
+Every APM document starts with:
 
 ```yaml
 ---
-apm_category: task-spec         # document type (see table below)
-apm_ref: E010.T020              # reference: PROJECT | E010 | E010.T020
+apm_category: task-spec         # see table below
+apm_ref: E010.T020              # PROJECT | E010 | E010.T020
 apm_level: task                 # project | epic | task
 created_by: Planner             # Planner | Coder | Reviewer | Human
-model: <model-id>               # actual model used (assigned per rules/000-model-policy.mdc); omit if Human
-template_version: v1.1.0        # from .cursor/TEMPLATE_VERSION, read once at document creation
+model: <model-id>               # the model that actually wrote it; omit if Human
+template_version: v1.2.0        # version: line of .cursor/TEMPLATE_VERSION at creation
 intended_for: Coder             # Planner | Coder | Reviewer | Human | All
 created_at: 2026-05-08
 updated_at: 2026-05-08
 ---
 ```
 
-| `apm_category` value | Document |
-|---------------------|----------|
-| `project-brief` | `brief.md` |
-| `decisions-register` | `DECISIONS.md` |
-| `project-spec` | `spec.md` (project level) |
-| `roadmap` | `roadmap.md` |
-| `epic-plan` | `epic-NNN/plan.md` |
-| `task-spec` | `task-NNN/spec.md` |
-| `dod` | `task-NNN/dod.md` |
-| `task-report` | `task-NNN/report.md` |
-| `task-review` | `task-NNN/review.md` |
-| `epic-report` | `epic-NNN/report.md` |
+| `apm_category` | File | Written by |
+|---|---|---|
+| `project-brief` | `brief.md` | Human |
+| `decisions-register` | `DECISIONS.md` | Planner, Coder (append-only) |
+| `project-spec` | `spec.md` | Planner |
+| `roadmap` | `roadmap.md` | Planner |
+| `epic-plan` | `epic-NNN/plan.md` | Planner |
+| `task-spec` | `task-NNN/spec.md` | Planner |
+| `dod` | `task-NNN/dod.md` | Planner → Coder fills |
+| `task-report` | `task-NNN/report.md` | Coder |
+| `task-review` | `task-NNN/review.md` | Reviewer |
+| `epic-report` | `epic-NNN/report.md` | Coder |
+
+`template_version` lets a later audit tell which conventions a document was written under.
+Example documents for every category: `doc/project-progress/` in this repository.
 
 ---
 
-## Cursor Skills
+## Safety and Human control
 
-Five Skills guide AI agents through each APM phase:
-
-| Skill | Used by | Phase |
-|-------|---------|-------|
-| `project-init` | Planner | Phase 0 — brief → spec + roadmap |
-| `plan-epic` | Planner | Phase E — roadmap → epic plan + task specs (+ DoR gate) |
-| `execute-task` | Coder | Phase T — spec → implementation + report |
-| `review-task` | Reviewer | Phase R — diff vs spec/dod → `review.md` verdict |
-| `review-epic` | Coder + Planner | Phase ER — epic report + roadmap review |
-
-To invoke a skill, use `@skill-name` in Cursor chat, or reference it directly:
-`Read .cursor/skills/execute-task/SKILL.md and follow it.`
-
----
-
-## Cursor Rule
-
-`rules/070-project-management.mdc` and `rules/090-apm-orchestration.mdc` activate
-automatically when working on files in `doc/project-progress/**/*.md`. Together they
-provide:
-- Condensed APM terminology (machine-readable)
-- Document type reference table, file header schema
-- Required sections for Task Specification and Task Report (per band tier)
-- The Planner ↔ subagent protocol and the Human Gate Briefing format
-- Security guards (no git push without Human approval)
+- **No `git commit`/`push`/`pull`/`merge`/`rebase`/`reset`** without one of the explicit
+  trigger phrases or `/push` (`rules/020-git.mdc`). The Planner offers commits; you make them.
+- **No database migrations, deployments, or destructive file operations** without approval.
+- **Content the agent reads is data, not instructions** — web pages, tickets, tool output,
+  files under `doc/external/` (`rules/080-agent-security.mdc`).
+- **Every Task has a Reviewer verdict** — an LLM review for `medium`/`high`, the
+  deterministic gate for `low`.
+- **The Coder escalates to the Planner, the Planner to you.** Nobody guesses at
+  architecture.
+- **The Planner proposes Roadmap changes; you decide.**
+- **`make check` before every commit**, and the `commit-task` skill refuses to stage
+  `.env`, keys, or `nogit_data/`.
 
 ---
 
-## Terminology Reference
+## Checklists
 
-For full bilingual definitions of all APM terms, see
-[`skills/project-init/templates/GLOSSARY.md`](skills/project-init/templates/GLOSSARY.md)
-(the file `project-init` seeds into a new project's `doc/project-progress/GLOSSARY.md`).
+### Starting a project
 
-Quick reference:
+```
+[ ] Install the template; run check_installation.py; open in Cursor
+[ ] /role-show → assign models (or answer when asked); set DESIGN_RULES.user.md if you have invariants
+[ ] Give the Planner your brief → project-init
+[ ] Approve spec.md + roadmap.md                                      [F0.5]
+```
 
-| English | Czech | File/Location |
-|---------|-------|---------------|
+### Each Epic
+
+```
+[ ] plan-epic → read the briefing; check DoR per Task; approve plan.md [FE.2]
+[ ] Let Phase T/R run; answer BLOCKED questions the Planner relays
+[ ] Decide at each high-band gate                                      [FT.7]
+[ ] Reply to commit offers with a trigger phrase (or not)
+[ ] review-epic → read the Epic Report table; decide on the Roadmap    [FER.2]
+```
+
+### When the chat window fills up
+
+```
+Read epic-NNN/plan.md and the state of every task directory in it;
+continue from the first Task that has no review.md with verdict APPROVE.
+```
+
+---
+
+## Terminology
+
+Full bilingual definitions: `skills/project-init/templates/GLOSSARY.md` (seeded into every
+project as `doc/project-progress/GLOSSARY.md`).
+
+| Term | Czech | Where |
+|---|---|---|
 | Project Brief | Neformální zadání | `brief.md` |
 | Project Specification | Specifikace projektu | `spec.md` |
 | Roadmap | Hlavní plán | `roadmap.md` |
-| Epic | Velký úkol (Epika) | `epic-NNN-name/` |
-| Epic Plan | Plán epiky | `epic-NNN/plan.md` |
-| Task | Úkol | `task-NNN-name/` |
-| Task Specification | Zadání tasku | `task-NNN/spec.md` |
-| Context Bundle | Kontextový balík | section in `spec.md` |
-| Definition of Done | Kritéria splnění | `task-NNN/dod.md` |
-| Task Report | Report tasku | `task-NNN/report.md` |
-| Task Review | Revize tasku (Reviewer) | `task-NNN/review.md` |
-| Definition of Ready | Kritéria připravenosti | DoR gate at FE.2 |
-| Epic Report | Report epiky | `epic-NNN/report.md` |
-| Human Review | Revize člověkem | steps FT.7, FE.2 |
-
----
-
-## Checklist — Starting a New Project
-
-```
-[ ] Read README.project_management.md (this file)
-[ ] Open Cursor and load the project
-[ ] Invoke skill: @project-init
-[ ] Deliver Project Brief to Planner
-[ ] Iterate with Planner until spec.md and roadmap.md are approved [F0.5]
-[ ] For each Epic: invoke @plan-epic, check DoR per Task, review plan.md, approve [FE.2]
-[ ] For each Task: invoke @execute-task (Coder), then @review-task (Reviewer, different model)
-[ ] For `high`-band/escalated Tasks only: review review.md, approve as Human [FT.7]
-    (medium/low Tasks need no action here — they surface in the Epic Report)
-[ ] After each Epic: invoke @review-epic, review roadmap + ADR/spec validity [FER.2]
-```
-
----
-
-## Security and Human Control
-
-APM is designed to keep Human in control at all times:
-
-- **No git commit or push** without explicit Human instruction.
-- **No database migrations** without Human approval.
-- **No destructive file operations** without confirmation.
-- Every phase boundary requires an independent Reviewer verdict; Human approval is
-  required at boundaries scaled to the Task's/Epic's band — see [Bands](#bands).
-- The Coder stops and escalates to the Planner when the spec is ambiguous; the Planner
-  escalates to Human if it cannot resolve it either.
-- The Planner proposes Roadmap changes; Human decides whether to apply them.
+| Source of Truth (SoT) | Zdroj pravdy | `spec.md` § 7 / `DESIGN_RULES.user.md` |
+| Decisions register | Registr rozhodnutí | `DECISIONS.md` |
+| Epic / Epic Plan / Epic Report | Epika / plán epiky / report epiky | `epic-NNN/`, `plan.md`, `report.md` |
+| Task / Task Specification | Task / zadání tasku | `task-NNN/`, `spec.md` |
+| Context Bundle | Kontextový balík | section of `spec.md` |
+| Band | Pásmo | `spec.md`, `plan.md` table |
+| Definition of Ready (DoR) | Kritéria připravenosti | gate at FE.2 |
+| Definition of Done (DoD) | Kritéria splnění | `dod.md` |
+| Deterministic gate | Deterministická brána | `make check` |
+| Task Report / Task Review | Report tasku / revize tasku | `report.md`, `review.md` |
+| Human gate / Human Gate Briefing | Lidská brána / briefing k bráně | F0.5, FE.2, FT.7, FER.2 |
+| Subagent, `DONE` / `BLOCKED` | Subagent, signál dokončení | `090` § A |
+| Spike | Průzkumná epika | `spike/<desc>` branch |
+| ADR | Záznam architektonického rozhodnutí | `doc/architecture/decisions/` |

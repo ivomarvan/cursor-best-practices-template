@@ -74,39 +74,15 @@ spike/<desc>      ← exploratory work / experiment epic (070-project-management
 - Delete the branch after merge.
   <!-- cs: Po merge větev smaz. -->
 
-## `.gitignore` — generic entries (always commit)
+## `.gitignore`
 
-<!-- cs: .gitignore — generické záznamy platné pro každý projekt -->
+<!-- cs: .gitignore -->
 
-Each project **must** have a `.gitignore`. Start from this generic base and extend
-with language-specific entries (see the respective language rule).
-<!-- cs: Každý projekt musí mít .gitignore. Začni od tohoto základu a rozšiř o jazykové záznamy (viz jazykové pravidlo). -->
-
-```gitignore
-# Secrets and environment
-.env
-.env.*
-!.env.example
-
-# IDE and editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS artifacts
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Personal convention — local data never committed
-nogit_data/
-
-# Generic logs and temp files
-*.log
-*.tmp
-```
+Each project **must** have a `.gitignore`. The generic base (secrets, IDE, OS artifacts,
+`nogit_data/`) lives in `060-project-structure.mdc`; language-specific entries in the
+respective language rule.
+<!-- cs: Každý projekt musí mít .gitignore. Generický základ je v 060-project-structure.mdc,
+     jazykové záznamy v příslušném jazykovém pravidle. -->
 
 ## Pull Request conventions
 
@@ -137,14 +113,9 @@ When Human's message contains one of these phrases, invoke skill `commit-task`:
 
 <!-- cs: Detailní postup: skill commit-task. -->
 
-## Useful read-only commands
-
-<!-- cs: Užitečné příkazy (readonly — vždy bezpečné) -->
-
-```bash
-git status                          # working directory state
-git diff                            # unstaged changes
-git diff --staged                   # staged changes
-git log --oneline --graph --all     # history overview
-git log -p -- <file>                # file history with diffs
-```
+`/push` is the same explicit consent expressed as a slash command (see `commands/push.md`).
+Changes outside an APM Epic (typos, docs, config) need no APM ceremony — they follow this
+rule and the project's deterministic gate.
+<!-- cs: /push je stejný výslovný souhlas vyjádřený slash příkazem. Změny mimo epiku APM
+     (překlepy, dokumentace, konfigurace) nepotřebují ceremonii APM — řídí se tímto pravidlem
+     a deterministickým gatem projektu. -->

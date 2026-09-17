@@ -30,16 +30,13 @@ Every public function and class in `.h` / `.hpp` has a Doxygen comment:
 
 ```c
 /**
- * @brief Connect to the configured Wi-Fi network.
- *
- * Attempts connection up to MAX_RETRY_COUNT times with exponential back-off.
+ * @brief Connect to the configured Wi-Fi network (MAX_RETRY_COUNT retries, back-off).
  *
  * @param[in]  config   Wi-Fi station configuration (SSID, password, channel).
  * @param[out] ip_info  Assigned IP address; valid only on ESP_OK.
  *
  * @return ESP_OK            Successfully connected and IP assigned.
- * @return ESP_ERR_TIMEOUT   All retries exhausted.
- * @return ESP_ERR_WIFI_*    Underlying Wi-Fi driver error.
+ * @return ESP_ERR_TIMEOUT   All retries exhausted; ESP_ERR_WIFI_* from the driver.
  */
 esp_err_t wifi_manager_connect(const wifi_config_t *config, esp_netif_ip_info_t *ip_info);
 ```
@@ -240,12 +237,9 @@ Add these to the project `.gitignore` when C/C++ or ESP-IDF is used:
 ```gitignore
 *.o
 *.a
-*.so
 *.d
 build/
 cmake-build-*/
-CMakeFiles/
-CMakeCache.txt
 compile_commands.json
 sdkconfig.old
 dependencies.lock

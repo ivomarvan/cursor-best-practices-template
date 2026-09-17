@@ -227,14 +227,14 @@ Always includes: all new tests pass, full test suite passes (no regressions).
 **Czech:** Report tasku
 
 Written by Coder after completing a Task, in `<communication-language>`. Tier depends on
-the Task's **Band**: full (6 sections — what/inputs-outputs/decisions/code refs/
+the Task's **Band**: full (7 sections — what/inputs-outputs/decisions/deviations/code refs/
 regression/DoD) for `high`, short (4 sections) for `medium`, micro (5 lines) for `low` —
 see `rules/090-apm-orchestration.mdc`.
 
 The primary mechanism by which Human stays informed of what happened.
 
 <!-- cs: Napsáno Coderem po dokončení tasku, v <communication-language>. Úroveň závisí na
-     pásmu tasku: plná (6 sekcí) pro high, krátká (4 sekce) pro medium, mikro (5 řádků)
+     pásmu tasku: plná (7 sekcí) pro high, krátká (4 sekce) pro medium, mikro (5 řádků)
      pro low.
      Primární mechanismus, kterým zůstává člověk informován o tom, co se dělo. -->
 

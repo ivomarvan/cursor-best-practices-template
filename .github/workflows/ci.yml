@@ -1,0 +1,23 @@
+# Deterministic gate for the template itself (not for consuming projects — those use
+# skills/python-dev/templates/ci.yml). Runs `make check`: ruff + mypy --strict on
+# scripts/, then pytest, which installs the template into a temp project and audits it
+# with scripts/check_installation.py (length limits, leaked comments, frontmatter).
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # detect_version() uses `git describe --tags`
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff mypy pytest
+      - run: make check

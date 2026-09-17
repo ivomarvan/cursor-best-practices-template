@@ -35,12 +35,34 @@ For a setting `<NAME>`:
    <!-- cs: Resolution: pokud <NAME>.user.md existuje, ZCELA nahrazuje default pro dané
         nastavení (celý soubor, nikdy slučování po polích). Jinak platí default. -->
 
-**Hard rule**: `.cursor/` in a consuming project is **100% generated** by
-`scripts/install_into_project.py` and is **never hand-edited** — a re-run wipes and
-rewrites it in full. Every override belongs in `doc/apm_config/*.user.md`.
-<!-- cs: Tvrdé pravidlo: .cursor/ ve spotřebitelském projektu je 100% generovaný pomocí
-     scripts/install_into_project.py a NIKDY se needituje ručně — opětovný běh ho celý
-     smaže a znovu napíše. Každý override patří do doc/apm_config/*.user.md. -->
+## Ownership inside `.cursor/`
+<!-- cs: Vlastnictví uvnitř .cursor/ -->
+
+`.cursor/TEMPLATE_MANIFEST` lists every file the template owns. Two hard rules follow:
+<!-- cs: .cursor/TEMPLATE_MANIFEST vypisuje každý soubor vlastněný šablonou. Plynou z toho
+     dvě tvrdá pravidla: -->
+
+- **Template-owned files are generated, never hand-edited.** A re-run of
+  `scripts/install_into_project.py` removes and rewrites exactly the manifest's files.
+  Config overrides belong in `doc/apm_config/*.user.md`.
+  <!-- cs: Soubory šablony jsou generované, nikdy se needitují ručně — opětovný běh
+       instalátoru smaže a přepíše právě soubory z manifestu. Overridy konfigurace patří
+       do doc/apm_config/*.user.md. -->
+- **Project-owned rules, skills and commands live next to them and survive re-install.**
+  Rules use the reserved namespace `rules/9xx-<slug>.mdc` (template numbering ends at
+  `2xx`); skills `skills/<name>/SKILL.md` and commands `commands/<name>.md` under a name
+  the template does not use. A project rule may **narrow or extend** a template rule; to
+  **override** one, say so explicitly in `DESIGN_RULES.user.md` (which takes precedence).
+  <!-- cs: Projektová pravidla, skilly a příkazy žijí vedle nich a re-instalaci přežijí.
+       Pravidla používají rezervovaný prostor rules/9xx-<slug>.mdc (šablona končí u 2xx);
+       skilly skills/<name>/SKILL.md a příkazy commands/<name>.md pod jménem, které šablona
+       nepoužívá. Projektové pravidlo smí pravidlo šablony zúžit nebo rozšířit; přebití
+       vyslov explicitně v DESIGN_RULES.user.md (má přednost). -->
+
+`scripts/check_installation.py` flags a rule outside `9xx-` that is not in the manifest
+as a probable orphan.
+<!-- cs: check_installation.py označí pravidlo mimo 9xx-, které není v manifestu, jako
+     pravděpodobného sirotka. -->
 
 ## Binding Project Conventions (DESIGN_RULES)
 <!-- cs: Závazné projektové konvence (DESIGN_RULES) -->

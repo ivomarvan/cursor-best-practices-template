@@ -58,14 +58,26 @@ When an APM skill starts work in a role:
 1. Read the resolved *Active Role Assignments* table (AGENT_MODELS config, see above).
    <!-- cs: Přečti vyřešenou tabulku Active Role Assignments (konfigurace AGENT_MODELS,
         viz výše). -->
-2. **Assigned** → state the model to use and remind the Human to select it in Cursor's
-   model selector before continuing.
-   <!-- cs: Přiřazeno → uveď model k použití a připomeň Humanovi vybrat ho v selektoru
-        modelu před pokračováním. -->
+2. **Assigned** — two delivery paths, depending on where the role runs:
+   - *Role in the parent chat window* (typically Planner): state the model and remind the
+     Human to select it in Cursor's model selector — Cursor does not switch it for you.
+   - *Role run as a subagent* (typically Coder, Reviewer — see `090-apm-orchestration.mdc`):
+     pass the resolved slug as the subagent call's `model` parameter. If that slug is not
+     offered for subagents, use the nearest cell of the same band and record the
+     substitution in the resulting `report.md` / `review.md`.
+   <!-- cs: Přiřazeno — dvě cesty podle toho, kde role běží: v rodičovském okně (Planner)
+        uveď model a připomeň Humanovi přepnout selektor — Cursor to sám neudělá; jako
+        subagent (Coder, Reviewer) předej slug parametrem model volání subagenta; když
+        slug pro subagenty není k dispozici, vezmi nejbližší buňku téhož pásma a náhradu
+        zapiš do report.md / review.md. -->
 3. **`unassigned`** → **ASK** the Human which model to use for this role before doing any
    work. Offer to persist the answer via `/role-assign`.
    <!-- cs: `unassigned` → ZEPTEJ SE Humana, který model pro roli použít, než cokoli
         uděláš. Nabídni uložení odpovědi přes /role-assign. -->
+4. **`—`** → the cell does not apply (e.g. Reviewer `low` = deterministic gate only, Planner
+   `low` = never occurs). Do not ask; do not run an LLM in that role for that band.
+   <!-- cs: `—` → buňka se neuplatní (např. Reviewer low = jen deterministický gate,
+        Planner low = nenastává). Neptej se; LLM v té roli pro to pásmo nespouštěj. -->
 
 Never silently assume a model. Never invent model names outside the resolved table.
 <!-- cs: Nikdy tiše nepředpokládej model. Nikdy nevymýšlej názvy modelů mimo vyřešenou
@@ -120,13 +132,15 @@ stays visible. Gate and report tier for a Task follow its band — see
      kolo se připisuje, eskalace zůstává viditelná. Brána a úroveň reportu se řídí pásmem
      tasku — viz 090-apm-orchestration.mdc. -->
 
-A project MAY leave the **Reviewer** role unassigned for `low` in `AGENT_MODELS.user.md`,
-if its deterministic gate (tests/lint/types) already covers the correctness bar for
-low-risk changes — an LLM reviewer would add nothing there. State the reason in
-`AGENT_MODELS.user.md`; it is a project decision, not a default.
-<!-- cs: Projekt smí nechat Reviewera pro low nepřiřazeného, pokud deterministická brána
-     (testy/lint/typy) pokrývá nároky na nízkorizikové změny — LLM reviewer by tam nic
-     nepřidal. Zdůvodni to v AGENT_MODELS.user.md, je to projektové rozhodnutí, ne default. -->
+The template default sets **Reviewer `low` = `—`**: the deterministic gate (tests/lint/
+types) is the review for mechanical changes; an LLM reviewer would add nothing there. A
+project MAY assign a model to that cell in `AGENT_MODELS.user.md` if its `low` Tasks are
+not fully gate-checkable. Never leave it `unassigned` — that would make every `low` Task
+stop to ask the Human.
+<!-- cs: Default šablony má Reviewer low = —: deterministická brána (testy/lint/typy) je
+     revizí mechanických změn; LLM reviewer by tam nic nepřidal. Projekt smí do buňky v
+     AGENT_MODELS.user.md model přiřadit, pokud jeho low tasky gate plně nepokryje. Nikdy
+     nenechávej unassigned — každý low task by se zastavil dotazem na Humana. -->
 
 ## Audit trail
 <!-- cs: Auditní stopa -->
@@ -139,12 +153,14 @@ the document. Keep it concrete (it may be a dated snapshot) — that is history,
 ## Cursor limitation
 <!-- cs: Omezení Cursoru -->
 
-Cursor does **not** auto-switch the model per skill or role. An assignment is documented
-intent + a reminder for the Human. For true per-role automation, drive agents via the
-Cursor SDK or separate Cloud Agents.
-<!-- cs: Cursor sám nepřepíná model podle skillu ani role. Přiřazení je dokumentovaný
-     záměr + připomínka Humanovi. Pro skutečnou automatizaci per-role použij Cursor SDK
-     nebo Cloud Agents. -->
+Cursor does **not** switch the parent chat window's model per skill or role — for that
+window an assignment is documented intent + a reminder for the Human. Subagents are the
+exception: their model is set per call (Resolution rule, step 2). The subagent slug list
+differs from the UI list and changes over time — verify before switching a profile.
+<!-- cs: Cursor nepřepíná model rodičovského okna podle skillu ani role — tam je přiřazení
+     dokumentovaný záměr + připomínka Humanovi. Výjimkou jsou subagenti: jejich model se
+     nastavuje při každém volání (krok 2). Seznam slugů pro subagenty se liší od UI a mění
+     se — před přepnutím profilu ověř. -->
 
 ## Commands
 <!-- cs: Příkazy -->

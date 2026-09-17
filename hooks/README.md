@@ -1,16 +1,17 @@
 # .cursor/hooks
 
-Cursor IDE hooks and shared git hooks for projects using this submodule.
+Cursor IDE hooks and shared git hooks for projects using this template.
 
 ## Structure
 
 ```
-hooks/
-├── hooks.json           → Cursor project hooks (place at project root or .cursor/)
-├── session-start.sh     → sessionStart: activates the git commit-msg hook
-├── git/
-│   └── commit-msg       → strips Cursor auto-attribution from every commit message
-└── README.md            → this file
+.cursor/
+├── hooks.json           → Cursor project hooks registration (installer copies it here)
+└── hooks/
+    ├── session-start.sh → sessionStart: activates the git commit-msg hook
+    ├── git/
+    │   └── commit-msg   → strips Cursor auto-attribution from every commit message
+    └── README.md        → this file
 ```
 
 ## What it solves
@@ -23,14 +24,17 @@ The `commit-msg` git hook removes this trailer before git finalises the commit.
 ## How it activates
 
 `session-start.sh` runs at every Cursor session start (registered in `hooks.json`).
-It runs:
+If `core.hooksPath` is **unset**, it runs:
 
 ```bash
 git config --local core.hooksPath .cursor/hooks/git
 ```
 
-This tells git to use the versioned hooks directory instead of `.git/hooks/`.
 The setting persists in `.git/config` after the first session.
+
+If `core.hooksPath` is already set to something else (husky, pre-commit, your own
+hooks), the script **does not override it** — it prints a note to stderr instead. Keep
+both by calling `.cursor/hooks/git/commit-msg "$1"` from your own `commit-msg` hook.
 
 ## Manual activation (after cloning without Cursor)
 
@@ -40,11 +44,15 @@ git config --local core.hooksPath .cursor/hooks/git
 
 Run once per clone. No further steps needed.
 
-## Using this submodule in other projects
+## Installing into a project
 
-1. Add as submodule at `.cursor/`:
-   ```bash
-   git submodule add git@github.com:ivomarvan/cursor-best-practices-template.git .cursor
-   ```
-2. Open the project in Cursor — `sessionStart` hook activates automatically.
-3. Done. All future commits in that project will have the Cursor trailer stripped.
+Recommended (Option C in the root `README.md`):
+
+```bash
+python3 <template>/scripts/install_into_project.py --project <project-root> --lang cs
+```
+
+The installer copies `hooks.json` and `hooks/` into `<project-root>/.cursor/`. Open the
+project in Cursor — the `sessionStart` hook activates automatically. Options A/B
+(submodule at `.cursor/`) work the same way because the path `.cursor/hooks/git` is
+constant in every variant.

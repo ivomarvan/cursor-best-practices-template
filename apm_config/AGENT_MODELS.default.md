@@ -28,14 +28,16 @@ generic ones in that rule always apply, in addition to these):
 |---|---|---|---|
 | Planner | — | `unassigned` | `unassigned` |
 | Coder | `unassigned` | `unassigned` | `unassigned` |
-| Reviewer | `unassigned` | `unassigned` | `unassigned` |
+| Reviewer | — | `unassigned` | `unassigned` |
 
-`unassigned` means the agent **must ask** the Human before acting in that role. `—` for
-Planner `low` is expected: Planner is banded per Epic (`rules/000-model-policy.mdc`), and
-an Epic made only of `low` Tasks does not occur — use `medium` if it ever does.
-Edit via `/role-assign`, or by hand — see `rules/000-model-policy.mdc` for the resolution
-rule.
+`unassigned` means the agent **must ask** the Human before acting in that role. `—` means
+the cell does not apply: Planner `low` never occurs (Planner is banded per Epic,
+`rules/000-model-policy.mdc`; use `medium` if it ever does), and Reviewer `low` is covered
+by the deterministic gate alone — assign a model there only if your `low` Tasks are not
+fully gate-checkable. Edit via `/role-assign`, or by hand — see `rules/000-model-policy.mdc`
+for the resolution rule.
 <!-- cs: `unassigned` znamená, že se agent MUSÍ zeptat Humana, než začne v té roli
-     pracovat. `—` u Planner low je záměrné: Planner má pásmo za epiku, epika jen z low
-     tasků nenastává — použij medium. Uprav přes /role-assign, nebo ručně — viz
-     rules/000-model-policy.mdc pro pravidlo rozlišení. -->
+     pracovat. `—` znamená, že se buňka neuplatní: Planner low nenastává (Planner má pásmo
+     za epiku; kdyby nastalo, použij medium) a Reviewer low pokrývá sám deterministický
+     gate — model tam přiřaď jen tehdy, když tvé low tasky gate plně nepokryje. Uprav přes
+     /role-assign, nebo ručně — viz rules/000-model-policy.mdc pro pravidlo rozlišení. -->

@@ -8,7 +8,9 @@ import re
 import subprocess
 from pathlib import Path
 
-_LANGUAGE_NAME_ROW = re.compile(r"\|\s*`<communication-language>`\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE)
+_LANGUAGE_NAME_ROW = re.compile(
+    r"\|\s*`<communication-language>`\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE
+)
 _LANGUAGE_CODE_ROW = re.compile(r"\|\s*`<lang-code>`\s*\|\s*`?([a-z]{2})`?\s*\|\s*$", re.MULTILINE)
 
 
